@@ -76,6 +76,14 @@ class EstablishmentStatusUpdate(BaseModel):
     is_active: bool
     subscription_status: Optional[SubscriptionStatus] = None
 
+class EstablishmentUpdate(BaseModel):
+    name: Optional[str] = None
+    type: Optional[EstablishmentType] = None
+    city: Optional[str] = None
+    address: Optional[str] = None
+    latitude: Optional[float] = None
+    longitude: Optional[float] = None
+
 
 # ---------- MEDECINS ----------
 

@@ -5,6 +5,12 @@ export default function Navbar() {
   const navigate = useNavigate()
   const role = getRole()
 
+  // Les liens de recherche patient (medecin/pharmacie) n'ont pas de sens
+  // pour un compte staff/admin connecte - seuls les patients et les
+  // visiteurs non connectes (qui pourraient etre de futurs patients) en
+  // ont besoin.
+  const isStaffRole = role && role !== 'patient'
+
   function handleLogout() {
     clearSession()
     navigate('/connexion')
@@ -18,8 +24,12 @@ export default function Navbar() {
           <span className="font-display text-xl font-semibold text-forest-900">LGP Sante</span>
         </Link>
         <nav className="flex items-center gap-6 text-sm font-medium text-forest-700">
-          <Link to="/rechercher" className="hover:text-forest-900">Trouver un medecin</Link>
-          <Link to="/pharmacie" className="hover:text-forest-900">Pharmacie</Link>
+          {!isStaffRole && (
+            <>
+              <Link to="/rechercher" className="hover:text-forest-900">Trouver un medecin</Link>
+              <Link to="/pharmacie" className="hover:text-forest-900">Pharmacie</Link>
+            </>
+          )}
           {role === 'patient' && <Link to="/espace-patient" className="hover:text-forest-900">Mon espace</Link>}
           {role === 'establishment_admin' && <Link to="/admin-etablissement" className="hover:text-forest-900">Mon etablissement</Link>}
           {role === 'super_admin' && <Link to="/super-admin" className="hover:text-forest-900">Super Admin</Link>}

@@ -1,6 +1,6 @@
 """
 Gestion des etablissements - reservee au Super Admin (niveau 1).
-Section 4: ajout/suppression d'etablissements, suspension pour non-paiement.
+Section 4: ajout/suppression d'etablissements, modification, suspension pour non-paiement.
 """
 import uuid
 
@@ -9,9 +9,10 @@ from sqlalchemy.orm import Session
 
 from app.database import get_db
 from app.models import Establishment, User, UserRole, AuditLog
-from app.schemas import EstablishmentCreate, EstablishmentOut, EstablishmentStatusUpdate
+from app.schemas import EstablishmentCreate, EstablishmentOut, EstablishmentStatusUpdate, EstablishmentUpdate
 from app.deps import require_roles
 from app.security import hash_password
+from app.services.geo import resolve_city_coordinates
 
 router = APIRouter(prefix="/establishments", tags=["etablissements"])
 
@@ -24,12 +25,23 @@ def create_establishment(payload: EstablishmentCreate, db: Session = Depends(get
     if existing_admin:
         raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail="Cet email admin est deja utilise")
 
+    # Si le Super Admin ne fournit pas de coordonnees GPS precises, on utilise
+    # une position approximative de la ville (voir app/services/geo.py) pour
+    # que le moteur de suggestion puisse quand meme calculer une distance.
+    latitude, longitude = payload.latitude, payload.longitude
+    if latitude is None or longitude is None:
+        approx = resolve_city_coordinates(payload.city)
+        if approx:
+            latitude, longitude = approx
+
     establishment = Establishment(
         id=str(uuid.uuid4()),
         name=payload.name,
         type=payload.type,
         city=payload.city,
         address=payload.address,
+        latitude=latitude,
+        longitude=longitude,
     )
     db.add(establishment)
     db.flush()
@@ -54,6 +66,40 @@ def create_establishment(payload: EstablishmentCreate, db: Session = Depends(get
             dependencies=[Depends(require_roles(UserRole.SUPER_ADMIN))])
 def list_establishments(db: Session = Depends(get_db)):
     return db.query(Establishment).order_by(Establishment.created_at.desc()).all()
+
+
+@router.patch("/{establishment_id}", response_model=EstablishmentOut,
+              dependencies=[Depends(require_roles(UserRole.SUPER_ADMIN))])
+def update_establishment(establishment_id: str, payload: EstablishmentUpdate, db: Session = Depends(get_db),
+                          current_user: User = Depends(require_roles(UserRole.SUPER_ADMIN))):
+    """
+    Modification complete d'un etablissement deja cree (nom, type, ville,
+    adresse, coordonnees). Reponse au retour de M. SOGADJI FAUSTIN: il
+    manquait un moyen de corriger un etablissement apres sa creation.
+    Seuls les champs fournis (non None) sont modifies - les autres restent
+    inchanges.
+    """
+    establishment = db.query(Establishment).filter(Establishment.id == establishment_id).first()
+    if not establishment:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Etablissement introuvable")
+
+    update_data = payload.model_dump(exclude_unset=True)
+    for field, value in update_data.items():
+        setattr(establishment, field, value)
+
+    # Si la ville a change mais qu'aucune nouvelle coordonnee n'est fournie
+    # explicitement dans cette meme requete, on reactualise la position
+    # approximative pour que le moteur de suggestion reste coherent.
+    if "city" in update_data and "latitude" not in update_data and "longitude" not in update_data:
+        approx = resolve_city_coordinates(establishment.city)
+        if approx:
+            establishment.latitude, establishment.longitude = approx
+
+    db.add(AuditLog(user_id=current_user.id, establishment_id=establishment.id,
+                     action="update_establishment", details=f"Modification de {establishment.name}"))
+    db.commit()
+    db.refresh(establishment)
+    return establishment
 
 
 @router.patch("/{establishment_id}/status", response_model=EstablishmentOut,
