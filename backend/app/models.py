@@ -250,4 +250,4 @@ class DoctorReview(Base):
     created_at = Column(DateTime, default=datetime.utcnow)
 
     doctor = relationship("Doctor")
-    patient = relationship("Patient"))
+    patient = relationship("Patient")
