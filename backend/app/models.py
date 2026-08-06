@@ -53,7 +53,10 @@ class AppointmentStatus(str, enum.Enum):
 
 class ReservationStatus(str, enum.Enum):
     PENDING = "pending"
+    CONFIRMED = "confirmed"
+    PREPARING = "preparing"
     READY = "ready"
+    OUT_FOR_DELIVERY = "out_for_delivery"
     DELIVERED = "delivered"
     CANCELLED = "cancelled"
 
@@ -218,8 +221,10 @@ class PharmacyReservation(Base):
     quantity = Column(Integer, nullable=False, default=1)
     delivery_mode = Column(Enum(DeliveryMode), default=DeliveryMode.PICKUP)
     status = Column(Enum(ReservationStatus), default=ReservationStatus.PENDING)
+    estimated_ready_at = Column(DateTime, nullable=True)
+    pharmacist_note = Column(Text, nullable=True)
     created_at = Column(DateTime, default=datetime.utcnow)
-
+    
     medication = relationship("PharmacyStock", back_populates="reservations")
 
 
@@ -251,3 +256,14 @@ class DoctorReview(Base):
 
     doctor = relationship("Doctor")
     patient = relationship("Patient")
+
+class PharmacyReservationStatusHistory(Base):
+    """Timeline d'une commande - append-only, jamais modifie ni supprime."""
+    __tablename__ = "pharmacy_reservation_status_history"
+
+    id = Column(UUID(as_uuid=False), primary_key=True, default=gen_uuid)
+    reservation_id = Column(UUID(as_uuid=False), ForeignKey("pharmacy_reservations.id"), nullable=False)
+    status = Column(Enum(ReservationStatus), nullable=False)
+    note = Column(Text, nullable=True)
+    changed_by_user_id = Column(UUID(as_uuid=False), ForeignKey("users.id"), nullable=True)
+    created_at = Column(DateTime, default=datetime.utcnow)

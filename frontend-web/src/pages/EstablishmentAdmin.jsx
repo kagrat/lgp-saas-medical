@@ -1,6 +1,8 @@
 import { useEffect, useState } from 'react'
 import api, { getErrorMessage } from '../api/client'
 import { SPECIALTIES, DAYS_OF_WEEK } from '../constants'
+import StarRating from '../components/StarRating'
+import { StatusBadge, RESERVATION_STATUSES, RESERVATION_STATUS_LABELS } from '../components/OrderStatus'
 
 export default function EstablishmentAdmin() {
   const [tab, setTab] = useState('stats')
@@ -8,8 +10,11 @@ export default function EstablishmentAdmin() {
   const [doctors, setDoctors] = useState([])
   const [appointments, setAppointments] = useState([])
   const [stock, setStock] = useState([])
+  const [orders, setOrders] = useState([])
   const [error, setError] = useState('')
   const [expandedDoctorId, setExpandedDoctorId] = useState(null)
+  const [updatingOrderId, setUpdatingOrderId] = useState(null)
+  const [orderUpdateForm, setOrderUpdateForm] = useState({})
 
   const [newDoctor, setNewDoctor] = useState({
     email: '', password: '', full_name: '', phone: '', specialty: SPECIALTIES[0], consultation_price: '',
@@ -22,18 +27,25 @@ export default function EstablishmentAdmin() {
 
   async function loadAll() {
     try {
-      const [statsRes, doctorsRes, apptsRes, stockRes] = await Promise.all([
+      const [statsRes, doctorsRes, apptsRes, stockRes, ordersRes] = await Promise.all([
         api.get('/dashboard/establishment'),
         api.get('/doctors/establishment'),
         api.get('/appointments/establishment'),
         api.get('/pharmacy/stock'),
+        api.get('/pharmacy/reservations/establishment'),
       ])
       setStats(statsRes.data)
       setDoctors(doctorsRes.data)
       setAppointments(apptsRes.data)
       setStock(stockRes.data)
+      setOrders(ordersRes.data)
+      const initialOrderForms = {}
+      ordersRes.data.forEach((o) => {
+        initialOrderForms[o.id] = { status: o.status, note: o.pharmacist_note || '', estimated_ready_at: '' }
+      })
+      setOrderUpdateForm(initialOrderForms)
     } catch (err) {
-      setError("Impossible de charger le tableau de bord. Verifie que tu es bien connecte en tant qu'admin etablissement.")
+      setError(getErrorMessage(err, "Impossible de charger le tableau de bord. Verifie que tu es bien connecte en tant qu'admin etablissement."))
     }
   }
 
@@ -66,11 +78,34 @@ export default function EstablishmentAdmin() {
     }
   }
 
+  function updateOrderForm(reservationId, field, value) {
+    setOrderUpdateForm((forms) => ({ ...forms, [reservationId]: { ...forms[reservationId], [field]: value } }))
+  }
+
+  async function submitOrderUpdate(reservationId) {
+    setUpdatingOrderId(reservationId)
+    setError('')
+    try {
+      const form = orderUpdateForm[reservationId]
+      await api.patch(`/pharmacy/reservations/${reservationId}/status`, {
+        status: form.status,
+        note: form.note || null,
+        estimated_ready_at: form.estimated_ready_at ? new Date(form.estimated_ready_at).toISOString() : null,
+      })
+      await loadAll()
+    } catch (err) {
+      setError(getErrorMessage(err, "Impossible de mettre a jour cette commande."))
+    } finally {
+      setUpdatingOrderId(null)
+    }
+  }
+
   const tabs = [
     { id: 'stats', label: 'Statistiques' },
     { id: 'doctors', label: 'Medecins' },
     { id: 'appointments', label: 'Rendez-vous' },
     { id: 'pharmacy', label: 'Pharmacie' },
+    { id: 'orders', label: 'Commandes' },
   ]
 
   return (
@@ -78,7 +113,7 @@ export default function EstablishmentAdmin() {
       <h1 className="font-display text-3xl font-semibold text-forest-900 mb-2">Mon etablissement</h1>
       <p className="text-forest-700 mb-8">Gestion des medecins, rendez-vous et pharmacie de ton etablissement.</p>
 
-      <div className="flex gap-2 mb-8 border-b border-forest-100">
+      <div className="flex gap-2 mb-8 border-b border-forest-100 flex-wrap">
         {tabs.map((t) => (
           <button
             key={t.id} onClick={() => setTab(t.id)}
@@ -137,6 +172,7 @@ export default function EstablishmentAdmin() {
                       {d.specialty} - {d.consultation_price.toLocaleString('fr-FR')} FCFA
                       {d.phone && ` - ${d.phone}`}
                     </p>
+                    <StarRating rating={d.average_rating} reviewCount={d.review_count} />
                   </div>
                   <button
                     onClick={() => setExpandedDoctorId(expandedDoctorId === d.id ? null : d.id)}
@@ -203,6 +239,61 @@ export default function EstablishmentAdmin() {
               </div>
             ))}
           </div>
+        </div>
+      )}
+
+      {tab === 'orders' && (
+        <div className="space-y-3">
+          {orders.length === 0 && <p className="text-forest-700">Aucune commande recue pour le moment.</p>}
+          {orders.map((o) => (
+            <div key={o.id} className="rounded-xl border border-forest-100 bg-white p-4">
+              <div className="flex justify-between items-start mb-3">
+                <div>
+                  <p className="text-forest-900 font-medium">{o.medication_name} <span className="text-xs text-forest-700 font-normal">({o.medication_reference})</span></p>
+                  <p className="text-sm text-forest-700">
+                    Quantite: {o.quantity} - {o.delivery_mode === 'delivery' ? 'Livraison' : 'Retrait sur place'}
+                  </p>
+                </div>
+                <StatusBadge status={o.status} />
+              </div>
+              <div className="flex flex-wrap gap-2 items-end">
+                <div>
+                  <label className="block text-xs text-forest-700 mb-1">Nouveau statut</label>
+                  <select
+                    value={orderUpdateForm[o.id]?.status || o.status}
+                    onChange={(e) => updateOrderForm(o.id, 'status', e.target.value)}
+                    className="rounded-lg border border-forest-100 px-3 py-1.5 text-sm bg-white"
+                  >
+                    {RESERVATION_STATUSES.map((s) => (
+                      <option key={s} value={s}>{RESERVATION_STATUS_LABELS[s]}</option>
+                    ))}
+                  </select>
+                </div>
+                <div>
+                  <label className="block text-xs text-forest-700 mb-1">Pret estime (optionnel)</label>
+                  <input type="datetime-local"
+                    value={orderUpdateForm[o.id]?.estimated_ready_at || ''}
+                    onChange={(e) => updateOrderForm(o.id, 'estimated_ready_at', e.target.value)}
+                    className="rounded-lg border border-forest-100 px-3 py-1.5 text-sm" />
+                </div>
+                <div className="flex-1 min-w-[200px]">
+                  <label className="block text-xs text-forest-700 mb-1">Note pour le patient (optionnel)</label>
+                  <input type="text"
+                    value={orderUpdateForm[o.id]?.note || ''}
+                    onChange={(e) => updateOrderForm(o.id, 'note', e.target.value)}
+                    placeholder="Ex: en rupture temporaire, disponible demain"
+                    className="w-full rounded-lg border border-forest-100 px-3 py-1.5 text-sm" />
+                </div>
+                <button
+                  onClick={() => submitOrderUpdate(o.id)}
+                  disabled={updatingOrderId === o.id}
+                  className="rounded-full bg-forest-700 text-white px-5 py-1.5 text-sm font-medium hover:bg-forest-900 transition disabled:opacity-50"
+                >
+                  {updatingOrderId === o.id ? 'Mise a jour...' : 'Mettre a jour'}
+                </button>
+              </div>
+            </div>
+          ))}
         </div>
       )}
     </div>

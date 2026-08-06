@@ -242,9 +242,13 @@ class ReservationOut(BaseModel):
     establishment_id: str
     patient_id: str
     medication_id: str
+    medication_name: str
+    medication_reference: str
     quantity: int
     delivery_mode: DeliveryMode
     status: ReservationStatus
+    estimated_ready_at: Optional[datetime] = None
+    pharmacist_note: Optional[str] = None
     created_at: datetime
 
     model_config = {"from_attributes": True}
@@ -279,6 +283,20 @@ class DoctorReviewOut(BaseModel):
     patient_name: str
     rating: int
     comment: Optional[str] = None
+    created_at: datetime
+
+    model_config = {"from_attributes": True}
+
+class ReservationStatusUpdate(BaseModel):
+    status: ReservationStatus
+    note: Optional[str] = Field(default=None, max_length=500)
+    estimated_ready_at: Optional[datetime] = None
+
+
+class ReservationHistoryOut(BaseModel):
+    id: str
+    status: ReservationStatus
+    note: Optional[str] = None
     created_at: datetime
 
     model_config = {"from_attributes": True}

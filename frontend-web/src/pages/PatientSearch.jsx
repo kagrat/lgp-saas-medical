@@ -1,3 +1,4 @@
+import StarRating from '../components/StarRating'
 import { useState } from 'react'
 import api, { getErrorMessage } from '../api/client'
 import { getRole } from '../api/client'
@@ -133,6 +134,7 @@ export default function PatientSearch() {
             {result.suggestions.map((slot, idx) => (
               <div key={idx} className="rounded-xl border border-forest-100 bg-white p-5 flex flex-col gap-2">
                 <p className="font-display text-lg text-forest-900 font-semibold">{slot.doctor_name}</p>
+                <StarRating rating={slot.average_rating} reviewCount={slot.review_count} />
                 <p className="text-sm text-forest-700">{slot.establishment_name}</p>
                 <p className="text-sm text-forest-700">
                   {new Date(slot.slot_start).toLocaleString('fr-FR', { weekday: 'long', day: 'numeric', month: 'long', hour: '2-digit', minute: '2-digit' })}
