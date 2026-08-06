@@ -236,4 +236,17 @@ class AuditLog(Base):
     establishment_id = Column(UUID(as_uuid=False), ForeignKey("establishments.id"), nullable=True)
     action = Column(String(200), nullable=False)
     details = Column(Text)
+    created_at = Column(DateTime, default=datetime.utcnow
+class DoctorReview(Base):
+    """Avis patient sur un medecin - uniquement apres un RDV termine, pour eviter les faux avis."""
+    __tablename__ = "doctor_reviews"
+
+    id = Column(UUID(as_uuid=False), primary_key=True, default=gen_uuid)
+    doctor_id = Column(UUID(as_uuid=False), ForeignKey("doctors.id"), nullable=False)
+    patient_id = Column(UUID(as_uuid=False), ForeignKey("patients.id"), nullable=False)
+    rating = Column(Integer, nullable=False)  # 1 a 5
+    comment = Column(Text)
     created_at = Column(DateTime, default=datetime.utcnow)
+
+    doctor = relationship("Doctor")
+    patient = relationship("Patient"))

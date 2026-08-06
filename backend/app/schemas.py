@@ -122,6 +122,8 @@ class DoctorOut(BaseModel):
     photo_url: Optional[str] = None
     establishment_id: str
     is_active: bool
+    average_rating: Optional[float] = None
+    review_count: int = 0
 
     model_config = {"from_attributes": True}
 
@@ -196,7 +198,8 @@ class SuggestionSlot(BaseModel):
     slot_start: datetime
     slot_end: datetime
     consultation_price: float
-
+    average_rating: Optional[float] = None
+    review_count: int = 0
 
 class AppointmentSearchResponse(BaseModel):
     exact_match_available: bool
@@ -263,3 +266,19 @@ class GlobalStatsOut(BaseModel):
     suspended_establishments: int
     total_appointments: int
     total_revenue_estimated: float
+
+class DoctorReviewCreate(BaseModel):
+    rating: int = Field(ge=1, le=5)
+    comment: Optional[str] = Field(default=None, max_length=1000)
+
+
+class DoctorReviewOut(BaseModel):
+    id: str
+    doctor_id: str
+    patient_id: str
+    patient_name: str
+    rating: int
+    comment: Optional[str] = None
+    created_at: datetime
+
+    model_config = {"from_attributes": True}

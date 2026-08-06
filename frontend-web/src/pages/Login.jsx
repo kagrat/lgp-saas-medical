@@ -1,13 +1,20 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useNavigate, Link } from 'react-router-dom'
-import api, { saveSession, getErrorMessage } from '../api/client'
+import api, { saveSession, getErrorMessage, consumeSessionExpiredFlag } from '../api/client'
 
 export default function Login() {
   const navigate = useNavigate()
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [error, setError] = useState('')
+  const [notice, setNotice] = useState('')
   const [loading, setLoading] = useState(false)
+
+  useEffect(() => {
+    if (consumeSessionExpiredFlag()) {
+      setNotice('Ta session a expire. Reconnecte-toi pour continuer.')
+    }
+  }, [])
 
   async function handleSubmit(e) {
     e.preventDefault()
@@ -30,6 +37,12 @@ export default function Login() {
     <div className="max-w-md mx-auto px-6 py-16">
       <h1 className="font-display text-3xl font-semibold text-forest-900 mb-2">Connexion</h1>
       <p className="text-forest-700 mb-8">Accede a ton espace patient, etablissement ou administration.</p>
+
+      {notice && (
+        <p className="text-amber-700 bg-amber-50 border border-amber-200 rounded-lg px-4 py-3 mb-6 text-sm">
+          {notice}
+        </p>
+      )}
 
       <form onSubmit={handleSubmit} className="space-y-4">
         <div>

@@ -1,5 +1,5 @@
 """
-Module 4 - Gestion des medecins.
+Module 4 - Gestion des medecins + Notes/avis (nouveau module ratings).
 Creation reservee a establishment_admin (jamais d'auto-inscription medecin).
 Recherche publique ouverte a tous (portail patient).
 """
@@ -7,15 +7,42 @@ import uuid
 from typing import Optional
 
 from fastapi import APIRouter, Depends, HTTPException, status
+from sqlalchemy import func
 from sqlalchemy.orm import Session
 
 from app.database import get_db
-from app.models import Doctor, User, UserRole, DoctorAvailability, DoctorAbsence, Establishment
-from app.schemas import DoctorCreate, DoctorOut, DoctorAvailabilityCreate, DoctorAbsenceCreate, DoctorAvailabilityOut
+from app.models import (
+    Doctor, User, UserRole, DoctorAvailability, DoctorAbsence, Establishment,
+    DoctorReview, Patient, Appointment, AppointmentStatus,
+)
+from app.schemas import (
+    DoctorCreate, DoctorOut, DoctorAvailabilityCreate, DoctorAbsenceCreate,
+    DoctorAvailabilityOut, DoctorReviewCreate, DoctorReviewOut,
+)
 from app.deps import require_roles, get_current_user
 from app.security import hash_password
 
 router = APIRouter(prefix="/doctors", tags=["medecins"])
+
+
+def _rating_stats(db: Session, doctor_id: str) -> tuple[Optional[float], int]:
+    """Moyenne et nombre d'avis pour un medecin, calcules a la volee (pas de cache a invalider)."""
+    avg_rating, count = (
+        db.query(func.avg(DoctorReview.rating), func.count(DoctorReview.id))
+        .filter(DoctorReview.doctor_id == doctor_id)
+        .first()
+    )
+    return (round(avg_rating, 1) if avg_rating is not None else None), (count or 0)
+
+
+def _to_doctor_out(db: Session, doctor: Doctor) -> DoctorOut:
+    avg_rating, review_count = _rating_stats(db, doctor.id)
+    return DoctorOut(
+        id=doctor.id, full_name=doctor.user.full_name, phone=doctor.user.phone, specialty=doctor.specialty,
+        consultation_price=doctor.consultation_price, bio=doctor.bio, photo_url=doctor.photo_url,
+        establishment_id=doctor.establishment_id, is_active=doctor.is_active,
+        average_rating=avg_rating, review_count=review_count,
+    )
 
 
 @router.post("", response_model=DoctorOut, status_code=status.HTTP_201_CREATED)
@@ -48,12 +75,7 @@ def create_doctor(payload: DoctorCreate, db: Session = Depends(get_db),
     db.add(doctor)
     db.commit()
     db.refresh(doctor)
-    return DoctorOut(
-        id=doctor.id, full_name=user.full_name, phone=user.phone, specialty=doctor.specialty,
-        consultation_price=doctor.consultation_price, bio=doctor.bio,
-        photo_url=doctor.photo_url, establishment_id=doctor.establishment_id,
-        is_active=doctor.is_active,
-    )
+    return _to_doctor_out(db, doctor)
 
 
 @router.get("/search", response_model=list[DoctorOut])
@@ -72,15 +94,7 @@ def search_doctors(
     if establishment_id:
         query = query.filter(Doctor.establishment_id == establishment_id)
 
-    results = []
-    for doctor in query.limit(50).all():
-        results.append(DoctorOut(
-            id=doctor.id, full_name=doctor.user.full_name, phone=doctor.user.phone, specialty=doctor.specialty,
-            consultation_price=doctor.consultation_price, bio=doctor.bio,
-            photo_url=doctor.photo_url, establishment_id=doctor.establishment_id,
-            is_active=doctor.is_active,
-        ))
-    return results
+    return [_to_doctor_out(db, doctor) for doctor in query.limit(50).all()]
 
 
 @router.get("/establishment", response_model=list[DoctorOut])
@@ -89,11 +103,7 @@ def list_establishment_doctors(db: Session = Depends(get_db),
                                     UserRole.ESTABLISHMENT_ADMIN, UserRole.SECRETARY))):
     """Liste des medecins de l'etablissement courant (isolation tenant stricte)."""
     doctors = db.query(Doctor).filter(Doctor.establishment_id == current_user.establishment_id).all()
-    return [DoctorOut(
-        id=d.id, full_name=d.user.full_name, phone=d.user.phone, specialty=d.specialty,
-        consultation_price=d.consultation_price, bio=d.bio, photo_url=d.photo_url,
-        establishment_id=d.establishment_id, is_active=d.is_active,
-    ) for d in doctors]
+    return [_to_doctor_out(db, d) for d in doctors]
 
 
 @router.post("/{doctor_id}/availabilities", status_code=status.HTTP_201_CREATED)
@@ -148,6 +158,124 @@ def add_absence(doctor_id: str, payload: DoctorAbsenceCreate, db: Session = Depe
     db.add(absence)
     db.commit()
     return {"message": "Absence enregistree"}
+
+
+# ---------- NOTES / AVIS (nouveau module) ----------
+
+@router.post("/{doctor_id}/reviews", response_model=DoctorReviewOut, status_code=status.HTTP_201_CREATED)
+def create_or_update_review(doctor_id: str, payload: DoctorReviewCreate, db: Session = Depends(get_db),
+                             current_user: User = Depends(require_roles(UserRole.PATIENT))):
+    """
+    Un patient ne peut laisser un avis que s'il a eu au moins un rendez-vous
+    TERMINE (COMPLETED) avec ce medecin - ca evite les faux avis. Si le
+    patient a deja laisse un avis pour ce medecin, on le met a jour plutot
+    que d'en creer un second (un seul avis par patient/medecin).
+    """
+    doctor = db.query(Doctor).filter(Doctor.id == doctor_id).first()
+    if not doctor:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Medecin introuvable")
+
+    patient = db.query(Patient).filter(Patient.user_id == current_user.id).first()
+    if not patient:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Dossier patient introuvable")
+
+    has_completed_appointment = (
+        db.query(Appointment)
+        .filter(
+            Appointment.doctor_id == doctor_id,
+            Appointment.patient_id == patient.id,
+            Appointment.status == AppointmentStatus.COMPLETED,
+        )
+        .first()
+    )
+    if not has_completed_appointment:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Tu ne peux laisser un avis qu'apres un rendez-vous termine avec ce medecin.",
+        )
+
+    existing_review = (
+        db.query(DoctorReview)
+        .filter(DoctorReview.doctor_id == doctor_id, DoctorReview.patient_id == patient.id)
+        .first()
+    )
+    if existing_review:
+        existing_review.rating = payload.rating
+        existing_review.comment = payload.comment
+        db.commit()
+        db.refresh(existing_review)
+        review = existing_review
+    else:
+        review = DoctorReview(
+            id=str(uuid.uuid4()), doctor_id=doctor_id, patient_id=patient.id,
+            rating=payload.rating, comment=payload.comment,
+        )
+        db.add(review)
+        db.commit()
+        db.refresh(review)
+
+    return DoctorReviewOut(
+        id=review.id, doctor_id=review.doctor_id, patient_id=review.patient_id,
+        patient_name=current_user.full_name, rating=review.rating,
+        comment=review.comment, created_at=review.created_at,
+    )
+
+
+@router.get("/{doctor_id}/reviews", response_model=list[DoctorReviewOut])
+def list_reviews(doctor_id: str, db: Session = Depends(get_db)):
+    """Public - visible sur le profil du medecin."""
+    reviews = (
+        db.query(DoctorReview)
+        .filter(DoctorReview.doctor_id == doctor_id)
+        .order_by(DoctorReview.created_at.desc())
+        .all()
+    )
+    return [
+        DoctorReviewOut(
+            id=r.id, doctor_id=r.doctor_id, patient_id=r.patient_id,
+            patient_name=r.patient.user.full_name, rating=r.rating,
+            comment=r.comment, created_at=r.created_at,
+        )
+        for r in reviews
+    ]
+
+
+@router.get("/reviewable")
+def list_reviewable_appointments(db: Session = Depends(get_db),
+                                  current_user: User = Depends(require_roles(UserRole.PATIENT))):
+    """
+    Liste des medecins que le patient peut noter (RDV termines), avec son
+    avis existant s'il y en a deja un - utilise par l'espace patient pour
+    afficher le bouton 'Laisser un avis' au bon endroit.
+    """
+    patient = db.query(Patient).filter(Patient.user_id == current_user.id).first()
+    if not patient:
+        return []
+
+    completed_doctor_ids = (
+        db.query(Appointment.doctor_id)
+        .filter(Appointment.patient_id == patient.id, Appointment.status == AppointmentStatus.COMPLETED)
+        .distinct()
+        .all()
+    )
+    results = []
+    for (doctor_id,) in completed_doctor_ids:
+        doctor = db.query(Doctor).filter(Doctor.id == doctor_id).first()
+        if not doctor:
+            continue
+        existing_review = (
+            db.query(DoctorReview)
+            .filter(DoctorReview.doctor_id == doctor_id, DoctorReview.patient_id == patient.id)
+            .first()
+        )
+        results.append({
+            "doctor_id": doctor_id,
+            "doctor_name": doctor.user.full_name,
+            "specialty": doctor.specialty,
+            "existing_rating": existing_review.rating if existing_review else None,
+            "existing_comment": existing_review.comment if existing_review else None,
+        })
+    return results
 
 
 def _get_doctor_in_scope(db: Session, doctor_id: str, current_user: User) -> Doctor:

@@ -7,36 +7,23 @@ Logique:
 3. Si un creneau exact a l'heure demandee existe dans la ville du patient -> match exact.
 4. Sinon -> suggestions triees en deux temps:
    a. d'abord par DISTANCE reelle (km) entre la ville du patient et
-      l'etablissement du medecin (les etablissements les plus proches
-      d'abord, pas seulement "meme ville" ou "n'importe quelle autre ville"),
+      l'etablissement du medecin,
    b. puis par proximite avec l'heure demandee, a distance egale.
 5. Le patient choisit et confirme en un clic.
 
-CORRECTIFS successifs (retours utilisateur):
-- la comparaison de ville est insensible a la casse,
-- les creneaux sont tries par proximite avec l'heure demandee (pas juste
-  les premiers de la journee),
-- les etablissements d'autres villes sont maintenant classes par distance
-  reelle (km) plutot que dans un ordre arbitraire.
-
-Hypothese: la distance est calculee a vol d'oiseau (haversine) entre la
-position (approximative ou exacte) de la ville/etablissement du patient et
-celle de chaque etablissement candidat. Voir app/services/geo.py pour le
-detail et ses limites (positions de ville approximatives par defaut).
+Chaque suggestion inclut maintenant la note moyenne du medecin (module
+Notes/avis) pour aider le patient a choisir entre plusieurs options proches.
 """
 from datetime import datetime, timedelta, date, time
 from typing import Optional
 
+from sqlalchemy import func
 from sqlalchemy.orm import Session
 
-from app.models import Doctor, DoctorAvailability, DoctorAbsence, Appointment, Establishment, AppointmentStatus
+from app.models import Doctor, DoctorAvailability, DoctorAbsence, Appointment, Establishment, AppointmentStatus, DoctorReview
 from app.schemas import SuggestionSlot
 from app.services.geo import haversine_km, resolve_city_coordinates
 
-# Rayon (km) en-deca duquel un etablissement est considere "dans la meme
-# zone" que la ville recherchee - sert uniquement a decider du match exact
-# (etape 3), pas a exclure des suggestions (toutes les distances sont
-# proposees, juste triees de la plus proche a la plus eloignee).
 LOCAL_RADIUS_KM = 15.0
 
 
@@ -54,11 +41,10 @@ def _is_doctor_absent(db: Session, doctor_id: str, target_date: date) -> bool:
 
 
 def _free_slots_for_doctor(db: Session, doctor: Doctor, target_date: date, max_slots: int = 40) -> list[tuple[datetime, datetime]]:
-    """Calcule TOUS les creneaux libres d'un medecin pour une date donnee (le tri se fait ensuite par l'appelant)."""
     if _is_doctor_absent(db, doctor.id, target_date):
         return []
 
-    day_of_week = target_date.weekday()  # 0=lundi
+    day_of_week = target_date.weekday()
     availabilities = (
         db.query(DoctorAvailability)
         .filter(DoctorAvailability.doctor_id == doctor.id, DoctorAvailability.day_of_week == day_of_week)
@@ -99,12 +85,20 @@ def _free_slots_for_doctor(db: Session, doctor: Doctor, target_date: date, max_s
 
 
 def _time_distance_minutes(slot_start: datetime, preferred_time: Optional[time]) -> int:
-    """Distance en minutes entre un creneau et l'heure preferee (tri chronologique si aucune heure preferee)."""
     if preferred_time is None:
         return int(slot_start.timestamp() // 60)
     slot_minutes = slot_start.hour * 60 + slot_start.minute
     preferred_minutes = preferred_time.hour * 60 + preferred_time.minute
     return abs(slot_minutes - preferred_minutes)
+
+
+def _rating_stats(db: Session, doctor_id: str) -> tuple[Optional[float], int]:
+    avg_rating, count = (
+        db.query(func.avg(DoctorReview.rating), func.count(DoctorReview.id))
+        .filter(DoctorReview.doctor_id == doctor_id)
+        .first()
+    )
+    return (round(avg_rating, 1) if avg_rating is not None else None), (count or 0)
 
 
 def find_appointment_or_suggest(
@@ -117,13 +111,6 @@ def find_appointment_or_suggest(
     requested_doctor_id: Optional[str] = None,
     max_suggestions: int = 6,
 ) -> tuple[bool, list[SuggestionSlot]]:
-    """
-    Retourne (exact_match_available, suggestions), triees d'abord par
-    distance geographique reelle (km) par rapport a la ville/etablissement
-    du patient, puis par proximite avec l'heure demandee.
-    """
-    # Position de reference du patient: priorite a l'etablissement precis
-    # s'il est fourni (flux de reservation direct), sinon la ville tapee.
     reference_coords = None
     if establishment_id:
         ref_establishment = db.query(Establishment).filter(Establishment.id == establishment_id).first()
@@ -142,11 +129,8 @@ def find_appointment_or_suggest(
 
     candidates = base_query.all()
 
-    # Rassemble tous les creneaux avec, pour chacun, la distance reelle (km)
-    # a la position de reference (None si l'un des deux points est inconnu -
-    # dans ce cas la distance ne departagera pas le tri, seul le temps comptera).
     slots: list[SuggestionSlot] = []
-    distances: dict[str, Optional[float]] = {}  # doctor_id -> distance_km
+    distances: dict[str, Optional[float]] = {}
 
     for doctor in candidates:
         establishment = db.query(Establishment).filter(Establishment.id == doctor.establishment_id).first()
@@ -161,16 +145,16 @@ def find_appointment_or_suggest(
             )
         distances[doctor.id] = distance_km
 
+        avg_rating, review_count = _rating_stats(db, doctor.id)
+
         for start, end in _free_slots_for_doctor(db, doctor, preferred_date):
             slots.append(SuggestionSlot(
                 doctor_id=doctor.id, doctor_name=doctor.user.full_name,
                 establishment_id=establishment.id, establishment_name=establishment.name,
                 slot_start=start, slot_end=end, consultation_price=doctor.consultation_price,
+                average_rating=avg_rating, review_count=review_count,
             ))
 
-    # Etape 3: creneau exact disponible a l'heure demandee, dans la zone locale
-    # (meme ville / rayon proche) - c'est ca qui declenche une "confirmation
-    # immediate" plutot qu'une simple suggestion.
     exact_match_available = False
     if preferred_time is not None:
         for s in slots:
@@ -181,9 +165,6 @@ def find_appointment_or_suggest(
                 exact_match_available = True
                 break
 
-    # Tri: distance croissante en priorite (None traite comme "distance
-    # inconnue", place apres les distances connues mais sans favoriser ou
-    # penaliser injustement), puis proximite avec l'heure demandee.
     def sort_key(s: SuggestionSlot):
         d = distances.get(s.doctor_id)
         distance_rank = d if d is not None else float("inf")
