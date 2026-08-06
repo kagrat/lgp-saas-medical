@@ -236,7 +236,8 @@ class AuditLog(Base):
     establishment_id = Column(UUID(as_uuid=False), ForeignKey("establishments.id"), nullable=True)
     action = Column(String(200), nullable=False)
     details = Column(Text)
-    created_at = Column(DateTime, default=datetime.utcnow
+    created_at = Column(DateTime, default=datetime.utcnow)
+    
 class DoctorReview(Base):
     """Avis patient sur un medecin - uniquement apres un RDV termine, pour eviter les faux avis."""
     __tablename__ = "doctor_reviews"
