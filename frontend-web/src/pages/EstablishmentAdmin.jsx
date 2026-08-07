@@ -3,6 +3,7 @@ import api, { getErrorMessage } from '../api/client'
 import { SPECIALTIES, DAYS_OF_WEEK } from '../constants'
 import StarRating from '../components/StarRating'
 import { StatusBadge, RESERVATION_STATUSES, RESERVATION_STATUS_LABELS } from '../components/OrderStatus'
+import { DOCUMENT_TYPES, DOCUMENT_TYPE_LABELS } from '../components/DocumentType'
 
 export default function EstablishmentAdmin() {
   const [tab, setTab] = useState('stats')
@@ -15,6 +16,11 @@ export default function EstablishmentAdmin() {
   const [expandedDoctorId, setExpandedDoctorId] = useState(null)
   const [updatingOrderId, setUpdatingOrderId] = useState(null)
   const [orderUpdateForm, setOrderUpdateForm] = useState({})
+  const [completingId, setCompletingId] = useState(null)
+  const [expandedAppointmentId, setExpandedAppointmentId] = useState(null)
+  const [docForm, setDocForm] = useState({ document_type: 'consultation_note', title: '', content: '' })
+  const [savingDoc, setSavingDoc] = useState(false)
+  const [docMessage, setDocMessage] = useState('')
 
   const [newDoctor, setNewDoctor] = useState({
     email: '', password: '', full_name: '', phone: '', specialty: SPECIALTIES[0], consultation_price: '',
@@ -97,6 +103,45 @@ export default function EstablishmentAdmin() {
       setError(getErrorMessage(err, "Impossible de mettre a jour cette commande."))
     } finally {
       setUpdatingOrderId(null)
+    }
+  }
+
+  async function markCompleted(appointmentId) {
+    setCompletingId(appointmentId)
+    setError('')
+    try {
+      await api.post(`/appointments/${appointmentId}/complete`)
+      await loadAll()
+    } catch (err) {
+      setError(getErrorMessage(err, "Impossible de marquer ce rendez-vous comme termine."))
+    } finally {
+      setCompletingId(null)
+    }
+  }
+
+  async function toggleAppointmentExpand(appointmentId) {
+    setExpandedAppointmentId(expandedAppointmentId === appointmentId ? null : appointmentId)
+    setDocMessage('')
+    setDocForm({ document_type: 'consultation_note', title: '', content: '' })
+  }
+
+  async function submitDocument(appointmentId) {
+    setSavingDoc(true)
+    setDocMessage('')
+    setError('')
+    try {
+      await api.post('/health-records', {
+        appointment_id: appointmentId,
+        document_type: docForm.document_type,
+        title: docForm.title,
+        content: docForm.content,
+      })
+      setDocMessage('Ajoute au dossier de sante du patient.')
+      setDocForm({ document_type: 'consultation_note', title: '', content: '' })
+    } catch (err) {
+      setError(getErrorMessage(err, "Impossible d'ajouter ce document au dossier."))
+    } finally {
+      setSavingDoc(false)
     }
   }
 
@@ -192,11 +237,67 @@ export default function EstablishmentAdmin() {
         <div className="space-y-2">
           {appointments.length === 0 && <p className="text-forest-700">Aucun rendez-vous enregistre.</p>}
           {appointments.map((a) => (
-            <div key={a.id} className="rounded-xl border border-forest-100 bg-white p-4 flex justify-between items-center">
-              <p className="text-forest-900">
-                {new Date(a.scheduled_at).toLocaleString('fr-FR')}
-              </p>
-              <span className="text-sm px-3 py-1 rounded-full bg-forest-50 text-forest-700">{a.status}</span>
+            <div key={a.id} className="rounded-xl border border-forest-100 bg-white p-4">
+              <div className="flex justify-between items-center">
+                <p className="text-forest-900">
+                  {new Date(a.scheduled_at).toLocaleString('fr-FR')}
+                </p>
+                <div className="flex items-center gap-2">
+                  <span className="text-sm px-3 py-1 rounded-full bg-forest-50 text-forest-700">{a.status}</span>
+                  {a.status === 'confirmed' && (
+                    <button
+                      onClick={() => markCompleted(a.id)}
+                      disabled={completingId === a.id}
+                      className="text-sm rounded-full bg-forest-700 text-white px-4 py-1.5 hover:bg-forest-900 transition disabled:opacity-50"
+                    >
+                      {completingId === a.id ? 'Mise a jour...' : 'Marquer termine'}
+                    </button>
+                  )}
+                  {a.status === 'completed' && (
+                    <button
+                      onClick={() => toggleAppointmentExpand(a.id)}
+                      className="text-sm rounded-full border border-forest-300 px-4 py-1.5 hover:bg-forest-50 transition"
+                    >
+                      {expandedAppointmentId === a.id ? 'Fermer' : 'Ajouter au dossier'}
+                    </button>
+                  )}
+                </div>
+              </div>
+
+              {expandedAppointmentId === a.id && (
+                <div className="mt-4 pt-4 border-t border-forest-100">
+                  {docMessage && <p className="text-forest-900 bg-forest-50 border border-forest-300 rounded-xl p-3 mb-3 text-sm">{docMessage}</p>}
+                  <div className="grid sm:grid-cols-2 gap-3 mb-3">
+                    <select
+                      value={docForm.document_type}
+                      onChange={(e) => setDocForm({ ...docForm, document_type: e.target.value })}
+                      className="rounded-lg border border-forest-100 px-3 py-2 text-sm bg-white"
+                    >
+                      {DOCUMENT_TYPES.map((t) => <option key={t} value={t}>{DOCUMENT_TYPE_LABELS[t]}</option>)}
+                    </select>
+                    <input
+                      placeholder="Titre (ex: Ordonnance du 21 mai)"
+                      value={docForm.title}
+                      onChange={(e) => setDocForm({ ...docForm, title: e.target.value })}
+                      className="rounded-lg border border-forest-100 px-3 py-2 text-sm"
+                    />
+                  </div>
+                  <textarea
+                    placeholder="Contenu (traitement prescrit, resultat, observations...)"
+                    value={docForm.content}
+                    onChange={(e) => setDocForm({ ...docForm, content: e.target.value })}
+                    rows={3}
+                    className="w-full rounded-lg border border-forest-100 px-3 py-2 text-sm mb-3"
+                  />
+                  <button
+                    onClick={() => submitDocument(a.id)}
+                    disabled={savingDoc || !docForm.title || !docForm.content}
+                    className="rounded-full bg-amber-500 text-forest-900 px-5 py-1.5 text-sm font-semibold hover:bg-amber-400 transition disabled:opacity-50"
+                  >
+                    {savingDoc ? 'Ajout...' : 'Ajouter au dossier du patient'}
+                  </button>
+                </div>
+              )}
             </div>
           ))}
         </div>

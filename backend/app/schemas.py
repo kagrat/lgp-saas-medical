@@ -300,3 +300,23 @@ class ReservationHistoryOut(BaseModel):
     created_at: datetime
 
     model_config = {"from_attributes": True}
+
+class MedicalDocumentCreate(BaseModel):
+    appointment_id: str
+    document_type: DocumentType
+    title: str = Field(min_length=2, max_length=200)
+    content: str = Field(min_length=1)
+
+
+class MedicalDocumentOut(BaseModel):
+    id: str
+    appointment_id: str
+    patient_id: str
+    doctor_name: str
+    establishment_name: str
+    document_type: DocumentType
+    title: str
+    content: str
+    created_at: datetime
+
+    model_config = {"from_attributes": True}

@@ -9,7 +9,7 @@ from fastapi.middleware.cors import CORSMiddleware
 
 from app.config import get_settings
 from app.database import Base, engine
-from app.routers import auth, establishments, doctors, appointments, pharmacy, dashboard
+from app.routers import auth, establishments, doctors, appointments, pharmacy, dashboard, health_records
 
 settings = get_settings()
 
@@ -45,6 +45,7 @@ app.include_router(doctors.router)
 app.include_router(appointments.router)
 app.include_router(pharmacy.router)
 app.include_router(dashboard.router)
+app.include_router(health_records.router)
 
 
 @app.get("/health")

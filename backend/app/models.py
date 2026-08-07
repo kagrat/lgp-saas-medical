@@ -267,3 +267,34 @@ class PharmacyReservationStatusHistory(Base):
     note = Column(Text, nullable=True)
     changed_by_user_id = Column(UUID(as_uuid=False), ForeignKey("users.id"), nullable=True)
     created_at = Column(DateTime, default=datetime.utcnow)
+
+class DocumentType(str, enum.Enum):
+    PRESCRIPTION = "prescription"
+    LAB_RESULT = "lab_result"
+    CONSULTATION_NOTE = "consultation_note"
+    CERTIFICATE = "certificate"
+    OTHER = "other"
+
+
+class MedicalDocument(Base):
+    """
+    Un element du dossier de sante - toujours rattache a un rendez-vous
+    reel (tracabilite complete: quel medecin, quel etablissement, quelle
+    consultation, a produit ce document).
+    """
+    __tablename__ = "medical_documents"
+
+    id = Column(UUID(as_uuid=False), primary_key=True, default=gen_uuid)
+    appointment_id = Column(UUID(as_uuid=False), ForeignKey("appointments.id"), nullable=False)
+    patient_id = Column(UUID(as_uuid=False), ForeignKey("patients.id"), nullable=False)
+    doctor_id = Column(UUID(as_uuid=False), ForeignKey("doctors.id"), nullable=False)
+    establishment_id = Column(UUID(as_uuid=False), ForeignKey("establishments.id"), nullable=False)
+    document_type = Column(Enum(DocumentType), nullable=False)
+    title = Column(String(200), nullable=False)
+    content = Column(Text, nullable=False)
+    created_at = Column(DateTime, default=datetime.utcnow)
+
+    appointment = relationship("Appointment")
+    patient = relationship("Patient")
+    doctor = relationship("Doctor")
+    establishment = relationship("Establishment")

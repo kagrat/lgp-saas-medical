@@ -1,13 +1,15 @@
 import { useEffect, useState } from 'react'
 import api, { getErrorMessage } from '../api/client'
 import { StatusBadge } from '../components/OrderStatus'
+import { DocumentTypeBadge } from '../components/DocumentType'
 
 export default function PatientDashboard() {
   const [appointments, setAppointments] = useState([])
   const [reviewable, setReviewable] = useState([])
   const [orders, setOrders] = useState([])
-  const [orderHistory, setOrderHistory] = useState({}) // reservation_id -> [history]
+  const [orderHistory, setOrderHistory] = useState({})
   const [expandedOrderId, setExpandedOrderId] = useState(null)
+  const [healthRecords, setHealthRecords] = useState([])
   const [error, setError] = useState('')
   const [cancellingId, setCancellingId] = useState(null)
   const [reviewForms, setReviewForms] = useState({})
@@ -18,6 +20,7 @@ export default function PatientDashboard() {
     loadAppointments()
     loadReviewable()
     loadOrders()
+    loadHealthRecords()
   }, [])
 
   async function loadAppointments() {
@@ -42,7 +45,7 @@ export default function PatientDashboard() {
       })
       setReviewForms(initialForms)
     } catch (err) {
-      // silencieux: pas critique si ca echoue
+      // silencieux
     }
   }
 
@@ -51,7 +54,16 @@ export default function PatientDashboard() {
       const { data } = await api.get('/pharmacy/reservations/mine')
       setOrders(data)
     } catch (err) {
-      // silencieux: pas critique si ca echoue
+      // silencieux
+    }
+  }
+
+  async function loadHealthRecords() {
+    try {
+      const { data } = await api.get('/health-records/mine')
+      setHealthRecords(data)
+    } catch (err) {
+      // silencieux
     }
   }
 
@@ -177,6 +189,29 @@ export default function PatientDashboard() {
                     ))}
                   </div>
                 )}
+              </div>
+            ))}
+          </div>
+        </section>
+      )}
+
+      {healthRecords.length > 0 && (
+        <section className="mb-10">
+          <h2 className="font-display text-xl font-semibold text-forest-900 mb-4">Mon dossier de sante</h2>
+          <p className="text-sm text-forest-700 mb-4">
+            Ordonnances, resultats et notes de consultation, tous etablissements confondus.
+          </p>
+          <div className="space-y-3">
+            {healthRecords.map((doc) => (
+              <div key={doc.id} className="rounded-xl border border-forest-100 bg-white p-4">
+                <div className="flex items-center justify-between mb-2">
+                  <p className="text-forest-900 font-medium">{doc.title}</p>
+                  <DocumentTypeBadge type={doc.document_type} />
+                </div>
+                <p className="text-sm text-forest-700 mb-2">{doc.content}</p>
+                <p className="text-xs text-forest-700">
+                  {doc.doctor_name} - {doc.establishment_name} - {new Date(doc.created_at).toLocaleDateString('fr-FR')}
+                </p>
               </div>
             ))}
           </div>

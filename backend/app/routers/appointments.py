@@ -19,14 +19,8 @@ router = APIRouter(prefix="/appointments", tags=["rendez-vous"])
 
 @router.post("/search", response_model=AppointmentSearchResponse)
 def search_appointment_slots(payload: AppointmentSearchRequest, db: Session = Depends(get_db)):
-    """
-    Etape 1-2 du moteur de suggestion (section 6): le patient decrit ce qu'il
-    veut, le systeme verifie la disponibilite et renvoie soit une confirmation
-    immediate possible, soit des suggestions alternatives.
-    """
     requested_doctor_id = None
     if payload.establishment_id and payload.preferred_time:
-        # si un seul medecin de la specialite dans l'etablissement, on le cible directement
         doctor = (
             db.query(Doctor)
             .filter(Doctor.establishment_id == payload.establishment_id, Doctor.specialty == payload.specialty)
@@ -49,7 +43,6 @@ def search_appointment_slots(payload: AppointmentSearchRequest, db: Session = De
 @router.post("", response_model=AppointmentOut, status_code=status.HTTP_201_CREATED)
 def create_appointment(payload: AppointmentCreate, db: Session = Depends(get_db),
                         current_user: User = Depends(require_roles(UserRole.PATIENT))):
-    """Etape 5 (section 6): le patient choisit et confirme en un clic."""
     doctor = db.query(Doctor).filter(Doctor.id == payload.doctor_id, Doctor.is_active == True).first()
     if not doctor:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Medecin introuvable")
@@ -58,9 +51,6 @@ def create_appointment(payload: AppointmentCreate, db: Session = Depends(get_db)
     if not patient:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Dossier patient introuvable")
 
-    # Alerte de conflit d'horaire (module 3): re-verification cote serveur,
-    # jamais uniquement cote client, pour eviter les doubles reservations
-    # en cas de requetes simultanees.
     conflict = (
         db.query(Appointment)
         .filter(
@@ -90,16 +80,12 @@ def create_appointment(payload: AppointmentCreate, db: Session = Depends(get_db)
                      action="create_appointment", details=f"RDV cree pour patient {patient.dossier_number}"))
     db.commit()
     db.refresh(appointment)
-    # NOTE: l'envoi de la confirmation email/SMS (module "Notifications") se
-    # branche ici via app/services/notifications.py - voir README, section
-    # "SMS et email" pour le cablage avec un vrai fournisseur.
     return appointment
 
 
 @router.get("/mine", response_model=list[AppointmentOut])
 def my_appointments(db: Session = Depends(get_db),
                      current_user: User = Depends(require_roles(UserRole.PATIENT))):
-    """Espace patient: historique + RDV a venir."""
     patient = db.query(Patient).filter(Patient.user_id == current_user.id).first()
     if not patient:
         return []
@@ -113,8 +99,6 @@ def cancel_appointment(appointment_id: str, db: Session = Depends(get_db),
     if not appointment:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Rendez-vous introuvable")
 
-    # Isolation: un patient ne peut annuler que SON rdv; un staff etablissement
-    # ne peut annuler que les rdv de SON etablissement.
     if current_user.role == UserRole.PATIENT:
         patient = db.query(Patient).filter(Patient.user_id == current_user.id).first()
         if not patient or appointment.patient_id != patient.id:
@@ -133,11 +117,37 @@ def cancel_appointment(appointment_id: str, db: Session = Depends(get_db),
     return appointment
 
 
+@router.post("/{appointment_id}/complete", response_model=AppointmentOut)
+def complete_appointment(appointment_id: str, db: Session = Depends(get_db),
+                          current_user: User = Depends(require_roles(
+                              UserRole.ESTABLISHMENT_ADMIN, UserRole.SECRETARY, UserRole.DOCTOR))):
+    """
+    NOUVEAU: manquait completement avant. Sans cette action, un rendez-vous
+    reste eternellement "confirme" meme apres que la consultation ait
+    reellement eu lieu - ce qui bloquait aussi bien les avis medecins
+    (module notes/avis) que le dossier de sante (les deux exigent un RDV
+    "termine" pour eviter les abus).
+    """
+    appointment = db.query(Appointment).filter(Appointment.id == appointment_id).first()
+    if not appointment:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Rendez-vous introuvable")
+    if appointment.establishment_id != current_user.establishment_id:
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Acces refuse")
+    if appointment.status != AppointmentStatus.CONFIRMED:
+        raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail="Seul un rendez-vous confirme peut etre marque termine")
+
+    appointment.status = AppointmentStatus.COMPLETED
+    db.add(AuditLog(user_id=current_user.id, establishment_id=appointment.establishment_id,
+                     action="complete_appointment", details=f"RDV {appointment.id} marque termine"))
+    db.commit()
+    db.refresh(appointment)
+    return appointment
+
+
 @router.get("/establishment", response_model=list[AppointmentOut])
 def establishment_appointments(db: Session = Depends(get_db),
                                 current_user: User = Depends(require_roles(
                                     UserRole.ESTABLISHMENT_ADMIN, UserRole.SECRETARY, UserRole.DOCTOR))):
-    """Module 3 - calendrier des RDV de l'etablissement (vue admin/secretaire/medecin)."""
     query = db.query(Appointment).filter(Appointment.establishment_id == current_user.establishment_id)
     if current_user.role == UserRole.DOCTOR:
         doctor = db.query(Doctor).filter(Doctor.user_id == current_user.id).first()
