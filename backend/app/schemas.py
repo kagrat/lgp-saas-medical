@@ -4,9 +4,10 @@ Aucune donnee n'atteint la base de donnees sans passer par un de ces schemas.
 """
 from datetime import datetime, date, time
 from typing import Optional
+from app.models import DocumentType
 from pydantic import BaseModel, EmailStr, Field, field_validator
 
-from app.models import UserRole, EstablishmentType, SubscriptionStatus, AppointmentStatus, ReservationStatus, DeliveryMode
+from app.models import UserRole, EstablishmentType, SubscriptionStatus, AppointmentStatus, ReservationStatus, DeliveryMode,DocumentType
 
 
 # ---------- AUTH ----------
