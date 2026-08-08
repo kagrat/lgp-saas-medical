@@ -1,6 +1,8 @@
 """
-Gestion des etablissements - reservee au Super Admin (niveau 1).
-Section 4: ajout/suppression d'etablissements, modification, suspension pour non-paiement.
+Gestion des etablissements - reservee au Super Admin (niveau 1), sauf /me
+qui est accessible a tout membre du staff pour connaitre son propre
+etablissement (utilise par le frontend pour adapter les onglets selon le
+type: hopital/clinique, pharmacie, ou laboratoire).
 """
 import uuid
 
@@ -10,7 +12,7 @@ from sqlalchemy.orm import Session
 from app.database import get_db
 from app.models import Establishment, User, UserRole, AuditLog
 from app.schemas import EstablishmentCreate, EstablishmentOut, EstablishmentStatusUpdate, EstablishmentUpdate
-from app.deps import require_roles
+from app.deps import require_roles, get_current_user
 from app.security import hash_password
 from app.services.geo import resolve_city_coordinates
 
@@ -25,9 +27,6 @@ def create_establishment(payload: EstablishmentCreate, db: Session = Depends(get
     if existing_admin:
         raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail="Cet email admin est deja utilise")
 
-    # Si le Super Admin ne fournit pas de coordonnees GPS precises, on utilise
-    # une position approximative de la ville (voir app/services/geo.py) pour
-    # que le moteur de suggestion puisse quand meme calculer une distance.
     latitude, longitude = payload.latitude, payload.longitude
     if latitude is None or longitude is None:
         approx = resolve_city_coordinates(payload.city)
@@ -68,17 +67,21 @@ def list_establishments(db: Session = Depends(get_db)):
     return db.query(Establishment).order_by(Establishment.created_at.desc()).all()
 
 
+@router.get("/me", response_model=EstablishmentOut)
+def my_establishment(db: Session = Depends(get_db), current_user: User = Depends(get_current_user)):
+    """Utilise par le frontend pour savoir quel type d'etablissement afficher (onglets adaptes)."""
+    if not current_user.establishment_id:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Compte non rattache a un etablissement")
+    establishment = db.query(Establishment).filter(Establishment.id == current_user.establishment_id).first()
+    if not establishment:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Etablissement introuvable")
+    return establishment
+
+
 @router.patch("/{establishment_id}", response_model=EstablishmentOut,
               dependencies=[Depends(require_roles(UserRole.SUPER_ADMIN))])
 def update_establishment(establishment_id: str, payload: EstablishmentUpdate, db: Session = Depends(get_db),
                           current_user: User = Depends(require_roles(UserRole.SUPER_ADMIN))):
-    """
-    Modification complete d'un etablissement deja cree (nom, type, ville,
-    adresse, coordonnees). Reponse au retour de M. SOGADJI FAUSTIN: il
-    manquait un moyen de corriger un etablissement apres sa creation.
-    Seuls les champs fournis (non None) sont modifies - les autres restent
-    inchanges.
-    """
     establishment = db.query(Establishment).filter(Establishment.id == establishment_id).first()
     if not establishment:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Etablissement introuvable")
@@ -87,9 +90,6 @@ def update_establishment(establishment_id: str, payload: EstablishmentUpdate, db
     for field, value in update_data.items():
         setattr(establishment, field, value)
 
-    # Si la ville a change mais qu'aucune nouvelle coordonnee n'est fournie
-    # explicitement dans cette meme requete, on reactualise la position
-    # approximative pour que le moteur de suggestion reste coherent.
     if "city" in update_data and "latitude" not in update_data and "longitude" not in update_data:
         approx = resolve_city_coordinates(establishment.city)
         if approx:

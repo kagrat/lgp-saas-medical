@@ -7,6 +7,7 @@ import Register from './pages/Register'
 import PatientSearch from './pages/PatientSearch'
 import PatientDashboard from './pages/PatientDashboard'
 import Pharmacy from './pages/Pharmacy'
+import Laboratory from './pages/Laboratory'
 import EstablishmentAdmin from './pages/EstablishmentAdmin'
 import SuperAdminDashboard from './pages/SuperAdminDashboard'
 
@@ -20,6 +21,7 @@ export default function App() {
         <Route path="/inscription" element={<Register />} />
         <Route path="/rechercher" element={<PatientSearch />} />
         <Route path="/pharmacie" element={<Pharmacy />} />
+        <Route path="/laboratoire" element={<Laboratory />} />
         <Route
           path="/espace-patient"
           element={<ProtectedRoute allowedRoles={['patient']}><PatientDashboard /></ProtectedRoute>}

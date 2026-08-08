@@ -4,14 +4,17 @@ import { SPECIALTIES, DAYS_OF_WEEK } from '../constants'
 import StarRating from '../components/StarRating'
 import { StatusBadge, RESERVATION_STATUSES, RESERVATION_STATUS_LABELS } from '../components/OrderStatus'
 import { DOCUMENT_TYPES, DOCUMENT_TYPE_LABELS } from '../components/DocumentType'
+import { LabStatusBadge, LAB_STATUSES, LAB_STATUS_LABELS } from '../components/LabStatus'
 
 export default function EstablishmentAdmin() {
+  const [establishment, setEstablishment] = useState(null)
   const [tab, setTab] = useState('stats')
   const [stats, setStats] = useState(null)
   const [doctors, setDoctors] = useState([])
   const [appointments, setAppointments] = useState([])
   const [stock, setStock] = useState([])
   const [orders, setOrders] = useState([])
+  const [labTests, setLabTests] = useState([])
   const [error, setError] = useState('')
   const [expandedDoctorId, setExpandedDoctorId] = useState(null)
   const [updatingOrderId, setUpdatingOrderId] = useState(null)
@@ -21,6 +24,8 @@ export default function EstablishmentAdmin() {
   const [docForm, setDocForm] = useState({ document_type: 'consultation_note', title: '', content: '' })
   const [savingDoc, setSavingDoc] = useState(false)
   const [docMessage, setDocMessage] = useState('')
+  const [labUpdateForm, setLabUpdateForm] = useState({})
+  const [updatingLabId, setUpdatingLabId] = useState(null)
 
   const [newDoctor, setNewDoctor] = useState({
     email: '', password: '', full_name: '', phone: '', specialty: SPECIALTIES[0], consultation_price: '',
@@ -28,28 +33,54 @@ export default function EstablishmentAdmin() {
   const [newStock, setNewStock] = useState({ reference: '', medication_name: '', category: '', quantity: '', alert_threshold: 10, unit_price: '' })
 
   useEffect(() => {
-    loadAll()
+    loadEstablishment()
   }, [])
+
+  useEffect(() => {
+    if (establishment) loadAll()
+  }, [establishment])
+
+  async function loadEstablishment() {
+    try {
+      const { data } = await api.get('/establishments/me')
+      setEstablishment(data)
+    } catch (err) {
+      setError(getErrorMessage(err, "Impossible de charger les informations de l'etablissement."))
+    }
+  }
 
   async function loadAll() {
     try {
-      const [statsRes, doctorsRes, apptsRes, stockRes, ordersRes] = await Promise.all([
-        api.get('/dashboard/establishment'),
-        api.get('/doctors/establishment'),
-        api.get('/appointments/establishment'),
-        api.get('/pharmacy/stock'),
-        api.get('/pharmacy/reservations/establishment'),
-      ])
-      setStats(statsRes.data)
-      setDoctors(doctorsRes.data)
-      setAppointments(apptsRes.data)
-      setStock(stockRes.data)
-      setOrders(ordersRes.data)
-      const initialOrderForms = {}
-      ordersRes.data.forEach((o) => {
-        initialOrderForms[o.id] = { status: o.status, note: o.pharmacist_note || '', estimated_ready_at: '' }
-      })
-      setOrderUpdateForm(initialOrderForms)
+      const isLab = establishment.type === 'laboratoire'
+      const calls = [api.get('/dashboard/establishment')]
+
+      if (!isLab) {
+        calls.push(api.get('/doctors/establishment'), api.get('/appointments/establishment'), api.get('/pharmacy/stock'), api.get('/pharmacy/reservations/establishment'))
+      } else {
+        calls.push(api.get('/lab/tests/establishment'))
+      }
+
+      const results = await Promise.all(calls)
+      setStats(results[0].data)
+
+      if (!isLab) {
+        setDoctors(results[1].data)
+        setAppointments(results[2].data)
+        setStock(results[3].data)
+        setOrders(results[4].data)
+        const initialOrderForms = {}
+        results[4].data.forEach((o) => {
+          initialOrderForms[o.id] = { status: o.status, note: o.pharmacist_note || '', estimated_ready_at: '' }
+        })
+        setOrderUpdateForm(initialOrderForms)
+      } else {
+        setLabTests(results[1].data)
+        const initialLabForms = {}
+        results[1].data.forEach((t) => {
+          initialLabForms[t.id] = { status: t.status, results_text: t.results_text || '', lab_technician_note: t.lab_technician_note || '' }
+        })
+        setLabUpdateForm(initialLabForms)
+      }
     } catch (err) {
       setError(getErrorMessage(err, "Impossible de charger le tableau de bord. Verifie que tu es bien connecte en tant qu'admin etablissement."))
     }
@@ -145,18 +176,57 @@ export default function EstablishmentAdmin() {
     }
   }
 
-  const tabs = [
-    { id: 'stats', label: 'Statistiques' },
-    { id: 'doctors', label: 'Medecins' },
-    { id: 'appointments', label: 'Rendez-vous' },
-    { id: 'pharmacy', label: 'Pharmacie' },
-    { id: 'orders', label: 'Commandes' },
-  ]
+  function updateLabForm(testId, field, value) {
+    setLabUpdateForm((forms) => ({ ...forms, [testId]: { ...forms[testId], [field]: value } }))
+  }
+
+  async function submitLabUpdate(testId) {
+    setUpdatingLabId(testId)
+    setError('')
+    try {
+      const form = labUpdateForm[testId]
+      await api.patch(`/lab/tests/${testId}/status`, {
+        status: form.status,
+        results_text: form.results_text || null,
+        lab_technician_note: form.lab_technician_note || null,
+      })
+      await loadAll()
+    } catch (err) {
+      setError(getErrorMessage(err, "Impossible de mettre a jour cette analyse."))
+    } finally {
+      setUpdatingLabId(null)
+    }
+  }
+
+  if (!establishment) {
+    return (
+      <div className="max-w-5xl mx-auto px-6 py-14">
+        {error ? <p className="text-clay-600">{error}</p> : <p className="text-forest-700">Chargement...</p>}
+      </div>
+    )
+  }
+
+  const isLab = establishment.type === 'laboratoire'
+
+  const tabs = isLab
+    ? [
+        { id: 'stats', label: 'Statistiques' },
+        { id: 'analyses', label: 'Analyses' },
+      ]
+    : [
+        { id: 'stats', label: 'Statistiques' },
+        { id: 'doctors', label: 'Medecins' },
+        { id: 'appointments', label: 'Rendez-vous' },
+        { id: 'pharmacy', label: 'Pharmacie' },
+        { id: 'orders', label: 'Commandes' },
+      ]
 
   return (
     <div className="max-w-5xl mx-auto px-6 py-14">
-      <h1 className="font-display text-3xl font-semibold text-forest-900 mb-2">Mon etablissement</h1>
-      <p className="text-forest-700 mb-8">Gestion des medecins, rendez-vous et pharmacie de ton etablissement.</p>
+      <h1 className="font-display text-3xl font-semibold text-forest-900 mb-2">{establishment.name}</h1>
+      <p className="text-forest-700 mb-8">
+        {isLab ? 'Gestion des demandes d\'analyses.' : 'Gestion des medecins, rendez-vous et pharmacie de ton etablissement.'}
+      </p>
 
       <div className="flex gap-2 mb-8 border-b border-forest-100 flex-wrap">
         {tabs.map((t) => (
@@ -180,7 +250,7 @@ export default function EstablishmentAdmin() {
         </div>
       )}
 
-      {tab === 'doctors' && (
+      {tab === 'doctors' && !isLab && (
         <div>
           <form onSubmit={handleAddDoctor} className="grid sm:grid-cols-2 gap-3 bg-white border border-forest-100 rounded-xl p-5 mb-6">
             <input required placeholder="Nom complet" value={newDoctor.full_name}
@@ -233,7 +303,7 @@ export default function EstablishmentAdmin() {
         </div>
       )}
 
-      {tab === 'appointments' && (
+      {tab === 'appointments' && !isLab && (
         <div className="space-y-2">
           {appointments.length === 0 && <p className="text-forest-700">Aucun rendez-vous enregistre.</p>}
           {appointments.map((a) => (
@@ -303,7 +373,7 @@ export default function EstablishmentAdmin() {
         </div>
       )}
 
-      {tab === 'pharmacy' && (
+      {tab === 'pharmacy' && !isLab && (
         <div>
           <form onSubmit={handleAddStock} className="grid sm:grid-cols-2 gap-3 bg-white border border-forest-100 rounded-xl p-5 mb-6">
             <input required placeholder="Reference (ex: MED-00123)" value={newStock.reference}
@@ -343,7 +413,7 @@ export default function EstablishmentAdmin() {
         </div>
       )}
 
-      {tab === 'orders' && (
+      {tab === 'orders' && !isLab && (
         <div className="space-y-3">
           {orders.length === 0 && <p className="text-forest-700">Aucune commande recue pour le moment.</p>}
           {orders.map((o) => (
@@ -393,6 +463,52 @@ export default function EstablishmentAdmin() {
                   {updatingOrderId === o.id ? 'Mise a jour...' : 'Mettre a jour'}
                 </button>
               </div>
+            </div>
+          ))}
+        </div>
+      )}
+
+      {tab === 'analyses' && isLab && (
+        <div className="space-y-3">
+          {labTests.length === 0 && <p className="text-forest-700">Aucune demande d'analyse recue pour le moment.</p>}
+          {labTests.map((t) => (
+            <div key={t.id} className="rounded-xl border border-forest-100 bg-white p-4">
+              <div className="flex justify-between items-start mb-3">
+                <div>
+                  <p className="text-forest-900 font-medium">{t.test_name}</p>
+                  {t.sample_type && <p className="text-sm text-forest-700">Prelevement: {t.sample_type}</p>}
+                </div>
+                <LabStatusBadge status={t.status} />
+              </div>
+              <div className="grid sm:grid-cols-2 gap-2 mb-2">
+                <select
+                  value={labUpdateForm[t.id]?.status || t.status}
+                  onChange={(e) => updateLabForm(t.id, 'status', e.target.value)}
+                  className="rounded-lg border border-forest-100 px-3 py-1.5 text-sm bg-white"
+                >
+                  {LAB_STATUSES.map((s) => <option key={s} value={s}>{LAB_STATUS_LABELS[s]}</option>)}
+                </select>
+                <input
+                  placeholder="Note (optionnel)"
+                  value={labUpdateForm[t.id]?.lab_technician_note || ''}
+                  onChange={(e) => updateLabForm(t.id, 'lab_technician_note', e.target.value)}
+                  className="rounded-lg border border-forest-100 px-3 py-1.5 text-sm"
+                />
+              </div>
+              <textarea
+                placeholder="Resultats (a remplir quand l'analyse est validee)"
+                value={labUpdateForm[t.id]?.results_text || ''}
+                onChange={(e) => updateLabForm(t.id, 'results_text', e.target.value)}
+                rows={2}
+                className="w-full rounded-lg border border-forest-100 px-3 py-2 text-sm mb-2"
+              />
+              <button
+                onClick={() => submitLabUpdate(t.id)}
+                disabled={updatingLabId === t.id}
+                className="rounded-full bg-forest-700 text-white px-5 py-1.5 text-sm font-medium hover:bg-forest-900 transition disabled:opacity-50"
+              >
+                {updatingLabId === t.id ? 'Mise a jour...' : 'Mettre a jour'}
+              </button>
             </div>
           ))}
         </div>

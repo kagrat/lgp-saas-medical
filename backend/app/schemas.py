@@ -7,7 +7,7 @@ from typing import Optional
 from app.models import DocumentType
 from pydantic import BaseModel, EmailStr, Field, field_validator
 
-from app.models import UserRole, EstablishmentType, SubscriptionStatus, AppointmentStatus, ReservationStatus, DeliveryMode,DocumentType
+from app.models import UserRole, EstablishmentType, SubscriptionStatus, AppointmentStatus, ReservationStatus, DeliveryMode,DocumentType,LabTestStatus
 
 
 # ---------- AUTH ----------
@@ -302,6 +302,7 @@ class ReservationHistoryOut(BaseModel):
 
     model_config = {"from_attributes": True}
 
+
 class MedicalDocumentCreate(BaseModel):
     appointment_id: str
     document_type: DocumentType
@@ -321,3 +322,38 @@ class MedicalDocumentOut(BaseModel):
     created_at: datetime
 
     model_config = {"from_attributes": True}
+
+class LabOut(BaseModel):
+    id: str
+    name: str
+    city: str
+    address: Optional[str] = None
+
+
+class LabTestRequestCreate(BaseModel):
+    establishment_id: str
+    test_name: str = Field(min_length=2, max_length=200)
+    sample_type: Optional[str] = None
+    scheduled_sample_at: Optional[datetime] = None
+
+
+class LabTestRequestOut(BaseModel):
+    id: str
+    establishment_id: str
+    establishment_name: str
+    patient_id: str
+    test_name: str
+    sample_type: Optional[str] = None
+    status: LabTestStatus
+    scheduled_sample_at: Optional[datetime] = None
+    results_text: Optional[str] = None
+    lab_technician_note: Optional[str] = None
+    created_at: datetime
+
+    model_config = {"from_attributes": True}
+
+
+class LabTestStatusUpdate(BaseModel):
+    status: LabTestStatus
+    results_text: Optional[str] = None
+    lab_technician_note: Optional[str] = Field(default=None, max_length=500)

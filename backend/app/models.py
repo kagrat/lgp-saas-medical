@@ -30,12 +30,14 @@ class UserRole(str, enum.Enum):
     SECRETARY = "secretary"
     PHARMACIST = "pharmacist"
     PATIENT = "patient"                   # niveau 3
+    LAB_TECHNICIAN = "lab_technician"
 
 
 class EstablishmentType(str, enum.Enum):
     HOPITAL = "hopital"
     CLINIQUE = "clinique"
     PHARMACIE = "pharmacie"
+    LABORATOIRE = "laboratoire"
 
 
 class SubscriptionStatus(str, enum.Enum):
@@ -298,3 +300,31 @@ class MedicalDocument(Base):
     patient = relationship("Patient")
     doctor = relationship("Doctor")
     establishment = relationship("Establishment")
+
+class LabTestStatus(str, enum.Enum):
+    REQUESTED = "requested"
+    SAMPLE_COLLECTED = "sample_collected"
+    IN_PROGRESS = "in_progress"
+    VALIDATED = "validated"
+    DELIVERED = "delivered"
+    CANCELLED = "cancelled"
+
+
+class LabTestRequest(Base):
+    """Demande d'analyse - independante du dossier de sante (MedicalDocument)
+    car un test labo n'a pas forcement de rendez-vous derriere."""
+    __tablename__ = "lab_test_requests"
+
+    id = Column(UUID(as_uuid=False), primary_key=True, default=gen_uuid)
+    establishment_id = Column(UUID(as_uuid=False), ForeignKey("establishments.id"), nullable=False)
+    patient_id = Column(UUID(as_uuid=False), ForeignKey("patients.id"), nullable=False)
+    test_name = Column(String(200), nullable=False)
+    sample_type = Column(String(100), nullable=True)
+    status = Column(Enum(LabTestStatus), default=LabTestStatus.REQUESTED)
+    scheduled_sample_at = Column(DateTime, nullable=True)
+    results_text = Column(Text, nullable=True)
+    lab_technician_note = Column(Text, nullable=True)
+    created_at = Column(DateTime, default=datetime.utcnow)
+
+    establishment = relationship("Establishment")
+    patient = relationship("Patient")

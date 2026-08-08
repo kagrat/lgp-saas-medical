@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import api, { getErrorMessage } from '../api/client'
 import { StatusBadge } from '../components/OrderStatus'
 import { DocumentTypeBadge } from '../components/DocumentType'
+import { LabStatusBadge } from '../components/LabStatus'
 
 export default function PatientDashboard() {
   const [appointments, setAppointments] = useState([])
@@ -10,6 +11,7 @@ export default function PatientDashboard() {
   const [orderHistory, setOrderHistory] = useState({})
   const [expandedOrderId, setExpandedOrderId] = useState(null)
   const [healthRecords, setHealthRecords] = useState([])
+  const [labTests, setLabTests] = useState([])
   const [error, setError] = useState('')
   const [cancellingId, setCancellingId] = useState(null)
   const [reviewForms, setReviewForms] = useState({})
@@ -21,6 +23,7 @@ export default function PatientDashboard() {
     loadReviewable()
     loadOrders()
     loadHealthRecords()
+    loadLabTests()
   }, [])
 
   async function loadAppointments() {
@@ -62,6 +65,15 @@ export default function PatientDashboard() {
     try {
       const { data } = await api.get('/health-records/mine')
       setHealthRecords(data)
+    } catch (err) {
+      // silencieux
+    }
+  }
+
+  async function loadLabTests() {
+    try {
+      const { data } = await api.get('/lab/tests/mine')
+      setLabTests(data)
     } catch (err) {
       // silencieux
     }
@@ -188,6 +200,34 @@ export default function PatientDashboard() {
                       </div>
                     ))}
                   </div>
+                )}
+              </div>
+            ))}
+          </div>
+        </section>
+      )}
+
+      {labTests.length > 0 && (
+        <section className="mb-10">
+          <h2 className="font-display text-xl font-semibold text-forest-900 mb-4">Mes analyses</h2>
+          <div className="space-y-3">
+            {labTests.map((t) => (
+              <div key={t.id} className="rounded-xl border border-forest-100 bg-white p-4">
+                <div className="flex items-center justify-between mb-2">
+                  <div>
+                    <p className="text-forest-900 font-medium">{t.test_name}</p>
+                    <p className="text-sm text-forest-700">{t.establishment_name}</p>
+                  </div>
+                  <LabStatusBadge status={t.status} />
+                </div>
+                {t.results_text && (
+                  <div className="mt-2 pt-2 border-t border-forest-100">
+                    <p className="text-sm text-forest-900 font-medium mb-1">Resultats:</p>
+                    <p className="text-sm text-forest-700">{t.results_text}</p>
+                  </div>
+                )}
+                {t.lab_technician_note && (
+                  <p className="text-sm text-forest-700 italic mt-1">Note du laboratoire: {t.lab_technician_note}</p>
                 )}
               </div>
             ))}

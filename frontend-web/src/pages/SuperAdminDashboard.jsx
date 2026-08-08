@@ -122,6 +122,7 @@ export default function SuperAdminDashboard() {
           <option value="hopital">Hopital</option>
           <option value="clinique">Clinique</option>
           <option value="pharmacie">Pharmacie</option>
+          <option value="laboratoire">Laboratoire</option>
         </select>
         <input required placeholder="Ville" value={newEstablishment.city}
           onChange={(e) => setNewEstablishment({ ...newEstablishment, city: e.target.value })}
@@ -167,6 +168,7 @@ export default function SuperAdminDashboard() {
                   <option value="hopital">Hopital</option>
                   <option value="clinique">Clinique</option>
                   <option value="pharmacie">Pharmacie</option>
+                  <option value="laboratoire">Laboratoire</option>
                 </select>
                 <input value={editForm.city} onChange={(e) => setEditForm({ ...editForm, city: e.target.value })}
                   placeholder="Ville" className="rounded-lg border border-forest-100 px-3 py-2" />
