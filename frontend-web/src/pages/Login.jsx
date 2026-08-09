@@ -1,6 +1,12 @@
 import { useState, useEffect } from 'react'
 import { useNavigate, Link } from 'react-router-dom'
-import api, { saveSession, getErrorMessage, consumeSessionExpiredFlag } from '../api/client'
+import api, { saveSession, getErrorMessage, consumeSessionExpiredFlag, getLastRoleBeforeExpiry } from '../api/client'
+
+const ROLE_LABELS = {
+  super_admin: 'Super Admin',
+  establishment_admin: 'etablissement',
+  patient: 'patient',
+}
 
 export default function Login() {
   const navigate = useNavigate()
@@ -10,10 +16,15 @@ export default function Login() {
   const [notice, setNotice] = useState('')
   const [loading, setLoading] = useState(false)
 
+  const lastExpiredRole = getLastRoleBeforeExpiry()
+  const wasStaffSession = lastExpiredRole && lastExpiredRole !== 'patient'
+
   useEffect(() => {
     if (consumeSessionExpiredFlag()) {
-      setNotice('Ta session a expire. Reconnecte-toi pour continuer.')
+      const label = ROLE_LABELS[lastExpiredRole]
+      setNotice(label ? `Ta session ${label} a expire. Reconnecte-toi pour continuer.` : 'Ta session a expire. Reconnecte-toi pour continuer.')
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
   async function handleSubmit(e) {
@@ -68,10 +79,12 @@ export default function Login() {
         </button>
       </form>
 
-      <p className="text-sm text-forest-700 mt-6">
-        Nouveau patient ?{' '}
-        <Link to="/inscription" className="text-amber-600 font-medium hover:underline">Creer un compte</Link>
-      </p>
+      {!wasStaffSession && (
+        <p className="text-sm text-forest-700 mt-6">
+          Nouveau patient ?{' '}
+          <Link to="/inscription" className="text-amber-600 font-medium hover:underline">Creer un compte</Link>
+        </p>
+      )}
     </div>
   )
 }

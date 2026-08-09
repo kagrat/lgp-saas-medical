@@ -1,11 +1,17 @@
 import { Link, useNavigate } from 'react-router-dom'
-import { getRole, clearSession } from '../api/client'
+import { getRole, clearSession, getLastRoleBeforeExpiry } from '../api/client'
 
 export default function Navbar() {
   const navigate = useNavigate()
   const role = getRole()
+  const lastExpiredRole = getLastRoleBeforeExpiry()
 
-  const isStaffRole = role && role !== 'patient'
+  // Cache les liens "recherche patient" si on est actuellement staff, OU si
+  // on vient juste de se faire deconnecter (session expiree) alors qu'on
+  // etait staff - evite l'affichage bizarre d'un ecran "visiteur patient"
+  // juste apres l'expiration de la session d'un admin/etablissement.
+  const effectiveRole = role || lastExpiredRole
+  const isStaffRole = effectiveRole && effectiveRole !== 'patient'
 
   function handleLogout() {
     clearSession()
