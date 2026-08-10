@@ -357,3 +357,22 @@ class LabTestStatusUpdate(BaseModel):
     status: LabTestStatus
     results_text: Optional[str] = None
     lab_technician_note: Optional[str] = Field(default=None, max_length=500)
+
+class MonthlyTrendPoint(BaseModel):
+    year: int
+    month: int
+    label: str
+    appointments_count: int
+    revenue: float
+
+
+class EstablishmentBreakdownPoint(BaseModel):
+    establishment_id: str
+    establishment_name: str
+    appointments_count: int
+    revenue: float
+
+
+class GlobalTrendsOut(BaseModel):
+    monthly: list[MonthlyTrendPoint]
+    by_establishment: list[EstablishmentBreakdownPoint]

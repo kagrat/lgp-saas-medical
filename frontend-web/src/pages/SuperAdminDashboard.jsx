@@ -1,8 +1,10 @@
 import { useEffect, useState } from 'react'
 import api, { getErrorMessage } from '../api/client'
+import { RevenueTrendChart, AppointmentsTrendChart, TopEstablishmentsChart } from '../components/RevenueCharts'
 
 export default function SuperAdminDashboard() {
   const [stats, setStats] = useState(null)
+  const [trends, setTrends] = useState(null)
   const [establishments, setEstablishments] = useState([])
   const [error, setError] = useState('')
   const [newEstablishment, setNewEstablishment] = useState({
@@ -19,11 +21,13 @@ export default function SuperAdminDashboard() {
 
   async function loadAll() {
     try {
-      const [statsRes, estRes] = await Promise.all([
+      const [statsRes, trendsRes, estRes] = await Promise.all([
         api.get('/dashboard/global'),
+        api.get('/dashboard/global/trends', { params: { months: 6 } }),
         api.get('/establishments'),
       ])
       setStats(statsRes.data)
+      setTrends(trendsRes.data)
       setEstablishments(estRes.data)
     } catch (err) {
       setError(getErrorMessage(err, 'Impossible de charger les donnees globales. Verifie ta session Super Admin.'))
@@ -109,6 +113,19 @@ export default function SuperAdminDashboard() {
           <StatCard label="Actifs" value={stats.active_establishments} />
           <StatCard label="Suspendus" value={stats.suspended_establishments} highlight={stats.suspended_establishments > 0} />
           <StatCard label="RDV totaux" value={stats.total_appointments} />
+        </div>
+      )}
+
+      {trends && (
+        <div className="mb-10">
+          <h2 className="font-display text-xl font-semibold text-forest-900 mb-4">Analytics (6 derniers mois)</h2>
+          <div className="grid lg:grid-cols-2 gap-4 mb-4">
+            <RevenueTrendChart data={trends.monthly} />
+            <AppointmentsTrendChart data={trends.monthly} />
+          </div>
+          {trends.by_establishment.length > 0 && (
+            <TopEstablishmentsChart data={trends.by_establishment} />
+          )}
         </div>
       )}
 
