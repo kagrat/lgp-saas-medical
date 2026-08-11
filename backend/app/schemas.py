@@ -7,7 +7,7 @@ from typing import Optional
 from app.models import DocumentType
 from pydantic import BaseModel, EmailStr, Field, field_validator
 
-from app.models import UserRole, EstablishmentType, SubscriptionStatus, AppointmentStatus, ReservationStatus, DeliveryMode,DocumentType,LabTestStatus
+from app.models import UserRole, EstablishmentType, SubscriptionStatus, AppointmentStatus, ReservationStatus, DeliveryMode,DocumentType,LabTestStatus,MessageSenderRole
 
 
 # ---------- AUTH ----------
@@ -376,3 +376,27 @@ class EstablishmentBreakdownPoint(BaseModel):
 class GlobalTrendsOut(BaseModel):
     monthly: list[MonthlyTrendPoint]
     by_establishment: list[EstablishmentBreakdownPoint]
+
+class MessageCreate(BaseModel):
+    content: str = Field(min_length=1, max_length=2000)
+
+
+class MessageOut(BaseModel):
+    id: str
+    patient_id: str
+    establishment_id: str
+    sender_role: MessageSenderRole
+    sender_name: str
+    content: str
+    created_at: datetime
+
+    model_config = {"from_attributes": True}
+
+
+class ConversationSummaryOut(BaseModel):
+    establishment_id: str
+    establishment_name: str
+    patient_id: str
+    patient_name: str
+    last_message: Optional[str] = None
+    last_message_at: Optional[datetime] = None

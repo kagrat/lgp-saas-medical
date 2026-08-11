@@ -6,10 +6,6 @@ export default function Navbar() {
   const role = getRole()
   const lastExpiredRole = getLastRoleBeforeExpiry()
 
-  // Cache les liens "recherche patient" si on est actuellement staff, OU si
-  // on vient juste de se faire deconnecter (session expiree) alors qu'on
-  // etait staff - evite l'affichage bizarre d'un ecran "visiteur patient"
-  // juste apres l'expiration de la session d'un admin/etablissement.
   const effectiveRole = role || lastExpiredRole
   const isStaffRole = effectiveRole && effectiveRole !== 'patient'
 
@@ -33,7 +29,12 @@ export default function Navbar() {
               <Link to="/laboratoire" className="hover:text-forest-900">Laboratoire</Link>
             </>
           )}
-          {role === 'patient' && <Link to="/espace-patient" className="hover:text-forest-900">Mon espace</Link>}
+          {role === 'patient' && (
+            <>
+              <Link to="/espace-patient" className="hover:text-forest-900">Mon espace</Link>
+              <Link to="/messages" className="hover:text-forest-900">Messages</Link>
+            </>
+          )}
           {role === 'establishment_admin' && <Link to="/admin-etablissement" className="hover:text-forest-900">Mon etablissement</Link>}
           {role === 'super_admin' && <Link to="/super-admin" className="hover:text-forest-900">Super Admin</Link>}
           {!role ? (

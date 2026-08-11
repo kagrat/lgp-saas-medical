@@ -8,6 +8,7 @@ import PatientSearch from './pages/PatientSearch'
 import PatientDashboard from './pages/PatientDashboard'
 import Pharmacy from './pages/Pharmacy'
 import Laboratory from './pages/Laboratory'
+import PatientMessages from './pages/PatientMessages'
 import EstablishmentAdmin from './pages/EstablishmentAdmin'
 import SuperAdminDashboard from './pages/SuperAdminDashboard'
 
@@ -25,6 +26,10 @@ export default function App() {
         <Route
           path="/espace-patient"
           element={<ProtectedRoute allowedRoles={['patient']}><PatientDashboard /></ProtectedRoute>}
+        />
+        <Route
+          path="/messages"
+          element={<ProtectedRoute allowedRoles={['patient']}><PatientMessages /></ProtectedRoute>}
         />
         <Route
           path="/admin-etablissement"

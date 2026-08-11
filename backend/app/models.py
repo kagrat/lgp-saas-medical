@@ -328,3 +328,20 @@ class LabTestRequest(Base):
 
     establishment = relationship("Establishment")
     patient = relationship("Patient")
+
+class MessageSenderRole(str, enum.Enum):
+    PATIENT = "patient"
+    STAFF = "staff"
+
+
+class Message(Base):
+    """Message de la messagerie patient <-> etablissement (module chat concierge)."""
+    __tablename__ = "messages"
+
+    id = Column(UUID(as_uuid=False), primary_key=True, default=gen_uuid)
+    patient_id = Column(UUID(as_uuid=False), ForeignKey("patients.id"), nullable=False)
+    establishment_id = Column(UUID(as_uuid=False), ForeignKey("establishments.id"), nullable=False)
+    sender_role = Column(Enum(MessageSenderRole), nullable=False)
+    sender_name = Column(String(200), nullable=False)
+    content = Column(Text, nullable=False)
+    created_at = Column(DateTime, default=datetime.utcnow)
