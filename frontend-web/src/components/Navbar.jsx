@@ -1,4 +1,5 @@
 import { Link, useNavigate } from 'react-router-dom'
+import { UserRound } from 'lucide-react'
 import { getRole, clearSession, getLastRoleBeforeExpiry } from '../api/client'
 
 export default function Navbar() {
@@ -37,6 +38,11 @@ export default function Navbar() {
           )}
           {role === 'establishment_admin' && <Link to="/admin-etablissement" className="hover:text-forest-900">Mon etablissement</Link>}
           {role === 'super_admin' && <Link to="/super-admin" className="hover:text-forest-900">Super Admin</Link>}
+          {role && (
+            <Link to="/profil" className="text-forest-700 hover:text-forest-900" aria-label="Mon profil">
+              <UserRound className="w-5 h-5" strokeWidth={1.75} />
+            </Link>
+          )}
           {!role ? (
             <Link to="/connexion" className="px-4 py-2 rounded-full bg-forest-700 text-white hover:bg-forest-900 transition">
               Connexion

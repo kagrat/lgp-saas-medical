@@ -400,3 +400,31 @@ class ConversationSummaryOut(BaseModel):
     patient_name: str
     last_message: Optional[str] = None
     last_message_at: Optional[datetime] = None
+
+class UserProfileOut(BaseModel):
+    id: str
+    email: EmailStr
+    full_name: str
+    phone: Optional[str] = None
+    role: UserRole
+    establishment_id: Optional[str] = None
+
+
+class UserProfileUpdate(BaseModel):
+    full_name: Optional[str] = Field(default=None, min_length=2, max_length=200)
+    phone: Optional[str] = None
+    email: Optional[EmailStr] = None
+
+
+class PasswordChangeRequest(BaseModel):
+    current_password: str
+    new_password: str = Field(min_length=8)
+
+    @field_validator("new_password")
+    @classmethod
+    def password_strength(cls, v: str) -> str:
+        if not any(c.isdigit() for c in v):
+            raise ValueError("Le mot de passe doit contenir au moins un chiffre")
+        if not any(c.isupper() for c in v):
+            raise ValueError("Le mot de passe doit contenir au moins une majuscule")
+        return v    

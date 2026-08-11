@@ -1,6 +1,42 @@
 import { Link } from 'react-router-dom'
+import { Stethoscope, Pill, FlaskConical, Calendar, MessageCircle, UserRound } from 'lucide-react'
+import { getRole } from '../api/client'
+
+const QUICK_ACTIONS = [
+  { to: '/rechercher', label: 'Trouver un medecin', icon: Stethoscope },
+  { to: '/pharmacie', label: 'Pharmacie', icon: Pill },
+  { to: '/laboratoire', label: 'Laboratoire', icon: FlaskConical },
+  { to: '/espace-patient', label: 'Mes rendez-vous', icon: Calendar },
+  { to: '/messages', label: 'Messages', icon: MessageCircle },
+  { to: '/profil', label: 'Mon profil', icon: UserRound },
+]
 
 export default function Home() {
+  const role = getRole()
+
+  if (role === 'patient') {
+    return (
+      <div className="max-w-4xl mx-auto px-6 py-14">
+        <p className="text-amber-600 font-medium tracking-wide uppercase text-xs mb-3">Bienvenue</p>
+        <h1 className="font-display text-3xl font-semibold text-forest-900 mb-8">Que veux-tu faire aujourd'hui ?</h1>
+
+        <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
+          {QUICK_ACTIONS.map(({ to, label, icon: Icon }) => (
+            <Link
+              key={to} to={to}
+              className="flex flex-col items-center justify-center gap-3 rounded-2xl border border-forest-100 bg-white p-6 text-center hover:border-forest-300 hover:shadow-sm transition"
+            >
+              <span className="w-12 h-12 rounded-full bg-forest-50 flex items-center justify-center">
+                <Icon className="w-6 h-6 text-forest-700" strokeWidth={1.75} />
+              </span>
+              <span className="text-sm font-medium text-forest-900">{label}</span>
+            </Link>
+          ))}
+        </div>
+      </div>
+    )
+  }
+
   return (
     <div className="max-w-5xl mx-auto px-6 py-20">
       <p className="text-amber-600 font-medium tracking-wide uppercase text-xs mb-4">LGP HOLDINGS</p>

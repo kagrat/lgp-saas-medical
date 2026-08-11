@@ -3,7 +3,7 @@ import { useNavigate, Link } from 'react-router-dom'
 import api, { saveSession, getErrorMessage, consumeSessionExpiredFlag, getLastRoleBeforeExpiry } from '../api/client'
 
 const ROLE_LABELS = {
-  super_admin: 'Super Admin',
+  super_admin: 'administrateur',
   establishment_admin: 'etablissement',
   patient: 'patient',
 }
@@ -36,7 +36,7 @@ export default function Login() {
       saveSession(data.access_token, data.role, data.establishment_id)
       if (data.role === 'super_admin') navigate('/super-admin')
       else if (data.role === 'establishment_admin') navigate('/admin-etablissement')
-      else navigate('/espace-patient')
+      else navigate('/')
     } catch (err) {
       setError(getErrorMessage(err, 'Connexion impossible. Verifie tes identifiants.'))
     } finally {
@@ -47,7 +47,9 @@ export default function Login() {
   return (
     <div className="max-w-md mx-auto px-6 py-16">
       <h1 className="font-display text-3xl font-semibold text-forest-900 mb-2">Connexion</h1>
-      <p className="text-forest-700 mb-8">Accede a ton espace patient, etablissement ou administration.</p>
+      <p className="text-forest-700 mb-8">
+        {wasStaffSession ? 'Reconnecte-toi pour continuer.' : 'Retrouve tes rendez-vous, tes commandes et tes messages.'}
+      </p>
 
       {notice && (
         <p className="text-amber-700 bg-amber-50 border border-amber-200 rounded-lg px-4 py-3 mb-6 text-sm">

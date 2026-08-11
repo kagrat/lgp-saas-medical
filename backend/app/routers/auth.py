@@ -1,12 +1,11 @@
 """
-Module 1 - Authentification et roles.
+Module 1 - Authentification et roles + gestion du profil personnel.
 
 Regle de securite cle: SEUL le role patient peut s'auto-inscrire via
-/auth/register-patient. Les comptes admin_etablissement, medecin, secretaire,
-pharmacien sont crees exclusivement par un compte deja autorise
-(super_admin cree les establishment_admin; establishment_admin cree
-medecin/secretaire/pharmacien). Cela empeche toute elevation de privilege
-par simple appel API.
+/auth/register-patient. Le changement de mot de passe exige TOUJOURS le
+mot de passe actuel (meme si on est deja connecte) - ca evite qu'une
+session laissee ouverte sur un appareil permette a n'importe qui de
+changer le mot de passe sans le connaitre.
 """
 import uuid
 
@@ -15,19 +14,26 @@ from sqlalchemy.orm import Session
 
 from app.database import get_db
 from app.models import User, Patient, UserRole, AuditLog
-from app.schemas import LoginRequest, TokenResponse, PatientRegisterRequest
+from app.schemas import (
+    LoginRequest, TokenResponse, PatientRegisterRequest, UserProfileUpdate, PasswordChangeRequest, UserProfileOut,
+)
 from app.security import verify_password, hash_password, create_access_token
 from app.deps import get_current_user
 
 router = APIRouter(prefix="/auth", tags=["authentification"])
 
 
+def _to_profile_out(user: User) -> UserProfileOut:
+    return UserProfileOut(
+        id=user.id, email=user.email, full_name=user.full_name, phone=user.phone,
+        role=user.role, establishment_id=user.establishment_id,
+    )
+
+
 @router.post("/login", response_model=TokenResponse)
 def login(payload: LoginRequest, db: Session = Depends(get_db)):
     user = db.query(User).filter(User.email == payload.email.lower()).first()
 
-    # Message d'erreur generique volontaire: ne jamais reveler si c'est
-    # l'email ou le mot de passe qui est incorrect (evite l'enumeration de comptes).
     invalid_credentials = HTTPException(
         status_code=status.HTTP_401_UNAUTHORIZED,
         detail="Email ou mot de passe incorrect",
@@ -39,7 +45,6 @@ def login(payload: LoginRequest, db: Session = Depends(get_db)):
     if not user.is_active:
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Compte desactive")
 
-    # Etablissement suspendu => acces bloque (sauf super_admin)
     if user.establishment_id and user.role != UserRole.SUPER_ADMIN:
         if user.establishment and not user.establishment.is_active:
             raise HTTPException(
@@ -75,7 +80,7 @@ def register_patient(payload: PatientRegisterRequest, db: Session = Depends(get_
         establishment_id=None,
     )
     db.add(user)
-    db.flush()  # obtient user.id sans committer
+    db.flush()
 
     dossier_number = f"PAT-{uuid.uuid4().hex[:8].upper()}"
     patient = Patient(
@@ -91,12 +96,42 @@ def register_patient(payload: PatientRegisterRequest, db: Session = Depends(get_
     return TokenResponse(access_token=token, role=user.role, establishment_id=None)
 
 
-@router.get("/me")
+@router.get("/me", response_model=UserProfileOut)
 def read_current_user(current_user: User = Depends(get_current_user)):
-    return {
-        "id": current_user.id,
-        "email": current_user.email,
-        "full_name": current_user.full_name,
-        "role": current_user.role,
-        "establishment_id": current_user.establishment_id,
-    }
+    return _to_profile_out(current_user)
+
+
+@router.patch("/me", response_model=UserProfileOut)
+def update_profile(payload: UserProfileUpdate, db: Session = Depends(get_db),
+                    current_user: User = Depends(get_current_user)):
+    """Modifier ses propres informations (nom, telephone, email) - accessible a tous les roles connectes."""
+    if payload.email and payload.email.lower() != current_user.email:
+        existing = db.query(User).filter(User.email == payload.email.lower()).first()
+        if existing:
+            raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail="Cet email est deja utilise par un autre compte")
+        current_user.email = payload.email.lower()
+
+    if payload.full_name:
+        current_user.full_name = payload.full_name
+    if payload.phone is not None:
+        current_user.phone = payload.phone
+
+    db.add(AuditLog(user_id=current_user.id, establishment_id=current_user.establishment_id,
+                     action="update_profile", details="Profil modifie"))
+    db.commit()
+    db.refresh(current_user)
+    return _to_profile_out(current_user)
+
+
+@router.post("/change-password")
+def change_password(payload: PasswordChangeRequest, db: Session = Depends(get_db),
+                     current_user: User = Depends(get_current_user)):
+    """Changer son mot de passe - exige TOUJOURS le mot de passe actuel, meme deja connecte."""
+    if not verify_password(payload.current_password, current_user.hashed_password):
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Mot de passe actuel incorrect")
+
+    current_user.hashed_password = hash_password(payload.new_password)
+    db.add(AuditLog(user_id=current_user.id, establishment_id=current_user.establishment_id,
+                     action="change_password", details="Mot de passe modifie"))
+    db.commit()
+    return {"message": "Mot de passe mis a jour avec succes"}
