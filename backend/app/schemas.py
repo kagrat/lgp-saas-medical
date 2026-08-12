@@ -263,6 +263,7 @@ class EstablishmentStatsOut(BaseModel):
     total_doctors: int
     total_revenue_estimated: float
     low_stock_items: int
+    appointments_trend_pct: Optional[float] = None
 
 
 class GlobalStatsOut(BaseModel):
@@ -427,4 +428,29 @@ class PasswordChangeRequest(BaseModel):
             raise ValueError("Le mot de passe doit contenir au moins un chiffre")
         if not any(c.isupper() for c in v):
             raise ValueError("Le mot de passe doit contenir au moins une majuscule")
-        return v    
+        return v 
+
+class StaffCreate(BaseModel):
+    email: EmailStr
+    password: str = Field(min_length=8)
+    full_name: str = Field(min_length=2, max_length=200)
+    phone: Optional[str] = None
+    role: UserRole
+
+
+class StaffOut(BaseModel):
+    id: str
+    email: EmailStr
+    full_name: str
+    phone: Optional[str] = None
+    role: UserRole
+    is_active: bool
+
+
+class AuditLogOut(BaseModel):
+    id: str
+    user_name: str
+    establishment_name: Optional[str] = None
+    action: str
+    details: Optional[str] = None
+    created_at: datetime   
