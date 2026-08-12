@@ -1,8 +1,10 @@
 """
-Gestion des etablissements - reservee au Super Admin (niveau 1), sauf /me
-qui est accessible a tout membre du staff pour connaitre son propre
-etablissement (utilise par le frontend pour adapter les onglets selon le
-type: hopital/clinique, pharmacie, ou laboratoire).
+Gestion des etablissements + gestion du personnel (nouveau).
+
+Regle de securite: un establishment_admin ne peut creer que des comptes
+staff (secretaire/pharmacien/technicien labo) - jamais un autre admin
+d'etablissement, ni un super admin. C'est le meme principe que pour la
+creation de medecins (deja en place): pas d'auto-elevation de privilege.
 """
 import uuid
 
@@ -11,12 +13,17 @@ from sqlalchemy.orm import Session
 
 from app.database import get_db
 from app.models import Establishment, User, UserRole, AuditLog
-from app.schemas import EstablishmentCreate, EstablishmentOut, EstablishmentStatusUpdate, EstablishmentUpdate
+from app.schemas import (
+    EstablishmentCreate, EstablishmentOut, EstablishmentStatusUpdate, EstablishmentUpdate,
+    StaffCreate, StaffOut,
+)
 from app.deps import require_roles, get_current_user
 from app.security import hash_password
 from app.services.geo import resolve_city_coordinates
 
 router = APIRouter(prefix="/establishments", tags=["etablissements"])
+
+ALLOWED_STAFF_ROLES = {UserRole.SECRETARY, UserRole.PHARMACIST, UserRole.LAB_TECHNICIAN}
 
 
 @router.post("", response_model=EstablishmentOut, status_code=status.HTTP_201_CREATED,
@@ -69,7 +76,6 @@ def list_establishments(db: Session = Depends(get_db)):
 
 @router.get("/me", response_model=EstablishmentOut)
 def my_establishment(db: Session = Depends(get_db), current_user: User = Depends(get_current_user)):
-    """Utilise par le frontend pour savoir quel type d'etablissement afficher (onglets adaptes)."""
     if not current_user.establishment_id:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Compte non rattache a un etablissement")
     establishment = db.query(Establishment).filter(Establishment.id == current_user.establishment_id).first()
@@ -121,3 +127,66 @@ def update_establishment_status(establishment_id: str, payload: EstablishmentSta
     db.commit()
     db.refresh(establishment)
     return establishment
+
+
+# ---------- GESTION DU PERSONNEL (nouveau) ----------
+
+@router.post("/staff", response_model=StaffOut, status_code=status.HTTP_201_CREATED)
+def create_staff_member(payload: StaffCreate, db: Session = Depends(get_db),
+                         current_user: User = Depends(require_roles(UserRole.ESTABLISHMENT_ADMIN))):
+    if payload.role not in ALLOWED_STAFF_ROLES:
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            detail="Role invalide - utilise secretary, pharmacist ou lab_technician",
+        )
+
+    existing = db.query(User).filter(User.email == payload.email.lower()).first()
+    if existing:
+        raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail="Cet email est deja utilise")
+
+    staff_user = User(
+        id=str(uuid.uuid4()),
+        establishment_id=current_user.establishment_id,
+        email=payload.email.lower(),
+        hashed_password=hash_password(payload.password),
+        full_name=payload.full_name,
+        phone=payload.phone,
+        role=payload.role,
+    )
+    db.add(staff_user)
+    db.add(AuditLog(user_id=current_user.id, establishment_id=current_user.establishment_id,
+                     action="create_staff", details=f"Compte {payload.role.value} cree: {payload.full_name}"))
+    db.commit()
+    db.refresh(staff_user)
+    return StaffOut(id=staff_user.id, email=staff_user.email, full_name=staff_user.full_name,
+                     phone=staff_user.phone, role=staff_user.role, is_active=staff_user.is_active)
+
+
+@router.get("/staff", response_model=list[StaffOut])
+def list_staff(db: Session = Depends(get_db),
+               current_user: User = Depends(require_roles(UserRole.ESTABLISHMENT_ADMIN))):
+    staff = (
+        db.query(User)
+        .filter(User.establishment_id == current_user.establishment_id, User.role.in_(list(ALLOWED_STAFF_ROLES)))
+        .order_by(User.full_name)
+        .all()
+    )
+    return [StaffOut(id=s.id, email=s.email, full_name=s.full_name, phone=s.phone, role=s.role, is_active=s.is_active) for s in staff]
+
+
+@router.patch("/staff/{staff_id}/deactivate", response_model=StaffOut)
+def deactivate_staff(staff_id: str, db: Session = Depends(get_db),
+                      current_user: User = Depends(require_roles(UserRole.ESTABLISHMENT_ADMIN))):
+    staff_user = db.query(User).filter(
+        User.id == staff_id, User.establishment_id == current_user.establishment_id, User.role.in_(list(ALLOWED_STAFF_ROLES))
+    ).first()
+    if not staff_user:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Membre du personnel introuvable")
+
+    staff_user.is_active = not staff_user.is_active
+    db.add(AuditLog(user_id=current_user.id, establishment_id=current_user.establishment_id,
+                     action="toggle_staff_active", details=f"{staff_user.full_name}: is_active={staff_user.is_active}"))
+    db.commit()
+    db.refresh(staff_user)
+    return StaffOut(id=staff_user.id, email=staff_user.email, full_name=staff_user.full_name,
+                     phone=staff_user.phone, role=staff_user.role, is_active=staff_user.is_active)

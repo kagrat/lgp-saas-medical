@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import api, { getErrorMessage } from '../api/client'
 import { RevenueTrendChart, AppointmentsTrendChart, TopEstablishmentsChart } from '../components/RevenueCharts'
+import ActivityLog from '../components/ActivityLog'
 
 export default function SuperAdminDashboard() {
   const [stats, setStats] = useState(null)
@@ -14,6 +15,7 @@ export default function SuperAdminDashboard() {
   const [editingId, setEditingId] = useState(null)
   const [editForm, setEditForm] = useState({ name: '', type: 'hopital', city: '', address: '', latitude: '', longitude: '' })
   const [savingEdit, setSavingEdit] = useState(false)
+  const [showActivityLog, setShowActivityLog] = useState(false)
 
   useEffect(() => {
     loadAll()
@@ -173,7 +175,7 @@ export default function SuperAdminDashboard() {
       </form>
 
       <h2 className="font-display text-xl font-semibold text-forest-900 mb-4">Etablissements adherents</h2>
-      <div className="space-y-2">
+      <div className="space-y-2 mb-10">
         {establishments.map((est) => (
           <div key={est.id} className="rounded-xl border border-forest-100 bg-white p-4">
             {editingId === est.id ? (
@@ -233,6 +235,15 @@ export default function SuperAdminDashboard() {
           </div>
         ))}
       </div>
+
+      <div className="flex items-center justify-between mb-4">
+        <h2 className="font-display text-xl font-semibold text-forest-900">Journal d'activite</h2>
+        <button onClick={() => setShowActivityLog(!showActivityLog)}
+          className="text-sm rounded-full border border-forest-300 px-4 py-1.5 hover:bg-forest-50 transition">
+          {showActivityLog ? 'Masquer' : 'Afficher'}
+        </button>
+      </div>
+      {showActivityLog && <ActivityLog />}
     </div>
   )
 }

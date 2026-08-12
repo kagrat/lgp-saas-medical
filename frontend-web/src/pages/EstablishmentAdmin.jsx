@@ -6,6 +6,7 @@ import { StatusBadge, RESERVATION_STATUSES, RESERVATION_STATUS_LABELS } from '..
 import { DOCUMENT_TYPES, DOCUMENT_TYPE_LABELS } from '../components/DocumentType'
 import { LabStatusBadge, LAB_STATUSES, LAB_STATUS_LABELS } from '../components/LabStatus'
 import ChatWindow from '../components/ChatWindow'
+import TeamMembers from '../components/TeamMembers'
 
 export default function EstablishmentAdmin() {
   const [establishment, setEstablishment] = useState(null)
@@ -239,7 +240,7 @@ export default function EstablishmentAdmin() {
         { id: 'pharmacy', label: 'Pharmacie' },
         { id: 'orders', label: 'Commandes' },
       ]
-  const tabs = [...baseTabs, { id: 'messages', label: 'Messages' }]
+  const tabs = [...baseTabs, { id: 'messages', label: 'Messages' }, { id: 'team', label: 'Equipe' }]
 
   const selectedConversation = conversations.find((c) => c.patient_id === selectedPatientId)
 
@@ -266,7 +267,7 @@ export default function EstablishmentAdmin() {
       {tab === 'stats' && stats && (
         <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-4">
           <StatCard label="RDV totaux" value={stats.total_appointments} />
-          <StatCard label="RDV ce mois" value={stats.appointments_this_month} />
+          <StatCard label="RDV ce mois" value={stats.appointments_this_month} trendPct={stats.appointments_trend_pct} />
           <StatCard label="Medecins actifs" value={stats.total_doctors} />
           <StatCard label="Alertes stock" value={stats.low_stock_items} highlight={stats.low_stock_items > 0} />
         </div>
@@ -573,6 +574,8 @@ export default function EstablishmentAdmin() {
           )}
         </div>
       )}
+
+      {tab === 'team' && <TeamMembers />}
     </div>
   )
 }
@@ -682,11 +685,18 @@ function DoctorAvailabilities({ doctorId }) {
   )
 }
 
-function StatCard({ label, value, highlight }) {
+function StatCard({ label, value, highlight, trendPct }) {
   return (
     <div className={`rounded-xl border p-5 ${highlight ? 'border-clay-500 bg-clay-500/5' : 'border-forest-100 bg-white'}`}>
       <p className="text-sm text-forest-700 mb-1">{label}</p>
-      <p className={`font-display text-3xl font-semibold ${highlight ? 'text-clay-600' : 'text-forest-900'}`}>{value}</p>
+      <div className="flex items-baseline gap-2">
+        <p className={`font-display text-3xl font-semibold ${highlight ? 'text-clay-600' : 'text-forest-900'}`}>{value}</p>
+        {trendPct !== null && trendPct !== undefined && (
+          <span className={`text-xs font-medium ${trendPct >= 0 ? 'text-forest-500' : 'text-clay-600'}`}>
+            {trendPct >= 0 ? '+' : ''}{trendPct}%
+          </span>
+        )}
+      </div>
     </div>
   )
 }

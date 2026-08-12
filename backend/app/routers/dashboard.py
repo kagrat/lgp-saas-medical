@@ -1,10 +1,6 @@
 """
 Module 6 - Tableau de bord (stats etablissement + stats globales super admin
-+ nouveau: tendances/graphiques pour le Super Admin).
-
-Choix technique: l'agregation par mois se fait cote Python (pas de fonction
-SQL specifique a PostgreSQL comme date_trunc), pour que ca fonctionne aussi
-bien en production (PostgreSQL) que dans les tests automatises (SQLite).
++ tendances/graphiques + indicateurs de variation mensuelle).
 """
 from collections import defaultdict
 from datetime import datetime, timedelta
@@ -28,21 +24,38 @@ MONTH_NAMES_FR = ["Janvier", "Fevrier", "Mars", "Avril", "Mai", "Juin",
                    "Juillet", "Aout", "Septembre", "Octobre", "Novembre", "Decembre"]
 
 
+def _percent_change(current: float, previous: float) -> float | None:
+    """Retourne le pourcentage de variation, ou None si impossible a calculer (pas de donnee du tout avant)."""
+    if previous == 0:
+        return None if current == 0 else 100.0
+    return round(((current - previous) / previous) * 100, 1)
+
+
 @router.get("/establishment", response_model=EstablishmentStatsOut)
 def establishment_stats(db: Session = Depends(get_db),
                          current_user: User = Depends(require_roles(UserRole.ESTABLISHMENT_ADMIN))):
     establishment_id = current_user.establishment_id
     now = datetime.utcnow()
+    this_month_start = now.replace(day=1, hour=0, minute=0, second=0, microsecond=0)
+    last_month_end = this_month_start - timedelta(seconds=1)
+    last_month_start = last_month_end.replace(day=1, hour=0, minute=0, second=0, microsecond=0)
 
     total_appointments = db.query(Appointment).filter(Appointment.establishment_id == establishment_id).count()
     appointments_this_month = (
         db.query(Appointment)
+        .filter(Appointment.establishment_id == establishment_id, Appointment.scheduled_at >= this_month_start)
+        .count()
+    )
+    appointments_last_month = (
+        db.query(Appointment)
         .filter(
             Appointment.establishment_id == establishment_id,
-            Appointment.scheduled_at >= now.replace(day=1, hour=0, minute=0, second=0),
+            Appointment.scheduled_at >= last_month_start, Appointment.scheduled_at < this_month_start,
         )
         .count()
     )
+    appointments_trend_pct = _percent_change(appointments_this_month, appointments_last_month)
+
     total_doctors = db.query(Doctor).filter(Doctor.establishment_id == establishment_id, Doctor.is_active == True).count()
 
     revenue = (
@@ -61,6 +74,7 @@ def establishment_stats(db: Session = Depends(get_db),
     return EstablishmentStatsOut(
         total_appointments=total_appointments,
         appointments_this_month=appointments_this_month,
+        appointments_trend_pct=appointments_trend_pct,
         total_doctors=total_doctors,
         total_revenue_estimated=float(revenue),
         low_stock_items=low_stock_items,
@@ -96,11 +110,6 @@ def global_stats(db: Session = Depends(get_db),
 @router.get("/global/trends", response_model=GlobalTrendsOut)
 def global_trends(months: int = 6, db: Session = Depends(get_db),
                    current_user: User = Depends(require_roles(UserRole.SUPER_ADMIN))):
-    """
-    Nouveau (module Analytics avances): tendance mensuelle (RDV + revenu
-    estime) sur les N derniers mois, et repartition par etablissement -
-    de quoi alimenter des graphiques cote Super Admin.
-    """
     months = max(1, min(months, 24))
     cutoff = datetime.utcnow() - timedelta(days=31 * months)
 
@@ -124,8 +133,6 @@ def global_trends(months: int = 6, db: Session = Depends(get_db),
         by_establishment[est_id]["count"] += 1
         by_establishment[est_id]["revenue"] += price or 0
 
-    # Construit la liste ordonnee des N derniers mois, y compris ceux sans
-    # aucun RDV (pour que le graphique n'ait pas de "trou").
     keys_in_order = []
     cursor = datetime.utcnow().replace(day=1)
     for _ in range(months):
