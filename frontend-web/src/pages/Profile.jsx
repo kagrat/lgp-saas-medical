@@ -12,7 +12,7 @@ export default function Profile() {
   const [savingPassword, setSavingPassword] = useState(false)
 
   const [dependents, setDependents] = useState([])
-  const [dependentForm, setDependentForm] = useState({ full_name: '', relationship: '', date_of_birth: '' })
+  const [dependentForm, setDependentForm] = useState({ full_name: '', relation_type: '', date_of_birth: '' })
   const [savingDependent, setSavingDependent] = useState(false)
   const role = getRole()
 
@@ -89,10 +89,10 @@ export default function Profile() {
     try {
       await api.post('/patients/dependents', {
         full_name: dependentForm.full_name,
-        relationship: dependentForm.relationship,
+        relation_type: dependentForm.relation_type,
         date_of_birth: dependentForm.date_of_birth || null,
       })
-      setDependentForm({ full_name: '', relationship: '', date_of_birth: '' })
+      setDependentForm({ full_name: '', relation_type: '', date_of_birth: '' })
       await loadDependents()
     } catch (err) {
       setError(getErrorMessage(err, "Impossible d'ajouter ce proche."))
@@ -158,8 +158,8 @@ export default function Profile() {
             <input required placeholder="Nom complet" value={dependentForm.full_name}
               onChange={(e) => setDependentForm({ ...dependentForm, full_name: e.target.value })}
               className="rounded-lg border border-forest-100 px-3 py-2" />
-            <input required placeholder="Relation (ex: Enfant, Conjoint)" value={dependentForm.relationship}
-              onChange={(e) => setDependentForm({ ...dependentForm, relationship: e.target.value })}
+            <input required placeholder="Relation (ex: Enfant, Conjoint)" value={dependentForm.relation_type}
+              onChange={(e) => setDependentForm({ ...dependentForm, relation_type: e.target.value })}
               className="rounded-lg border border-forest-100 px-3 py-2" />
             <input type="date" value={dependentForm.date_of_birth}
               onChange={(e) => setDependentForm({ ...dependentForm, date_of_birth: e.target.value })}
@@ -176,7 +176,7 @@ export default function Profile() {
                 <div>
                   <p className="text-forest-900 font-medium">{d.full_name}</p>
                   <p className="text-sm text-forest-700">
-                    {d.relationship}{d.date_of_birth ? ` - ne(e) le ${new Date(d.date_of_birth).toLocaleDateString('fr-FR')}` : ''}
+                    {d.relation_type}{d.date_of_birth ? ` - ne(e) le ${new Date(d.date_of_birth).toLocaleDateString('fr-FR')}` : ''}
                   </p>
                 </div>
                 <button onClick={() => handleRemoveDependent(d.id)}

@@ -73,8 +73,7 @@ def add_dependent(payload: DependentCreate, db: Session = Depends(get_db),
 
     dependent = Dependent(
         id=str(uuid.uuid4()), patient_id=patient.id,
-        full_name=payload.full_name, relationship=payload.relationship, date_of_birth=payload.date_of_birth,
-    )
+        full_name=payload.full_name, relation_type=payload.relationship, date_of_birth=payload.date_of_birth,
     db.add(dependent)
     db.commit()
     db.refresh(dependent)

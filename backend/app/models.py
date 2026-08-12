@@ -353,7 +353,7 @@ class Dependent(Base):
     id = Column(UUID(as_uuid=False), primary_key=True, default=gen_uuid)
     patient_id = Column(UUID(as_uuid=False), ForeignKey("patients.id"), nullable=False)
     full_name = Column(String(200), nullable=False)
-    relationship = Column(String(50), nullable=False)
+    relation_type = Column(String(50), nullable=False)
     date_of_birth = Column(Date, nullable=True)
 
     patient = relationship("Patient")

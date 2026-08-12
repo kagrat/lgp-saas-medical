@@ -471,14 +471,14 @@ class PatientDirectoryOut(BaseModel):
 
 class DependentCreate(BaseModel):
     full_name: str = Field(min_length=2, max_length=200)
-    relationship: str = Field(min_length=2, max_length=50)
+    relation_type: str = Field(min_length=2, max_length=50)
     date_of_birth: Optional[date] = None
 
 
 class DependentOut(BaseModel):
     id: str
     full_name: str
-    relationship: str
+    relation_type: str
     date_of_birth: Optional[date] = None
 
     model_config = {"from_attributes": True}
