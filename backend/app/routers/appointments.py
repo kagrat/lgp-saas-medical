@@ -19,8 +19,14 @@ router = APIRouter(prefix="/appointments", tags=["rendez-vous"])
 
 @router.post("/search", response_model=AppointmentSearchResponse)
 def search_appointment_slots(payload: AppointmentSearchRequest, db: Session = Depends(get_db)):
-    requested_doctor_id = None
-    if payload.establishment_id and payload.preferred_time:
+    """
+    NOUVEAU: si payload.doctor_id est fourni (ex: depuis la page profil d'un
+    medecin precis), on cible ce medecin directement, sans passer par la
+    logique de deduction automatique via specialite+etablissement.
+    """
+    requested_doctor_id = payload.doctor_id
+
+    if not requested_doctor_id and payload.establishment_id and payload.preferred_time:
         doctor = (
             db.query(Doctor)
             .filter(Doctor.establishment_id == payload.establishment_id, Doctor.specialty == payload.specialty)
@@ -121,13 +127,6 @@ def cancel_appointment(appointment_id: str, db: Session = Depends(get_db),
 def complete_appointment(appointment_id: str, db: Session = Depends(get_db),
                           current_user: User = Depends(require_roles(
                               UserRole.ESTABLISHMENT_ADMIN, UserRole.SECRETARY, UserRole.DOCTOR))):
-    """
-    NOUVEAU: manquait completement avant. Sans cette action, un rendez-vous
-    reste eternellement "confirme" meme apres que la consultation ait
-    reellement eu lieu - ce qui bloquait aussi bien les avis medecins
-    (module notes/avis) que le dossier de sante (les deux exigent un RDV
-    "termine" pour eviter les abus).
-    """
     appointment = db.query(Appointment).filter(Appointment.id == appointment_id).first()
     if not appointment:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Rendez-vous introuvable")

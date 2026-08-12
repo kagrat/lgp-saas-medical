@@ -1,7 +1,5 @@
 """
-Module 4 - Gestion des medecins + Notes/avis (nouveau module ratings).
-Creation reservee a establishment_admin (jamais d'auto-inscription medecin).
-Recherche publique ouverte a tous (portail patient).
+Module 4 - Gestion des medecins + Notes/avis + page profil public (nouveau).
 """
 import uuid
 from typing import Optional
@@ -17,7 +15,7 @@ from app.models import (
 )
 from app.schemas import (
     DoctorCreate, DoctorOut, DoctorAvailabilityCreate, DoctorAbsenceCreate,
-    DoctorAvailabilityOut, DoctorReviewCreate, DoctorReviewOut,
+    DoctorAvailabilityOut, DoctorReviewCreate, DoctorReviewOut, DoctorDetailOut,
 )
 from app.deps import require_roles, get_current_user
 from app.security import hash_password
@@ -26,7 +24,6 @@ router = APIRouter(prefix="/doctors", tags=["medecins"])
 
 
 def _rating_stats(db: Session, doctor_id: str) -> tuple[Optional[float], int]:
-    """Moyenne et nombre d'avis pour un medecin, calcules a la volee (pas de cache a invalider)."""
     avg_rating, count = (
         db.query(func.avg(DoctorReview.rating), func.count(DoctorReview.id))
         .filter(DoctorReview.doctor_id == doctor_id)
@@ -85,7 +82,6 @@ def search_doctors(
     establishment_id: Optional[str] = None,
     db: Session = Depends(get_db),
 ):
-    """Recherche publique - module 'Recherche et decouverte' du portail patient."""
     query = db.query(Doctor).join(Establishment).filter(Doctor.is_active == True, Establishment.is_active == True)
     if specialty:
         query = query.filter(Doctor.specialty.ilike(f"%{specialty}%"))
@@ -97,11 +93,31 @@ def search_doctors(
     return [_to_doctor_out(db, doctor) for doctor in query.limit(50).all()]
 
 
+@router.get("/{doctor_id}/profile", response_model=DoctorDetailOut)
+def doctor_public_profile(doctor_id: str, db: Session = Depends(get_db)):
+    """NOUVEAU: fiche publique complete d'un medecin (page profil patient)."""
+    doctor = db.query(Doctor).filter(Doctor.id == doctor_id, Doctor.is_active == True).first()
+    if not doctor:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Medecin introuvable")
+
+    establishment = db.query(Establishment).filter(Establishment.id == doctor.establishment_id).first()
+    avg_rating, review_count = _rating_stats(db, doctor.id)
+
+    return DoctorDetailOut(
+        id=doctor.id, full_name=doctor.user.full_name, phone=doctor.user.phone, specialty=doctor.specialty,
+        consultation_price=doctor.consultation_price, bio=doctor.bio, photo_url=doctor.photo_url,
+        establishment_id=doctor.establishment_id, is_active=doctor.is_active,
+        average_rating=avg_rating, review_count=review_count,
+        establishment_name=establishment.name if establishment else "Inconnu",
+        establishment_city=establishment.city if establishment else "",
+        establishment_address=establishment.address if establishment else None,
+    )
+
+
 @router.get("/establishment", response_model=list[DoctorOut])
 def list_establishment_doctors(db: Session = Depends(get_db),
                                 current_user: User = Depends(require_roles(
                                     UserRole.ESTABLISHMENT_ADMIN, UserRole.SECRETARY))):
-    """Liste des medecins de l'etablissement courant (isolation tenant stricte)."""
     doctors = db.query(Doctor).filter(Doctor.establishment_id == current_user.establishment_id).all()
     return [_to_doctor_out(db, d) for d in doctors]
 
@@ -160,17 +176,9 @@ def add_absence(doctor_id: str, payload: DoctorAbsenceCreate, db: Session = Depe
     return {"message": "Absence enregistree"}
 
 
-# ---------- NOTES / AVIS (nouveau module) ----------
-
 @router.post("/{doctor_id}/reviews", response_model=DoctorReviewOut, status_code=status.HTTP_201_CREATED)
 def create_or_update_review(doctor_id: str, payload: DoctorReviewCreate, db: Session = Depends(get_db),
                              current_user: User = Depends(require_roles(UserRole.PATIENT))):
-    """
-    Un patient ne peut laisser un avis que s'il a eu au moins un rendez-vous
-    TERMINE (COMPLETED) avec ce medecin - ca evite les faux avis. Si le
-    patient a deja laisse un avis pour ce medecin, on le met a jour plutot
-    que d'en creer un second (un seul avis par patient/medecin).
-    """
     doctor = db.query(Doctor).filter(Doctor.id == doctor_id).first()
     if not doctor:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Medecin introuvable")
@@ -223,7 +231,6 @@ def create_or_update_review(doctor_id: str, payload: DoctorReviewCreate, db: Ses
 
 @router.get("/{doctor_id}/reviews", response_model=list[DoctorReviewOut])
 def list_reviews(doctor_id: str, db: Session = Depends(get_db)):
-    """Public - visible sur le profil du medecin."""
     reviews = (
         db.query(DoctorReview)
         .filter(DoctorReview.doctor_id == doctor_id)
@@ -243,11 +250,6 @@ def list_reviews(doctor_id: str, db: Session = Depends(get_db)):
 @router.get("/reviewable")
 def list_reviewable_appointments(db: Session = Depends(get_db),
                                   current_user: User = Depends(require_roles(UserRole.PATIENT))):
-    """
-    Liste des medecins que le patient peut noter (RDV termines), avec son
-    avis existant s'il y en a deja un - utilise par l'espace patient pour
-    afficher le bouton 'Laisser un avis' au bon endroit.
-    """
     patient = db.query(Patient).filter(Patient.user_id == current_user.id).first()
     if not patient:
         return []
@@ -279,7 +281,6 @@ def list_reviewable_appointments(db: Session = Depends(get_db),
 
 
 def _get_doctor_in_scope(db: Session, doctor_id: str, current_user: User) -> Doctor:
-    """Verifie l'isolation tenant: un admin ne peut modifier que les medecins de SON etablissement."""
     doctor = db.query(Doctor).filter(Doctor.id == doctor_id).first()
     if not doctor:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Medecin introuvable")

@@ -128,6 +128,10 @@ class DoctorOut(BaseModel):
 
     model_config = {"from_attributes": True}
 
+class DoctorDetailOut(DoctorOut):
+    establishment_name: str
+    establishment_city: str
+    establishment_address: Optional[str] = None
 
 class DoctorAvailabilityOut(BaseModel):
     id: str
@@ -189,6 +193,7 @@ class AppointmentSearchRequest(BaseModel):
     establishment_id: Optional[str] = None
     preferred_date: date
     preferred_time: Optional[time] = None
+    doctor_id: Optional[str] = None
 
 
 class SuggestionSlot(BaseModel):
