@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import api, { getErrorMessage } from '../api/client'
 import { RevenueTrendChart, AppointmentsTrendChart, TopEstablishmentsChart } from '../components/RevenueCharts'
 import ActivityLog from '../components/ActivityLog'
+import UserDirectory from '../components/UserDirectory'
 
 export default function SuperAdminDashboard() {
   const [stats, setStats] = useState(null)
@@ -16,6 +17,7 @@ export default function SuperAdminDashboard() {
   const [editForm, setEditForm] = useState({ name: '', type: 'hopital', city: '', address: '', latitude: '', longitude: '' })
   const [savingEdit, setSavingEdit] = useState(false)
   const [showActivityLog, setShowActivityLog] = useState(false)
+  const [showUsers, setShowUsers] = useState(false)
 
   useEffect(() => {
     loadAll()
@@ -235,6 +237,15 @@ export default function SuperAdminDashboard() {
           </div>
         ))}
       </div>
+
+      <div className="flex items-center justify-between mb-4">
+        <h2 className="font-display text-xl font-semibold text-forest-900">Utilisateurs de la plateforme</h2>
+        <button onClick={() => setShowUsers(!showUsers)}
+          className="text-sm rounded-full border border-forest-300 px-4 py-1.5 hover:bg-forest-50 transition">
+          {showUsers ? 'Masquer' : 'Afficher'}
+        </button>
+      </div>
+      {showUsers && <div className="mb-10"><UserDirectory /></div>}
 
       <div className="flex items-center justify-between mb-4">
         <h2 className="font-display text-xl font-semibold text-forest-900">Journal d'activite</h2>

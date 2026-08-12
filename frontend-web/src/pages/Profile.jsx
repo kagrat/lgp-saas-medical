@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import api, { getErrorMessage } from '../api/client'
+import api, { getErrorMessage, getRole } from '../api/client'
 
 export default function Profile() {
   const [profile, setProfile] = useState(null)
@@ -11,8 +11,15 @@ export default function Profile() {
   const [savingInfo, setSavingInfo] = useState(false)
   const [savingPassword, setSavingPassword] = useState(false)
 
+  const [dependents, setDependents] = useState([])
+  const [dependentForm, setDependentForm] = useState({ full_name: '', relationship: '', date_of_birth: '' })
+  const [savingDependent, setSavingDependent] = useState(false)
+  const role = getRole()
+
   useEffect(() => {
     load()
+    if (role === 'patient') loadDependents()
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
   async function load() {
@@ -22,6 +29,15 @@ export default function Profile() {
       setInfoForm({ full_name: data.full_name, phone: data.phone || '', email: data.email })
     } catch (err) {
       setError(getErrorMessage(err, 'Impossible de charger ton profil.'))
+    }
+  }
+
+  async function loadDependents() {
+    try {
+      const { data } = await api.get('/patients/dependents/mine')
+      setDependents(data)
+    } catch (err) {
+      // silencieux
     }
   }
 
@@ -66,6 +82,34 @@ export default function Profile() {
     }
   }
 
+  async function handleAddDependent(e) {
+    e.preventDefault()
+    setError('')
+    setSavingDependent(true)
+    try {
+      await api.post('/patients/dependents', {
+        full_name: dependentForm.full_name,
+        relationship: dependentForm.relationship,
+        date_of_birth: dependentForm.date_of_birth || null,
+      })
+      setDependentForm({ full_name: '', relationship: '', date_of_birth: '' })
+      await loadDependents()
+    } catch (err) {
+      setError(getErrorMessage(err, "Impossible d'ajouter ce proche."))
+    } finally {
+      setSavingDependent(false)
+    }
+  }
+
+  async function handleRemoveDependent(id) {
+    try {
+      await api.delete(`/patients/dependents/${id}`)
+      await loadDependents()
+    } catch (err) {
+      setError(getErrorMessage(err, 'Impossible de supprimer ce proche.'))
+    }
+  }
+
   if (!profile) {
     return (
       <div className="max-w-2xl mx-auto px-6 py-14">
@@ -106,6 +150,44 @@ export default function Profile() {
           </button>
         </form>
       </section>
+
+      {role === 'patient' && (
+        <section className="mb-10">
+          <h2 className="font-display text-xl font-semibold text-forest-900 mb-4">Mes proches</h2>
+          <form onSubmit={handleAddDependent} className="grid sm:grid-cols-3 gap-3 bg-white border border-forest-100 rounded-xl p-5 mb-4">
+            <input required placeholder="Nom complet" value={dependentForm.full_name}
+              onChange={(e) => setDependentForm({ ...dependentForm, full_name: e.target.value })}
+              className="rounded-lg border border-forest-100 px-3 py-2" />
+            <input required placeholder="Relation (ex: Enfant, Conjoint)" value={dependentForm.relationship}
+              onChange={(e) => setDependentForm({ ...dependentForm, relationship: e.target.value })}
+              className="rounded-lg border border-forest-100 px-3 py-2" />
+            <input type="date" value={dependentForm.date_of_birth}
+              onChange={(e) => setDependentForm({ ...dependentForm, date_of_birth: e.target.value })}
+              className="rounded-lg border border-forest-100 px-3 py-2" />
+            <button type="submit" disabled={savingDependent}
+              className="sm:col-span-3 rounded-full bg-forest-700 text-white py-2.5 font-medium hover:bg-forest-900 transition disabled:opacity-50">
+              {savingDependent ? 'Ajout...' : 'Ajouter un proche'}
+            </button>
+          </form>
+          <div className="space-y-2">
+            {dependents.length === 0 && <p className="text-forest-700 text-sm">Aucun proche ajoute pour le moment.</p>}
+            {dependents.map((d) => (
+              <div key={d.id} className="rounded-xl border border-forest-100 bg-white p-4 flex justify-between items-center">
+                <div>
+                  <p className="text-forest-900 font-medium">{d.full_name}</p>
+                  <p className="text-sm text-forest-700">
+                    {d.relationship}{d.date_of_birth ? ` - ne(e) le ${new Date(d.date_of_birth).toLocaleDateString('fr-FR')}` : ''}
+                  </p>
+                </div>
+                <button onClick={() => handleRemoveDependent(d.id)}
+                  className="text-sm text-clay-600 hover:underline">
+                  Supprimer
+                </button>
+              </div>
+            ))}
+          </div>
+        </section>
+      )}
 
       <section>
         <h2 className="font-display text-xl font-semibold text-forest-900 mb-4">Changer mon mot de passe</h2>

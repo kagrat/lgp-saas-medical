@@ -7,6 +7,7 @@ import { DOCUMENT_TYPES, DOCUMENT_TYPE_LABELS } from '../components/DocumentType
 import { LabStatusBadge, LAB_STATUSES, LAB_STATUS_LABELS } from '../components/LabStatus'
 import ChatWindow from '../components/ChatWindow'
 import TeamMembers from '../components/TeamMembers'
+import PatientDirectory from '../components/PatientDirectory'
 
 export default function EstablishmentAdmin() {
   const [establishment, setEstablishment] = useState(null)
@@ -240,7 +241,7 @@ export default function EstablishmentAdmin() {
         { id: 'pharmacy', label: 'Pharmacie' },
         { id: 'orders', label: 'Commandes' },
       ]
-  const tabs = [...baseTabs, { id: 'messages', label: 'Messages' }, { id: 'team', label: 'Equipe' }]
+  const tabs = [...baseTabs, { id: 'patients', label: 'Patients' }, { id: 'messages', label: 'Messages' }, { id: 'team', label: 'Equipe' }]
 
   const selectedConversation = conversations.find((c) => c.patient_id === selectedPatientId)
 
@@ -536,6 +537,8 @@ export default function EstablishmentAdmin() {
           ))}
         </div>
       )}
+
+      {tab === 'patients' && <PatientDirectory />}
 
       {tab === 'messages' && (
         <div>

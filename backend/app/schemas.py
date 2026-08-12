@@ -459,3 +459,36 @@ class AuditLogOut(BaseModel):
     action: str
     details: Optional[str] = None
     created_at: datetime   
+
+class PatientDirectoryOut(BaseModel):
+    id: str
+    full_name: str
+    email: EmailStr
+    phone: Optional[str] = None
+    dossier_number: str
+    last_visit: Optional[datetime] = None
+
+
+class DependentCreate(BaseModel):
+    full_name: str = Field(min_length=2, max_length=200)
+    relationship: str = Field(min_length=2, max_length=50)
+    date_of_birth: Optional[date] = None
+
+
+class DependentOut(BaseModel):
+    id: str
+    full_name: str
+    relationship: str
+    date_of_birth: Optional[date] = None
+
+    model_config = {"from_attributes": True}
+
+
+class UserDirectoryOut(BaseModel):
+    id: str
+    email: EmailStr
+    full_name: str
+    role: UserRole
+    establishment_name: Optional[str] = None
+    is_active: bool
+    created_at: datetime

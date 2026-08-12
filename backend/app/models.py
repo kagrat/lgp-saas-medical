@@ -345,3 +345,15 @@ class Message(Base):
     sender_name = Column(String(200), nullable=False)
     content = Column(Text, nullable=False)
     created_at = Column(DateTime, default=datetime.utcnow)
+
+class Dependent(Base):
+    """Module 'Mes proches' - purement informatif pour l'instant, pas encore lie a la prise de RDV."""
+    __tablename__ = "dependents"
+
+    id = Column(UUID(as_uuid=False), primary_key=True, default=gen_uuid)
+    patient_id = Column(UUID(as_uuid=False), ForeignKey("patients.id"), nullable=False)
+    full_name = Column(String(200), nullable=False)
+    relationship = Column(String(50), nullable=False)
+    date_of_birth = Column(Date, nullable=True)
+
+    patient = relationship("Patient")
