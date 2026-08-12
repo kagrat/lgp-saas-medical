@@ -51,6 +51,7 @@ class AppointmentStatus(str, enum.Enum):
     CANCELLED = "cancelled"
     COMPLETED = "completed"
     NO_SHOW = "no_show"
+    ARRIVED = "arrived"
 
 
 class ReservationStatus(str, enum.Enum):
@@ -357,3 +358,15 @@ class Dependent(Base):
     date_of_birth = Column(Date, nullable=True)
 
     patient = relationship("Patient")
+
+class OpeningHours(Base):
+    """Horaires generaux de l'etablissement - distinct des disponibilites par medecin."""
+    __tablename__ = "opening_hours"
+
+    id = Column(UUID(as_uuid=False), primary_key=True, default=gen_uuid)
+    establishment_id = Column(UUID(as_uuid=False), ForeignKey("establishments.id"), nullable=False)
+    day_of_week = Column(Integer, nullable=False)
+    open_time = Column(Time, nullable=False)
+    close_time = Column(Time, nullable=False)
+
+    establishment = relationship("Establishment")

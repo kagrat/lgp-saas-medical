@@ -8,6 +8,7 @@ import { LabStatusBadge, LAB_STATUSES, LAB_STATUS_LABELS } from '../components/L
 import ChatWindow from '../components/ChatWindow'
 import TeamMembers from '../components/TeamMembers'
 import PatientDirectory from '../components/PatientDirectory'
+import OpeningHoursManager from '../components/OpeningHoursManager'
 
 export default function EstablishmentAdmin() {
   const [establishment, setEstablishment] = useState(null)
@@ -25,6 +26,9 @@ export default function EstablishmentAdmin() {
   const [updatingOrderId, setUpdatingOrderId] = useState(null)
   const [orderUpdateForm, setOrderUpdateForm] = useState({})
   const [completingId, setCompletingId] = useState(null)
+  const [arrivingId, setArrivingId] = useState(null)
+  const [reschedulingId, setReschedulingId] = useState(null)
+  const [rescheduleValue, setRescheduleValue] = useState('')
   const [expandedAppointmentId, setExpandedAppointmentId] = useState(null)
   const [docForm, setDocForm] = useState({ document_type: 'consultation_note', title: '', content: '' })
   const [savingDoc, setSavingDoc] = useState(false)
@@ -171,6 +175,38 @@ export default function EstablishmentAdmin() {
     }
   }
 
+  async function markArrived(appointmentId) {
+    setArrivingId(appointmentId)
+    setError('')
+    try {
+      await api.post(`/appointments/${appointmentId}/arrive`)
+      await loadAll()
+    } catch (err) {
+      setError(getErrorMessage(err, "Impossible de marquer ce rendez-vous comme arrive."))
+    } finally {
+      setArrivingId(null)
+    }
+  }
+
+  function toggleReschedule(appointmentId) {
+    setReschedulingId(reschedulingId === appointmentId ? null : appointmentId)
+    setRescheduleValue('')
+  }
+
+  async function submitReschedule(appointmentId) {
+    if (!rescheduleValue) return
+    setError('')
+    try {
+      await api.patch(`/appointments/${appointmentId}/reschedule`, {
+        new_scheduled_at: new Date(rescheduleValue).toISOString(),
+      })
+      setReschedulingId(null)
+      await loadAll()
+    } catch (err) {
+      setError(getErrorMessage(err, 'Impossible de reporter ce rendez-vous.'))
+    }
+  }
+
   async function toggleAppointmentExpand(appointmentId) {
     setExpandedAppointmentId(expandedAppointmentId === appointmentId ? null : appointmentId)
     setDocMessage('')
@@ -241,7 +277,13 @@ export default function EstablishmentAdmin() {
         { id: 'pharmacy', label: 'Pharmacie' },
         { id: 'orders', label: 'Commandes' },
       ]
-  const tabs = [...baseTabs, { id: 'patients', label: 'Patients' }, { id: 'messages', label: 'Messages' }, { id: 'team', label: 'Equipe' }]
+  const tabs = [
+    ...baseTabs,
+    { id: 'patients', label: 'Patients' },
+    { id: 'messages', label: 'Messages' },
+    { id: 'team', label: 'Equipe' },
+    { id: 'hours', label: 'Horaires' },
+  ]
 
   const selectedConversation = conversations.find((c) => c.patient_id === selectedPatientId)
 
@@ -332,13 +374,30 @@ export default function EstablishmentAdmin() {
           {appointments.length === 0 && <p className="text-forest-700">Aucun rendez-vous enregistre.</p>}
           {appointments.map((a) => (
             <div key={a.id} className="rounded-xl border border-forest-100 bg-white p-4">
-              <div className="flex justify-between items-center">
+              <div className="flex justify-between items-center flex-wrap gap-2">
                 <p className="text-forest-900">
                   {new Date(a.scheduled_at).toLocaleString('fr-FR')}
                 </p>
-                <div className="flex items-center gap-2">
+                <div className="flex items-center gap-2 flex-wrap">
                   <span className="text-sm px-3 py-1 rounded-full bg-forest-50 text-forest-700">{a.status}</span>
                   {a.status === 'confirmed' && (
+                    <>
+                      <button
+                        onClick={() => markArrived(a.id)}
+                        disabled={arrivingId === a.id}
+                        className="text-sm rounded-full border border-forest-300 px-4 py-1.5 hover:bg-forest-50 transition disabled:opacity-50"
+                      >
+                        {arrivingId === a.id ? '...' : 'Marquer arrive'}
+                      </button>
+                      <button
+                        onClick={() => toggleReschedule(a.id)}
+                        className="text-sm rounded-full border border-amber-400 text-amber-600 px-4 py-1.5 hover:bg-amber-50 transition"
+                      >
+                        Reporter
+                      </button>
+                    </>
+                  )}
+                  {(a.status === 'confirmed' || a.status === 'arrived') && (
                     <button
                       onClick={() => markCompleted(a.id)}
                       disabled={completingId === a.id}
@@ -357,6 +416,21 @@ export default function EstablishmentAdmin() {
                   )}
                 </div>
               </div>
+
+              {reschedulingId === a.id && (
+                <div className="mt-3 pt-3 border-t border-forest-100 flex flex-wrap gap-2 items-end">
+                  <div>
+                    <label className="block text-xs text-forest-700 mb-1">Nouvelle date et heure</label>
+                    <input type="datetime-local" value={rescheduleValue}
+                      onChange={(e) => setRescheduleValue(e.target.value)}
+                      className="rounded-lg border border-forest-100 px-3 py-1.5 text-sm" />
+                  </div>
+                  <button onClick={() => submitReschedule(a.id)}
+                    className="rounded-full bg-amber-500 text-forest-900 px-4 py-1.5 text-sm font-semibold hover:bg-amber-400 transition">
+                    Confirmer le report
+                  </button>
+                </div>
+              )}
 
               {expandedAppointmentId === a.id && (
                 <div className="mt-4 pt-4 border-t border-forest-100">
@@ -579,6 +653,8 @@ export default function EstablishmentAdmin() {
       )}
 
       {tab === 'team' && <TeamMembers />}
+
+      {tab === 'hours' && <OpeningHoursManager />}
     </div>
   )
 }

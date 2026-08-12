@@ -1,5 +1,6 @@
 """
 Module 3 - Gestion des rendez-vous + moteur de suggestion automatique.
+Nouveau: marquer "arrive" et reporter un rendez-vous.
 """
 import uuid
 
@@ -9,7 +10,7 @@ from sqlalchemy.orm import Session
 from app.database import get_db
 from app.models import Appointment, Doctor, Patient, User, UserRole, AppointmentStatus, AuditLog
 from app.schemas import (
-    AppointmentCreate, AppointmentOut, AppointmentSearchRequest, AppointmentSearchResponse
+    AppointmentCreate, AppointmentOut, AppointmentSearchRequest, AppointmentSearchResponse, AppointmentReschedule
 )
 from app.deps import require_roles, get_current_user
 from app.services.suggestion_engine import find_appointment_or_suggest
@@ -19,11 +20,6 @@ router = APIRouter(prefix="/appointments", tags=["rendez-vous"])
 
 @router.post("/search", response_model=AppointmentSearchResponse)
 def search_appointment_slots(payload: AppointmentSearchRequest, db: Session = Depends(get_db)):
-    """
-    NOUVEAU: si payload.doctor_id est fourni (ex: depuis la page profil d'un
-    medecin precis), on cible ce medecin directement, sans passer par la
-    logique de deduction automatique via specialite+etablissement.
-    """
     requested_doctor_id = payload.doctor_id
 
     if not requested_doctor_id and payload.establishment_id and payload.preferred_time:
@@ -123,6 +119,64 @@ def cancel_appointment(appointment_id: str, db: Session = Depends(get_db),
     return appointment
 
 
+@router.post("/{appointment_id}/arrive", response_model=AppointmentOut)
+def mark_arrived(appointment_id: str, db: Session = Depends(get_db),
+                  current_user: User = Depends(require_roles(
+                      UserRole.ESTABLISHMENT_ADMIN, UserRole.SECRETARY, UserRole.DOCTOR))):
+    """NOUVEAU: le patient est arrive sur place, avant que la consultation soit terminee."""
+    appointment = db.query(Appointment).filter(Appointment.id == appointment_id).first()
+    if not appointment:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Rendez-vous introuvable")
+    if appointment.establishment_id != current_user.establishment_id:
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Acces refuse")
+    if appointment.status != AppointmentStatus.CONFIRMED:
+        raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail="Seul un rendez-vous confirme peut etre marque arrive")
+
+    appointment.status = AppointmentStatus.ARRIVED
+    db.add(AuditLog(user_id=current_user.id, establishment_id=appointment.establishment_id,
+                     action="mark_arrived", details=f"RDV {appointment.id} marque arrive"))
+    db.commit()
+    db.refresh(appointment)
+    return appointment
+
+
+@router.patch("/{appointment_id}/reschedule", response_model=AppointmentOut)
+def reschedule_appointment(appointment_id: str, payload: AppointmentReschedule, db: Session = Depends(get_db),
+                            current_user: User = Depends(require_roles(
+                                UserRole.ESTABLISHMENT_ADMIN, UserRole.SECRETARY, UserRole.DOCTOR))):
+    """NOUVEAU: reporter un rendez-vous a une autre date/heure, avec re-verification du conflit."""
+    appointment = db.query(Appointment).filter(Appointment.id == appointment_id).first()
+    if not appointment:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Rendez-vous introuvable")
+    if appointment.establishment_id != current_user.establishment_id:
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Acces refuse")
+    if appointment.status not in (AppointmentStatus.CONFIRMED, AppointmentStatus.ARRIVED):
+        raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail="Ce rendez-vous ne peut plus etre reporte")
+
+    conflict = (
+        db.query(Appointment)
+        .filter(
+            Appointment.doctor_id == appointment.doctor_id,
+            Appointment.status == AppointmentStatus.CONFIRMED,
+            Appointment.scheduled_at == payload.new_scheduled_at,
+            Appointment.id != appointment.id,
+        )
+        .first()
+    )
+    if conflict:
+        raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail="Le medecin a deja un rendez-vous a ce nouveau creneau")
+
+    old_time = appointment.scheduled_at
+    appointment.scheduled_at = payload.new_scheduled_at
+    appointment.status = AppointmentStatus.CONFIRMED
+    db.add(AuditLog(user_id=current_user.id, establishment_id=appointment.establishment_id,
+                     action="reschedule_appointment",
+                     details=f"RDV {appointment.id} reporte de {old_time} a {payload.new_scheduled_at}"))
+    db.commit()
+    db.refresh(appointment)
+    return appointment
+
+
 @router.post("/{appointment_id}/complete", response_model=AppointmentOut)
 def complete_appointment(appointment_id: str, db: Session = Depends(get_db),
                           current_user: User = Depends(require_roles(
@@ -132,8 +186,8 @@ def complete_appointment(appointment_id: str, db: Session = Depends(get_db),
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Rendez-vous introuvable")
     if appointment.establishment_id != current_user.establishment_id:
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Acces refuse")
-    if appointment.status != AppointmentStatus.CONFIRMED:
-        raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail="Seul un rendez-vous confirme peut etre marque termine")
+    if appointment.status not in (AppointmentStatus.CONFIRMED, AppointmentStatus.ARRIVED):
+        raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail="Seul un rendez-vous confirme ou arrive peut etre marque termine")
 
     appointment.status = AppointmentStatus.COMPLETED
     db.add(AuditLog(user_id=current_user.id, establishment_id=appointment.establishment_id,

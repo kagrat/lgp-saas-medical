@@ -492,3 +492,36 @@ class UserDirectoryOut(BaseModel):
     establishment_name: Optional[str] = None
     is_active: bool
     created_at: datetime
+
+class AppointmentReschedule(BaseModel):
+    new_scheduled_at: datetime
+
+    @field_validator("new_scheduled_at")
+    @classmethod
+    def must_be_future(cls, v: datetime) -> datetime:
+        if v < datetime.utcnow():
+            raise ValueError("Impossible de reporter a une date passee")
+        return v
+
+
+class OpeningHoursCreate(BaseModel):
+    day_of_week: int = Field(ge=0, le=6)
+    open_time: time
+    close_time: time
+
+    @field_validator("close_time")
+    @classmethod
+    def close_after_open(cls, v: time, info):
+        open_t = info.data.get("open_time")
+        if open_t and v <= open_t:
+            raise ValueError("L'heure de fermeture doit etre apres l'heure d'ouverture")
+        return v
+
+
+class OpeningHoursOut(BaseModel):
+    id: str
+    day_of_week: int
+    open_time: time
+    close_time: time
+
+    model_config = {"from_attributes": True}
