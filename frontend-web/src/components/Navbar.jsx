@@ -24,11 +24,7 @@ export default function Navbar() {
         </Link>
         <nav className="flex items-center gap-6 text-sm font-medium text-forest-700">
           {!isStaffRole && (
-            <>
-              <Link to="/rechercher" className="hover:text-forest-900">Trouver un medecin</Link>
-              <Link to="/pharmacie" className="hover:text-forest-900">Pharmacie</Link>
-              <Link to="/laboratoire" className="hover:text-forest-900">Laboratoire</Link>
-            </>
+            <Link to="/soins" className="hover:text-forest-900">Soins</Link>
           )}
           {role === 'patient' && (
             <>

@@ -5,6 +5,7 @@ import ActivityLog from '../components/ActivityLog'
 import UserDirectory from '../components/UserDirectory'
 import PlatformTables from '../components/PlatformTables'
 import PlatformSettingsPanel from '../components/PlatformSettingsPanel'
+import PendingOverview from '../components/PendingOverview'
 
 export default function SuperAdminDashboard() {
   const [stats, setStats] = useState(null)
@@ -22,6 +23,7 @@ export default function SuperAdminDashboard() {
   const [showUsers, setShowUsers] = useState(false)
   const [showPlatformTables, setShowPlatformTables] = useState(false)
   const [showSettings, setShowSettings] = useState(false)
+  const [trendMonths, setTrendMonths] = useState(6)
 
   useEffect(() => {
     loadAll()
@@ -31,7 +33,7 @@ export default function SuperAdminDashboard() {
     try {
       const [statsRes, trendsRes, estRes] = await Promise.all([
         api.get('/dashboard/global'),
-        api.get('/dashboard/global/trends', { params: { months: 6 } }),
+        api.get('/dashboard/global/trends', { params: { months: trendMonths } }),
         api.get('/establishments'),
       ])
       setStats(statsRes.data)
@@ -40,6 +42,29 @@ export default function SuperAdminDashboard() {
     } catch (err) {
       setError(getErrorMessage(err, 'Impossible de charger les donnees globales. Verifie ta session Super Admin.'))
     }
+  }
+
+  async function changeTrendMonths(months) {
+    setTrendMonths(months)
+    try {
+      const { data } = await api.get('/dashboard/global/trends', { params: { months } })
+      setTrends(data)
+    } catch (err) {
+      setError(getErrorMessage(err, 'Impossible de charger les tendances.'))
+    }
+  }
+
+  function exportTrendsCsv() {
+    if (!trends) return
+    const header = 'Mois,RDV,Revenu (FCFA)\n'
+    const rows = trends.monthly.map((m) => `${m.label},${m.appointments_count},${m.revenue}`).join('\n')
+    const blob = new Blob([header + rows], { type: 'text/csv;charset=utf-8;' })
+    const url = URL.createObjectURL(blob)
+    const link = document.createElement('a')
+    link.href = url
+    link.download = `lgp-sante-rapport-${trendMonths}mois.csv`
+    link.click()
+    URL.revokeObjectURL(url)
   }
 
   async function handleCreate(e) {
@@ -115,6 +140,8 @@ export default function SuperAdminDashboard() {
 
       {error && <p className="text-clay-600 mb-6">{error}</p>}
 
+      <PendingOverview />
+
       {stats && (
         <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-10">
           <StatCard label="Etablissements" value={stats.total_establishments} />
@@ -126,7 +153,22 @@ export default function SuperAdminDashboard() {
 
       {trends && (
         <div className="mb-10">
-          <h2 className="font-display text-xl font-semibold text-forest-900 mb-4">Analytics (6 derniers mois)</h2>
+          <div className="flex flex-wrap items-center justify-between gap-3 mb-4">
+            <h2 className="font-display text-xl font-semibold text-forest-900">Analytics</h2>
+            <div className="flex items-center gap-2">
+              <select value={trendMonths} onChange={(e) => changeTrendMonths(Number(e.target.value))}
+                className="rounded-full border border-forest-100 px-4 py-1.5 text-sm bg-white">
+                <option value={3}>3 derniers mois</option>
+                <option value={6}>6 derniers mois</option>
+                <option value={12}>12 derniers mois</option>
+                <option value={24}>24 derniers mois</option>
+              </select>
+              <button onClick={exportTrendsCsv}
+                className="text-sm rounded-full border border-forest-300 px-4 py-1.5 hover:bg-forest-50 transition">
+                Exporter en CSV
+              </button>
+            </div>
+          </div>
           <div className="grid lg:grid-cols-2 gap-4 mb-4">
             <RevenueTrendChart data={trends.monthly} />
             <AppointmentsTrendChart data={trends.monthly} />

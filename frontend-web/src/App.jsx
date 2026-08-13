@@ -4,6 +4,7 @@ import ProtectedRoute from './components/ProtectedRoute'
 import Home from './pages/Home'
 import Login from './pages/Login'
 import Register from './pages/Register'
+import Care from './pages/Care'
 import PatientSearch from './pages/PatientSearch'
 import PatientDashboard from './pages/PatientDashboard'
 import Pharmacy from './pages/Pharmacy'
@@ -22,6 +23,7 @@ export default function App() {
         <Route path="/" element={<Home />} />
         <Route path="/connexion" element={<Login />} />
         <Route path="/inscription" element={<Register />} />
+        <Route path="/soins" element={<Care />} />
         <Route path="/rechercher" element={<PatientSearch />} />
         <Route path="/pharmacie" element={<Pharmacy />} />
         <Route path="/laboratoire" element={<Laboratory />} />

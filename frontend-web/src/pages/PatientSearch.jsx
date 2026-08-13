@@ -15,31 +15,67 @@ export default function PatientSearch() {
   const [loading, setLoading] = useState(false)
   const [pendingSlot, setPendingSlot] = useState(null)
   const [confirmation, setConfirmation] = useState(null)
+  const [quickRange, setQuickRange] = useState(null) // 'today' | 'tomorrow' | 'week' | null
   const role = getRole()
+
+  function dateOffset(days) {
+    const d = new Date()
+    d.setDate(d.getDate() + days)
+    return d.toISOString().slice(0, 10)
+  }
 
   function update(field, value) {
     setForm((f) => ({ ...f, [field]: value }))
   }
 
   async function handleSearch(e) {
-    e.preventDefault()
+    if (e) e.preventDefault()
     setError('')
     setResult(null)
     setLoading(true)
     try {
-      const payload = {
-        specialty: form.specialty,
-        city: form.city || null,
-        preferred_date: form.preferred_date,
-        preferred_time: form.preferred_time || null,
+      if (quickRange === 'week') {
+        // "Cette semaine": pas de recherche multi-jours cote serveur pour
+        // l'instant - on interroge les 7 prochains jours un par un et on
+        // fusionne les suggestions, triees par proximite temporelle globale.
+        const allSuggestions = []
+        let anyExactMatch = false
+        for (let i = 0; i < 7; i++) {
+          const { data } = await api.post('/appointments/search', {
+            specialty: form.specialty,
+            city: form.city || null,
+            preferred_date: dateOffset(i),
+            preferred_time: form.preferred_time || null,
+          })
+          if (data.exact_match_available) anyExactMatch = true
+          allSuggestions.push(...data.suggestions)
+        }
+        setResult({ exact_match_available: anyExactMatch, suggestions: allSuggestions.slice(0, 12) })
+      } else {
+        const payload = {
+          specialty: form.specialty,
+          city: form.city || null,
+          preferred_date: form.preferred_date,
+          preferred_time: form.preferred_time || null,
+        }
+        const { data } = await api.post('/appointments/search', payload)
+        setResult(data)
       }
-      const { data } = await api.post('/appointments/search', payload)
-      setResult(data)
       setStep(2)
     } catch (err) {
       setError(getErrorMessage(err, "La recherche a echoue. Verifie les champs et reessaie."))
     } finally {
       setLoading(false)
+    }
+  }
+
+  function quickSearch(range) {
+    setQuickRange(range)
+    const date = range === 'today' ? dateOffset(0) : range === 'tomorrow' ? dateOffset(1) : dateOffset(0)
+    update('preferred_date', date)
+    if (form.specialty) {
+      // Declenche la recherche immediatement si une specialite est deja choisie.
+      setTimeout(() => handleSearch(), 0)
     }
   }
 
@@ -89,6 +125,24 @@ export default function PatientSearch() {
           onCancel={backToResults}
         />
       ) : step === 1 ? (
+        <div className="flex gap-2 mb-4">
+          {[
+            { value: 'today', label: "Aujourd'hui" },
+            { value: 'tomorrow', label: 'Demain' },
+            { value: 'week', label: 'Cette semaine' },
+          ].map((opt) => (
+            <button
+              key={opt.value} type="button"
+              onClick={() => setQuickRange(quickRange === opt.value ? null : opt.value)}
+              className={`text-sm px-4 py-1.5 rounded-full font-medium transition ${
+                quickRange === opt.value ? 'bg-amber-500 text-forest-900' : 'border border-forest-100 text-forest-700 hover:bg-forest-50'
+              }`}
+            >
+              {opt.label}
+            </button>
+          ))}
+        </div>
+
         <form onSubmit={handleSearch} className="grid sm:grid-cols-2 gap-4 bg-white rounded-2xl p-6 border border-forest-100 shadow-sm">
           <div>
             <label className="block text-sm font-medium text-forest-900 mb-1">Specialite</label>
@@ -107,9 +161,13 @@ export default function PatientSearch() {
               className="w-full rounded-lg border border-forest-100 px-4 py-2.5 focus:border-forest-500" />
           </div>
           <div>
-            <label className="block text-sm font-medium text-forest-900 mb-1">Date souhaitee</label>
-            <input type="date" required value={form.preferred_date} onChange={(e) => update('preferred_date', e.target.value)}
-              className="w-full rounded-lg border border-forest-100 px-4 py-2.5 focus:border-forest-500" />
+            <label className="block text-sm font-medium text-forest-900 mb-1">
+              Date souhaitee {quickRange === 'week' && <span className="text-forest-700 font-normal">(ignoree - recherche sur 7 jours)</span>}
+            </label>
+            <input type="date" required={quickRange !== 'week'} disabled={quickRange === 'week'}
+              value={form.preferred_date}
+              onChange={(e) => { update('preferred_date', e.target.value); setQuickRange(null) }}
+              className="w-full rounded-lg border border-forest-100 px-4 py-2.5 focus:border-forest-500 disabled:bg-forest-50" />
           </div>
           <div>
             <label className="block text-sm font-medium text-forest-900 mb-1">Heure souhaitee (optionnel)</label>

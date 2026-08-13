@@ -37,6 +37,8 @@ export default function Home() {
     )
   }
 
+  // Ecran d'accueil / "splash" pour un visiteur non connecte - un seul
+  // appel a l'action bien visible, plus un lien discret pour se reconnecter.
   return (
     <div className="max-w-5xl mx-auto px-6 py-20">
       <p className="text-amber-600 font-medium tracking-wide uppercase text-xs mb-4">LGP HOLDINGS</p>
@@ -48,14 +50,18 @@ export default function Home() {
         et prends rendez-vous en un clic dans l'un des etablissements adherents au Benin.
         Si ton medecin n'est pas libre, on te propose toujours une alternative.
       </p>
-      <div className="flex gap-4">
+      <div className="flex flex-wrap items-center gap-4">
         <Link to="/rechercher" className="rounded-full bg-forest-700 text-white px-8 py-3.5 font-medium hover:bg-forest-900 transition">
-          Trouver un medecin
+          Commencer
         </Link>
         <Link to="/pharmacie" className="rounded-full border border-forest-300 text-forest-900 px-8 py-3.5 font-medium hover:bg-forest-50 transition">
           Pharmacie en ligne
         </Link>
       </div>
+      <p className="text-sm text-forest-700 mt-8">
+        Deja un compte ?{' '}
+        <Link to="/connexion" className="text-amber-600 font-medium hover:underline">Se connecter</Link>
+      </p>
     </div>
   )
 }

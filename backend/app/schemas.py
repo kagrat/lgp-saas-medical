@@ -661,3 +661,21 @@ class EquipmentOut(BaseModel):
     notes: Optional[str] = None
 
     model_config = {"from_attributes": True}
+
+class PendingOverviewOut(BaseModel):
+    pending_appointments: int
+    pending_orders: int
+    cancelled_appointments: int
+    low_stock_items: int
+    pending_lab_tests: int
+
+
+class PatientDetailOut(BaseModel):
+    id: str
+    full_name: str
+    email: EmailStr
+    phone: Optional[str] = None
+    dossier_number: str
+    appointments: list[GlobalAppointmentOut]
+    orders_count: int
+    lab_tests_count: int
