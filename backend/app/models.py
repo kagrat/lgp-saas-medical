@@ -321,6 +321,8 @@ class LabTestRequest(Base):
     patient_id = Column(UUID(as_uuid=False), ForeignKey("patients.id"), nullable=False)
     test_name = Column(String(200), nullable=False)
     sample_type = Column(String(100), nullable=True)
+    sample_collected_at = Column(DateTime, nullable=True)
+    results_validated_at = Column(DateTime, nullable=True)
     status = Column(Enum(LabTestStatus), default=LabTestStatus.REQUESTED)
     scheduled_sample_at = Column(DateTime, nullable=True)
     results_text = Column(Text, nullable=True)

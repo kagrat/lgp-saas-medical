@@ -12,6 +12,7 @@ import PatientDirectory from '../components/PatientDirectory'
 import OpeningHoursManager from '../components/OpeningHoursManager'
 import FilterTabs from '../components/FilterTabs'
 import StatusStepper from '../components/StatusStepper'
+import { LabStatsCards, RegisterTestByStaff } from '../components/LabStaffTools'
 
 export default function EstablishmentAdmin() {
   const [establishment, setEstablishment] = useState(null)
@@ -616,6 +617,8 @@ export default function EstablishmentAdmin() {
 
       {tab === 'analyses' && isLab && (
         <div>
+          <LabStatsCards />
+          <RegisterTestByStaff onRegistered={loadAll} />
           <FilterTabs options={labFilterOptions} active={labFilter} onChange={setLabFilter} />
           <div className="space-y-3">
             {filteredLabTests.length === 0 && <p className="text-forest-700">Aucune analyse dans cette categorie.</p>}
@@ -623,7 +626,10 @@ export default function EstablishmentAdmin() {
               <div key={t.id} className="rounded-xl border border-forest-100 bg-white p-4">
                 <div className="mb-3">
                   <p className="text-forest-900 font-medium">{t.test_name}</p>
-                  {t.sample_type && <p className="text-sm text-forest-700 mb-3">Prelevement: {t.sample_type}</p>}
+                  {t.sample_type && <p className="text-sm text-forest-700">Prelevement: {t.sample_type}</p>}
+                  {t.sample_collected_at && (
+                    <p className="text-xs text-forest-700 mb-3">Preleve le {new Date(t.sample_collected_at).toLocaleString('fr-FR')}</p>
+                  )}
                   <StatusStepper steps={LAB_STEPS} currentValue={t.status} labels={LAB_STATUS_LABELS} />
                 </div>
                 <div className="grid sm:grid-cols-2 gap-2 mb-2 mt-3">

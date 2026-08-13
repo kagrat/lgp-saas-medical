@@ -3,6 +3,7 @@ import api, { getErrorMessage } from '../api/client'
 import { RevenueTrendChart, AppointmentsTrendChart, TopEstablishmentsChart } from '../components/RevenueCharts'
 import ActivityLog from '../components/ActivityLog'
 import UserDirectory from '../components/UserDirectory'
+import PlatformTables from '../components/PlatformTables'
 
 export default function SuperAdminDashboard() {
   const [stats, setStats] = useState(null)
@@ -18,6 +19,7 @@ export default function SuperAdminDashboard() {
   const [savingEdit, setSavingEdit] = useState(false)
   const [showActivityLog, setShowActivityLog] = useState(false)
   const [showUsers, setShowUsers] = useState(false)
+  const [showPlatformTables, setShowPlatformTables] = useState(false)
 
   useEffect(() => {
     loadAll()
@@ -237,6 +239,15 @@ export default function SuperAdminDashboard() {
           </div>
         ))}
       </div>
+
+      <div className="flex items-center justify-between mb-4">
+        <h2 className="font-display text-xl font-semibold text-forest-900">Tables plateforme</h2>
+        <button onClick={() => setShowPlatformTables(!showPlatformTables)}
+          className="text-sm rounded-full border border-forest-300 px-4 py-1.5 hover:bg-forest-50 transition">
+          {showPlatformTables ? 'Masquer' : 'Afficher'}
+        </button>
+      </div>
+      {showPlatformTables && <div className="mb-10"><PlatformTables /></div>}
 
       <div className="flex items-center justify-between mb-4">
         <h2 className="font-display text-xl font-semibold text-forest-900">Utilisateurs de la plateforme</h2>

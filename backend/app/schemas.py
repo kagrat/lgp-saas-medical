@@ -352,6 +352,7 @@ class LabTestRequestOut(BaseModel):
     sample_type: Optional[str] = None
     status: LabTestStatus
     scheduled_sample_at: Optional[datetime] = None
+    sample_collected_at: Optional[datetime] = None
     results_text: Optional[str] = None
     lab_technician_note: Optional[str] = None
     created_at: datetime
@@ -525,3 +526,53 @@ class OpeningHoursOut(BaseModel):
     close_time: time
 
     model_config = {"from_attributes": True}
+
+class LabTestRegisterByStaff(BaseModel):
+    patient_id: str
+    test_name: str = Field(min_length=2, max_length=200)
+    sample_type: Optional[str] = None
+
+
+class LabStatsOut(BaseModel):
+    total_tests: int
+    delivered_count: int
+    pending_count: int
+    to_validate_count: int
+    completion_rate_pct: Optional[float] = None
+    average_turnaround_days: Optional[float] = None
+
+
+class GlobalAppointmentOut(BaseModel):
+    id: str
+    patient_name: str
+    doctor_name: str
+    establishment_name: str
+    scheduled_at: datetime
+    status: AppointmentStatus
+
+
+class GlobalOrderOut(BaseModel):
+    id: str
+    patient_name: str
+    medication_name: str
+    establishment_name: str
+    quantity: int
+    status: ReservationStatus
+    created_at: datetime
+
+
+class GlobalDoctorOut(BaseModel):
+    id: str
+    full_name: str
+    specialty: str
+    establishment_name: str
+    is_active: bool
+
+
+class GlobalEstablishmentSummaryOut(BaseModel):
+    id: str
+    name: str
+    city: str
+    is_active: bool
+    subscription_status: SubscriptionStatus
+    admin_email: Optional[str] = None
