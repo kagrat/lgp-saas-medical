@@ -1,8 +1,10 @@
 import { useEffect, useState } from 'react'
 import api, { getErrorMessage } from '../api/client'
-import { StatusBadge } from '../components/OrderStatus'
+import { StatusBadge, RESERVATION_STEPS, RESERVATION_STATUS_LABELS } from '../components/OrderStatus'
 import { DocumentTypeBadge } from '../components/DocumentType'
-import { LabStatusBadge } from '../components/LabStatus'
+import { LabStatusBadge, LAB_STEPS, LAB_STATUS_LABELS } from '../components/LabStatus'
+import { AppointmentStatusBadge } from '../components/AppointmentStatusUI'
+import StatusStepper from '../components/StatusStepper'
 
 export default function PatientDashboard() {
   const [appointments, setAppointments] = useState([])
@@ -148,7 +150,7 @@ export default function PatientDashboard() {
                 <p className="text-forest-900 font-medium">
                   {new Date(a.scheduled_at).toLocaleString('fr-FR', { weekday: 'long', day: 'numeric', month: 'long', hour: '2-digit', minute: '2-digit' })}
                 </p>
-                <p className="text-sm text-forest-700">Statut: {a.status}</p>
+                <div className="mt-1"><AppointmentStatusBadge status={a.status} /></div>
               </div>
               <button
                 onClick={() => handleCancel(a.id)}
@@ -168,27 +170,25 @@ export default function PatientDashboard() {
           <div className="space-y-3">
             {orders.map((o) => (
               <div key={o.id} className="rounded-xl border border-forest-100 bg-white p-4">
-                <div className="flex items-center justify-between">
-                  <div>
+                <div className="mb-3">
+                  <div className="flex items-center justify-between mb-2">
                     <p className="text-forest-900 font-medium">{o.medication_name} <span className="text-xs text-forest-700 font-normal">({o.medication_reference})</span></p>
-                    <p className="text-sm text-forest-700">
-                      Quantite: {o.quantity} - {o.delivery_mode === 'delivery' ? 'Livraison' : 'Retrait sur place'}
-                    </p>
-                    {o.estimated_ready_at && (
-                      <p className="text-sm text-forest-700">
-                        Pret estime le {new Date(o.estimated_ready_at).toLocaleString('fr-FR')}
-                      </p>
-                    )}
-                    {o.pharmacist_note && (
-                      <p className="text-sm text-forest-700 italic">Note de la pharmacie: {o.pharmacist_note}</p>
-                    )}
-                  </div>
-                  <div className="flex flex-col items-end gap-2">
-                    <StatusBadge status={o.status} />
                     <button onClick={() => toggleOrderHistory(o.id)} className="text-xs text-amber-600 hover:underline">
                       {expandedOrderId === o.id ? 'Masquer le suivi' : 'Voir le suivi'}
                     </button>
                   </div>
+                  <p className="text-sm text-forest-700 mb-3">
+                    Quantite: {o.quantity} - {o.delivery_mode === 'delivery' ? 'Livraison' : 'Retrait sur place'}
+                  </p>
+                  <StatusStepper steps={RESERVATION_STEPS} currentValue={o.status} labels={RESERVATION_STATUS_LABELS} />
+                  {o.estimated_ready_at && (
+                    <p className="text-sm text-forest-700 mt-3">
+                      Pret estime le {new Date(o.estimated_ready_at).toLocaleString('fr-FR')}
+                    </p>
+                  )}
+                  {o.pharmacist_note && (
+                    <p className="text-sm text-forest-700 italic">Note de la pharmacie: {o.pharmacist_note}</p>
+                  )}
                 </div>
                 {expandedOrderId === o.id && orderHistory[o.id] && (
                   <div className="mt-3 pt-3 border-t border-forest-100 space-y-2">
@@ -213,12 +213,10 @@ export default function PatientDashboard() {
           <div className="space-y-3">
             {labTests.map((t) => (
               <div key={t.id} className="rounded-xl border border-forest-100 bg-white p-4">
-                <div className="flex items-center justify-between mb-2">
-                  <div>
-                    <p className="text-forest-900 font-medium">{t.test_name}</p>
-                    <p className="text-sm text-forest-700">{t.establishment_name}</p>
-                  </div>
-                  <LabStatusBadge status={t.status} />
+                <div className="mb-3">
+                  <p className="text-forest-900 font-medium">{t.test_name}</p>
+                  <p className="text-sm text-forest-700 mb-3">{t.establishment_name}</p>
+                  <StatusStepper steps={LAB_STEPS} currentValue={t.status} labels={LAB_STATUS_LABELS} />
                 </div>
                 {t.results_text && (
                   <div className="mt-2 pt-2 border-t border-forest-100">
@@ -305,10 +303,11 @@ export default function PatientDashboard() {
         {past.length === 0 && <p className="text-forest-700">Aucun historique pour le moment.</p>}
         <div className="space-y-3">
           {past.map((a) => (
-            <div key={a.id} className="rounded-xl border border-forest-100 bg-white/60 p-4">
+            <div key={a.id} className="rounded-xl border border-forest-100 bg-white/60 p-4 flex items-center justify-between">
               <p className="text-forest-900">
-                {new Date(a.scheduled_at).toLocaleDateString('fr-FR')} - {a.status}
+                {new Date(a.scheduled_at).toLocaleDateString('fr-FR')}
               </p>
+              <AppointmentStatusBadge status={a.status} />
             </div>
           ))}
         </div>

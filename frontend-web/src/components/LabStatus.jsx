@@ -26,3 +26,5 @@ export function LabStatusBadge({ status }) {
 
 export const LAB_STATUSES = Object.keys(STATUS_LABELS)
 export const LAB_STATUS_LABELS = STATUS_LABELS
+// Ordre du "chemin normal" (sans annulee) - utilise par le stepper visuel.
+export const LAB_STEPS = ['requested', 'sample_collected', 'in_progress', 'validated', 'delivered']

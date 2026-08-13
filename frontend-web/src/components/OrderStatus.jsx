@@ -28,3 +28,5 @@ export function StatusBadge({ status }) {
 
 export const RESERVATION_STATUSES = Object.keys(STATUS_LABELS)
 export const RESERVATION_STATUS_LABELS = STATUS_LABELS
+// Ordre du "chemin normal" (sans annulee) - utilise par le stepper visuel.
+export const RESERVATION_STEPS = ['pending', 'confirmed', 'preparing', 'ready', 'out_for_delivery', 'delivered']

@@ -1,12 +1,11 @@
 import { useEffect, useState } from 'react'
 import api, { getErrorMessage } from '../api/client'
+import StepIndicator from './StepIndicator'
 
 /**
- * Etape de recapitulatif avant confirmation finale - remplace l'ancien
- * "un clic et c'est reserve" par un vrai ecran de verification, comme
- * demande (flux de reservation en plusieurs etapes).
+ * Etape de recapitulatif avant confirmation finale.
  */
-export default function BookingConfirmStep({ slot, onConfirmed, onCancel }) {
+export default function BookingConfirmStep({ slot, onConfirmed, onCancel, stepTotal = 3, stepCurrent = 3 }) {
   const [patient, setPatient] = useState(null)
   const [error, setError] = useState('')
   const [confirming, setConfirming] = useState(false)
@@ -34,7 +33,7 @@ export default function BookingConfirmStep({ slot, onConfirmed, onCancel }) {
 
   return (
     <div className="rounded-2xl border border-forest-100 bg-white p-6">
-      <p className="text-xs text-amber-600 font-medium uppercase tracking-wide mb-1">Etape 2 sur 2</p>
+      <StepIndicator current={stepCurrent} total={stepTotal} label="Confirme ton rendez-vous" />
       <h2 className="font-display text-2xl text-forest-900 font-semibold mb-6">Confirme ton rendez-vous</h2>
 
       <div className="rounded-xl bg-forest-50 p-4 mb-4">

@@ -4,6 +4,7 @@ import { Phone, MapPin } from 'lucide-react'
 import api, { getRole, getErrorMessage } from '../api/client'
 import StarRating from '../components/StarRating'
 import BookingConfirmStep from '../components/BookingConfirmStep'
+import StepIndicator from '../components/StepIndicator'
 
 export default function DoctorProfile() {
   const { doctorId } = useParams()
@@ -111,12 +112,14 @@ export default function DoctorProfile() {
       ) : pendingSlot ? (
         <BookingConfirmStep
           slot={pendingSlot}
+          stepTotal={2}
+          stepCurrent={2}
           onConfirmed={(appt) => { setConfirmation(appt); setPendingSlot(null) }}
           onCancel={() => setPendingSlot(null)}
         />
       ) : (
         <div className="rounded-2xl border border-forest-100 bg-white p-6 mb-6">
-          <p className="text-xs text-amber-600 font-medium uppercase tracking-wide mb-1">Etape 1 sur 2</p>
+          <StepIndicator current={1} total={2} label="Choisis un creneau" />
           <h2 className="font-display text-xl text-forest-900 font-semibold mb-4">Choisis un creneau</h2>
           <form onSubmit={handleSearch} className="grid sm:grid-cols-2 gap-3 mb-4">
             <input type="date" required value={searchDate} onChange={(e) => setSearchDate(e.target.value)}
