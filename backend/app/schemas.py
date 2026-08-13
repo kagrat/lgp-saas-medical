@@ -576,3 +576,88 @@ class GlobalEstablishmentSummaryOut(BaseModel):
     is_active: bool
     subscription_status: SubscriptionStatus
     admin_email: Optional[str] = None
+
+class ServiceCreate(BaseModel):
+    name: str = Field(min_length=2, max_length=200)
+    price: float = Field(ge=0)
+    duration_minutes: Optional[int] = Field(default=None, ge=1)
+    description: Optional[str] = None
+
+
+class ServiceOut(BaseModel):
+    id: str
+    name: str
+    price: float
+    duration_minutes: Optional[int] = None
+    description: Optional[str] = None
+
+    model_config = {"from_attributes": True}
+
+
+class RoomCreate(BaseModel):
+    name: str = Field(min_length=2, max_length=200)
+    room_type: Optional[str] = None
+    capacity: Optional[int] = Field(default=None, ge=1)
+
+
+class RoomOut(BaseModel):
+    id: str
+    name: str
+    room_type: Optional[str] = None
+    capacity: Optional[int] = None
+
+    model_config = {"from_attributes": True}
+
+
+class PlatformSettingsOut(BaseModel):
+    platform_name: str
+    support_email: Optional[str] = None
+    support_phone: Optional[str] = None
+
+
+class PlatformSettingsUpdate(BaseModel):
+    platform_name: Optional[str] = None
+    support_email: Optional[str] = None
+    support_phone: Optional[str] = None
+
+
+class ReferenceValueCreate(BaseModel):
+    test_name: str = Field(min_length=2, max_length=200)
+    unit: Optional[str] = None
+    min_value: Optional[float] = None
+    max_value: Optional[float] = None
+    notes: Optional[str] = None
+
+
+class ReferenceValueOut(BaseModel):
+    id: str
+    test_name: str
+    unit: Optional[str] = None
+    min_value: Optional[float] = None
+    max_value: Optional[float] = None
+    notes: Optional[str] = None
+
+    model_config = {"from_attributes": True}
+
+
+class EquipmentCreate(BaseModel):
+    name: str = Field(min_length=2, max_length=200)
+    status: str = Field(default="fonctionnel")
+    notes: Optional[str] = None
+
+    @field_validator("status")
+    @classmethod
+    def valid_status(cls, v: str) -> str:
+        allowed = {"fonctionnel", "maintenance", "hors_service"}
+        if v not in allowed:
+            raise ValueError(f"Statut invalide, doit etre parmi: {', '.join(allowed)}")
+        return v
+
+
+class EquipmentOut(BaseModel):
+    id: str
+    name: str
+    status: str
+    notes: Optional[str] = None
+
+    model_config = {"from_attributes": True}

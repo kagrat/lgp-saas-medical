@@ -4,6 +4,7 @@ import { RevenueTrendChart, AppointmentsTrendChart, TopEstablishmentsChart } fro
 import ActivityLog from '../components/ActivityLog'
 import UserDirectory from '../components/UserDirectory'
 import PlatformTables from '../components/PlatformTables'
+import PlatformSettingsPanel from '../components/PlatformSettingsPanel'
 
 export default function SuperAdminDashboard() {
   const [stats, setStats] = useState(null)
@@ -20,6 +21,7 @@ export default function SuperAdminDashboard() {
   const [showActivityLog, setShowActivityLog] = useState(false)
   const [showUsers, setShowUsers] = useState(false)
   const [showPlatformTables, setShowPlatformTables] = useState(false)
+  const [showSettings, setShowSettings] = useState(false)
 
   useEffect(() => {
     loadAll()
@@ -239,6 +241,15 @@ export default function SuperAdminDashboard() {
           </div>
         ))}
       </div>
+
+      <div className="flex items-center justify-between mb-4">
+        <h2 className="font-display text-xl font-semibold text-forest-900">Parametres generaux</h2>
+        <button onClick={() => setShowSettings(!showSettings)}
+          className="text-sm rounded-full border border-forest-300 px-4 py-1.5 hover:bg-forest-50 transition">
+          {showSettings ? 'Masquer' : 'Afficher'}
+        </button>
+      </div>
+      {showSettings && <div className="mb-10"><PlatformSettingsPanel /></div>}
 
       <div className="flex items-center justify-between mb-4">
         <h2 className="font-display text-xl font-semibold text-forest-900">Tables plateforme</h2>

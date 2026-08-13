@@ -372,3 +372,65 @@ class OpeningHours(Base):
     close_time = Column(Time, nullable=False)
 
     establishment = relationship("Establishment")
+
+class Service(Base):
+    """Catalogue des services/actes de l'etablissement (distinct du prix de consultation par medecin)."""
+    __tablename__ = "services"
+
+    id = Column(UUID(as_uuid=False), primary_key=True, default=gen_uuid)
+    establishment_id = Column(UUID(as_uuid=False), ForeignKey("establishments.id"), nullable=False)
+    name = Column(String(200), nullable=False)
+    price = Column(Float, nullable=False, default=0)
+    duration_minutes = Column(Integer, nullable=True)
+    description = Column(Text, nullable=True)
+
+    establishment = relationship("Establishment")
+
+
+class Room(Base):
+    """Salles/ressources internes - usage interne uniquement, pas expose publiquement."""
+    __tablename__ = "rooms"
+
+    id = Column(UUID(as_uuid=False), primary_key=True, default=gen_uuid)
+    establishment_id = Column(UUID(as_uuid=False), ForeignKey("establishments.id"), nullable=False)
+    name = Column(String(200), nullable=False)
+    room_type = Column(String(100), nullable=True)
+    capacity = Column(Integer, nullable=True)
+
+    establishment = relationship("Establishment")
+
+
+class PlatformSetting(Base):
+    """Parametres generaux (cle/valeur) - Super Admin uniquement."""
+    __tablename__ = "platform_settings"
+
+    key = Column(String(100), primary_key=True)
+    value = Column(Text, nullable=True)
+
+
+class ReferenceValue(Base):
+    """Valeurs de reference labo (ex: Glycemie 0.70-1.10 g/L)."""
+    __tablename__ = "reference_values"
+
+    id = Column(UUID(as_uuid=False), primary_key=True, default=gen_uuid)
+    establishment_id = Column(UUID(as_uuid=False), ForeignKey("establishments.id"), nullable=False)
+    test_name = Column(String(200), nullable=False)
+    unit = Column(String(50), nullable=True)
+    min_value = Column(Float, nullable=True)
+    max_value = Column(Float, nullable=True)
+    notes = Column(Text, nullable=True)
+
+    establishment = relationship("Establishment")
+
+
+class Equipment(Base):
+    """Inventaire des equipements du laboratoire."""
+    __tablename__ = "equipment"
+
+    id = Column(UUID(as_uuid=False), primary_key=True, default=gen_uuid)
+    establishment_id = Column(UUID(as_uuid=False), ForeignKey("establishments.id"), nullable=False)
+    name = Column(String(200), nullable=False)
+    status = Column(String(50), nullable=False, default="fonctionnel")
+    notes = Column(Text, nullable=True)
+
+    establishment = relationship("Establishment")

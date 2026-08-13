@@ -13,6 +13,8 @@ import OpeningHoursManager from '../components/OpeningHoursManager'
 import FilterTabs from '../components/FilterTabs'
 import StatusStepper from '../components/StatusStepper'
 import { LabStatsCards, RegisterTestByStaff } from '../components/LabStaffTools'
+import ServicesRoomsManager from '../components/ServicesRoomsManager'
+import LabCatalogManager from '../components/LabCatalogManager'
 
 export default function EstablishmentAdmin() {
   const [establishment, setEstablishment] = useState(null)
@@ -298,12 +300,16 @@ export default function EstablishmentAdmin() {
         { id: 'pharmacy', label: 'Pharmacie' },
         { id: 'orders', label: 'Commandes' },
       ]
+  const extraTabs = isLab
+    ? [{ id: 'catalog', label: 'Catalogue' }]
+    : [{ id: 'services', label: 'Services' }]
   const tabs = [
     ...baseTabs,
     { id: 'patients', label: 'Patients' },
     { id: 'messages', label: 'Messages' },
     { id: 'team', label: 'Equipe' },
     { id: 'hours', label: 'Horaires' },
+    ...extraTabs,
   ]
 
   const selectedConversation = conversations.find((c) => c.patient_id === selectedPatientId)
@@ -710,6 +716,10 @@ export default function EstablishmentAdmin() {
       {tab === 'team' && <TeamMembers />}
 
       {tab === 'hours' && <OpeningHoursManager />}
+
+      {tab === 'services' && !isLab && <ServicesRoomsManager />}
+
+      {tab === 'catalog' && isLab && <LabCatalogManager />}
     </div>
   )
 }
