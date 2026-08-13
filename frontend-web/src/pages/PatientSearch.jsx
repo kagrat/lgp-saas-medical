@@ -125,6 +125,7 @@ export default function PatientSearch() {
           onCancel={backToResults}
         />
       ) : step === 1 ? (
+        <>
         <div className="flex gap-2 mb-4">
           {[
             { value: 'today', label: "Aujourd'hui" },
@@ -181,6 +182,7 @@ export default function PatientSearch() {
             </button>
           </div>
         </form>
+        </>
       ) : (
         <div>
           {result.exact_match_available ? (
