@@ -1,15 +1,16 @@
 """
 Module 1 - Authentification et roles + gestion du profil personnel.
 
-Regle de securite cle: SEUL le role patient peut s'auto-inscrire via
-/auth/register-patient. Le changement de mot de passe exige TOUJOURS le
-mot de passe actuel (meme si on est deja connecte) - ca evite qu'une
-session laissee ouverte sur un appareil permette a n'importe qui de
-changer le mot de passe sans le connaitre.
+NOUVEAU: separation stricte, appliquee cote serveur (pas seulement a
+l'ecran), entre le portail web (patients) et l'application Desktop
+(etablissements + Super Admin). Chaque client (web ou desktop) envoie un
+en-tete X-Client-Type ; le serveur refuse toute connexion incoherente avec
+ce type de client, meme si les identifiants sont corrects. Ca garantit que
+les deux produits sont reellement distincts, pas juste separes a l'ecran.
 """
 import uuid
 
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, status, Header
 from sqlalchemy.orm import Session
 
 from app.database import get_db
@@ -22,6 +23,11 @@ from app.deps import get_current_user
 
 router = APIRouter(prefix="/auth", tags=["authentification"])
 
+STAFF_ROLES = {
+    UserRole.SUPER_ADMIN, UserRole.ESTABLISHMENT_ADMIN, UserRole.DOCTOR,
+    UserRole.SECRETARY, UserRole.PHARMACIST, UserRole.LAB_TECHNICIAN,
+}
+
 
 def _to_profile_out(user: User) -> UserProfileOut:
     return UserProfileOut(
@@ -31,7 +37,8 @@ def _to_profile_out(user: User) -> UserProfileOut:
 
 
 @router.post("/login", response_model=TokenResponse)
-def login(payload: LoginRequest, db: Session = Depends(get_db)):
+def login(payload: LoginRequest, db: Session = Depends(get_db),
+          x_client_type: str = Header(default="web")):
     user = db.query(User).filter(User.email == payload.email.lower()).first()
 
     invalid_credentials = HTTPException(
@@ -44,6 +51,19 @@ def login(payload: LoginRequest, db: Session = Depends(get_db)):
 
     if not user.is_active:
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Compte desactive")
+
+    # Separation stricte web/desktop, appliquee ici, pas juste a l'ecran.
+    is_staff = user.role in STAFF_ROLES
+    if x_client_type == "desktop" and not is_staff:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Ce compte patient n'est pas accessible depuis cette application. Utilise le portail web.",
+        )
+    if x_client_type == "web" and is_staff:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Ce compte doit se connecter depuis l'application LGP Console (Desktop).",
+        )
 
     if user.establishment_id and user.role != UserRole.SUPER_ADMIN:
         if user.establishment and not user.establishment.is_active:
@@ -104,7 +124,6 @@ def read_current_user(current_user: User = Depends(get_current_user)):
 @router.patch("/me", response_model=UserProfileOut)
 def update_profile(payload: UserProfileUpdate, db: Session = Depends(get_db),
                     current_user: User = Depends(get_current_user)):
-    """Modifier ses propres informations (nom, telephone, email) - accessible a tous les roles connectes."""
     if payload.email and payload.email.lower() != current_user.email:
         existing = db.query(User).filter(User.email == payload.email.lower()).first()
         if existing:
@@ -126,7 +145,6 @@ def update_profile(payload: UserProfileUpdate, db: Session = Depends(get_db),
 @router.post("/change-password")
 def change_password(payload: PasswordChangeRequest, db: Session = Depends(get_db),
                      current_user: User = Depends(get_current_user)):
-    """Changer son mot de passe - exige TOUJOURS le mot de passe actuel, meme deja connecte."""
     if not verify_password(payload.current_password, current_user.hashed_password):
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Mot de passe actuel incorrect")
 

@@ -1,11 +1,26 @@
 import axios from 'axios'
 
+/**
+ * Client API unique, "conscient" de sa cible (web ou desktop). Detection
+ * a l'execution (pas a la compilation): les deux applications sont
+ * construites en un seul passage Vite (voir vite.config.js, deux points
+ * d'entree html), donc une variable d'environnement classique serait
+ * identique pour les deux. Chaque fichier HTML pose son propre marqueur
+ * (voir desktop.html) que ce fichier lit au demarrage.
+ */
+const CLIENT_TYPE = (typeof window !== 'undefined' && window.__LGP_CLIENT_TYPE__) || 'web'
+const STORAGE_PREFIX = CLIENT_TYPE === 'desktop' ? 'lgp_desktop_' : 'lgp_'
+const LOGIN_PATH = CLIENT_TYPE === 'desktop' ? '/' : '/connexion'
+
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000'
 
-const api = axios.create({ baseURL: API_URL })
+const api = axios.create({
+  baseURL: API_URL,
+  headers: { 'X-Client-Type': CLIENT_TYPE },
+})
 
 api.interceptors.request.use((config) => {
-  const token = localStorage.getItem('lgp_token')
+  const token = localStorage.getItem(`${STORAGE_PREFIX}token`)
   if (token) {
     config.headers.Authorization = `Bearer ${token}`
   }
@@ -16,64 +31,49 @@ api.interceptors.response.use(
   (response) => response,
   (error) => {
     const isAuthFailure = error.response && error.response.status === 401
-    const previousRole = localStorage.getItem('lgp_role')
-    const wasLoggedIn = !!localStorage.getItem('lgp_token')
+    const previousRole = localStorage.getItem(`${STORAGE_PREFIX}role`)
+    const wasLoggedIn = !!localStorage.getItem(`${STORAGE_PREFIX}token`)
 
     if (isAuthFailure && wasLoggedIn) {
-      // CORRECTIF: on garde une trace du role qui vient d'expirer (staff ou
-      // patient) AVANT de nettoyer la session. Ca permet a la Navbar et a
-      // la page de connexion de savoir qu'un admin/etablissement vient
-      // d'etre deconnecte, plutot que de basculer silencieusement sur un
-      // affichage "visiteur patient" (boutons recherche medecin/pharmacie,
-      // lien "creer un compte patient") qui n'a pas de sens pour quelqu'un
-      // qui etait admin l'instant d'avant.
       if (previousRole) {
-        sessionStorage.setItem('lgp_last_role_before_expiry', previousRole)
+        sessionStorage.setItem(`${STORAGE_PREFIX}last_role_before_expiry`, previousRole)
       }
-      localStorage.removeItem('lgp_token')
-      localStorage.removeItem('lgp_role')
-      localStorage.removeItem('lgp_establishment_id')
-      sessionStorage.setItem('lgp_session_expired', '1')
-      window.location.href = '/connexion'
+      localStorage.removeItem(`${STORAGE_PREFIX}token`)
+      localStorage.removeItem(`${STORAGE_PREFIX}role`)
+      localStorage.removeItem(`${STORAGE_PREFIX}establishment_id`)
+      sessionStorage.setItem(`${STORAGE_PREFIX}session_expired`, '1')
+      window.location.href = LOGIN_PATH
       return new Promise(() => {})
     }
-
     return Promise.reject(error)
   }
 )
 
 export function saveSession(token, role, establishmentId) {
-  localStorage.setItem('lgp_token', token)
-  localStorage.setItem('lgp_role', role)
-  if (establishmentId) localStorage.setItem('lgp_establishment_id', establishmentId)
-  // Une nouvelle connexion reussie efface la trace de l'ancienne session expiree.
-  sessionStorage.removeItem('lgp_last_role_before_expiry')
+  localStorage.setItem(`${STORAGE_PREFIX}token`, token)
+  localStorage.setItem(`${STORAGE_PREFIX}role`, role)
+  if (establishmentId) localStorage.setItem(`${STORAGE_PREFIX}establishment_id`, establishmentId)
+  sessionStorage.removeItem(`${STORAGE_PREFIX}last_role_before_expiry`)
 }
 
 export function clearSession() {
-  localStorage.removeItem('lgp_token')
-  localStorage.removeItem('lgp_role')
-  localStorage.removeItem('lgp_establishment_id')
-  sessionStorage.removeItem('lgp_last_role_before_expiry')
+  localStorage.removeItem(`${STORAGE_PREFIX}token`)
+  localStorage.removeItem(`${STORAGE_PREFIX}role`)
+  localStorage.removeItem(`${STORAGE_PREFIX}establishment_id`)
+  sessionStorage.removeItem(`${STORAGE_PREFIX}last_role_before_expiry`)
 }
 
 export function getRole() {
-  return localStorage.getItem('lgp_role')
+  return localStorage.getItem(`${STORAGE_PREFIX}role`)
 }
 
-/**
- * Role de la session qui vient d'expirer (si applicable), sans la
- * consommer/effacer - utilise par Navbar ET Login sur le meme rendu,
- * effacee uniquement lors de la prochaine connexion reussie (saveSession).
- */
 export function getLastRoleBeforeExpiry() {
-  return sessionStorage.getItem('lgp_last_role_before_expiry')
+  return sessionStorage.getItem(`${STORAGE_PREFIX}last_role_before_expiry`)
 }
 
-/** Vrai une seule fois juste apres une redirection causee par une session expiree. */
 export function consumeSessionExpiredFlag() {
-  const wasExpired = sessionStorage.getItem('lgp_session_expired') === '1'
-  sessionStorage.removeItem('lgp_session_expired')
+  const wasExpired = sessionStorage.getItem(`${STORAGE_PREFIX}session_expired`) === '1'
+  sessionStorage.removeItem(`${STORAGE_PREFIX}session_expired`)
   return wasExpired
 }
 
@@ -82,9 +82,7 @@ export function getErrorMessage(err, fallback = 'Une erreur est survenue. Reessa
   if (!detail) return fallback
   if (typeof detail === 'string') return detail
   if (Array.isArray(detail)) {
-    return detail
-      .map((d) => (typeof d === 'string' ? d : d.msg || JSON.stringify(d)))
-      .join(' - ')
+    return detail.map((d) => (typeof d === 'string' ? d : d.msg || JSON.stringify(d))).join(' - ')
   }
   return fallback
 }
