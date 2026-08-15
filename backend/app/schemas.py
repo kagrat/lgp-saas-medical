@@ -33,6 +33,8 @@ class PatientRegisterRequest(BaseModel):
     full_name: str = Field(min_length=2, max_length=200)
     phone: Optional[str] = None
     date_of_birth: Optional[date] = None
+    gender: Optional[str] = None
+    residence: Optional[str] = None
 
     @field_validator("password")
     @classmethod
@@ -413,6 +415,8 @@ class UserProfileOut(BaseModel):
     email: EmailStr
     full_name: str
     phone: Optional[str] = None
+    gender: Optional[str] = None
+    residence: Optional[str] = None
     role: UserRole
     establishment_id: Optional[str] = None
 
@@ -421,6 +425,8 @@ class UserProfileUpdate(BaseModel):
     full_name: Optional[str] = Field(default=None, min_length=2, max_length=200)
     phone: Optional[str] = None
     email: Optional[EmailStr] = None
+    gender: Optional[str] = None
+    residence: Optional[str] = None
 
 
 class PasswordChangeRequest(BaseModel):
