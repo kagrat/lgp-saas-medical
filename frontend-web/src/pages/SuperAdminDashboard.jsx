@@ -6,6 +6,7 @@ import UserDirectory from '../components/UserDirectory'
 import PlatformTables from '../components/PlatformTables'
 import PlatformSettingsPanel from '../components/PlatformSettingsPanel'
 import PendingOverview from '../components/PendingOverview'
+import SupportInbox from '../components/SupportInbox'
 
 export default function SuperAdminDashboard() {
   const [stats, setStats] = useState(null)
@@ -20,6 +21,7 @@ export default function SuperAdminDashboard() {
   const [editForm, setEditForm] = useState({ name: '', type: 'hopital', city: '', address: '', latitude: '', longitude: '' })
   const [savingEdit, setSavingEdit] = useState(false)
   const [showActivityLog, setShowActivityLog] = useState(false)
+  const [showSupportInbox, setShowSupportInbox] = useState(false)
   const [showUsers, setShowUsers] = useState(false)
   const [showPlatformTables, setShowPlatformTables] = useState(false)
   const [showSettings, setShowSettings] = useState(false)
@@ -283,7 +285,15 @@ export default function SuperAdminDashboard() {
           </div>
         ))}
       </div>
-
+       
+      <div className="flex items-center justify-between mb-4">
+  <h2 className="font-display text-xl font-semibold text-forest-900">Messages support</h2>
+  <button onClick={() => setShowSupportInbox(!showSupportInbox)}
+    className="text-sm rounded-full border border-forest-300 px-4 py-1.5 hover:bg-forest-50 transition">
+    {showSupportInbox ? 'Masquer' : 'Afficher'}
+  </button>
+</div>
+{showSupportInbox && <div className="mb-10"><SupportInbox /></div>}
       <div className="flex items-center justify-between mb-4">
         <h2 className="font-display text-xl font-semibold text-forest-900">Parametres generaux</h2>
         <button onClick={() => setShowSettings(!showSettings)}

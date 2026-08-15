@@ -36,6 +36,9 @@ export default function Navbar() {
           {role === 'super_admin' && <Link to="/super-admin" className="hover:text-forest-900">Super Admin</Link>}
           {role && (
             <Link to="/profil" className="text-forest-700 hover:text-forest-900" aria-label="Mon profil">
+              {role && (
+           <Link to="/support" className="hover:text-forest-900">Support</Link>
+            )}
               <UserRound className="w-5 h-5" strokeWidth={1.75} />
             </Link>
           )}

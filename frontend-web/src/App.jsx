@@ -14,6 +14,7 @@ import Profile from './pages/Profile'
 import DoctorProfile from './pages/DoctorProfile'
 import EstablishmentAdmin from './pages/EstablishmentAdmin'
 import SuperAdminDashboard from './pages/SuperAdminDashboard'
+import SupportChat from './pages/SupportChat'
 
 export default function App() {
   return (
@@ -48,6 +49,10 @@ export default function App() {
           path="/super-admin"
           element={<ProtectedRoute allowedRoles={['super_admin']}><SuperAdminDashboard /></ProtectedRoute>}
         />
+        <Route
+          path="/support"
+          element={<ProtectedRoute><SupportChat /></ProtectedRoute>}
+/>
       </Routes>
     </div>
   )

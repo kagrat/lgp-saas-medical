@@ -5,6 +5,7 @@ import DesktopLogin from './pages-desktop/DesktopLogin'
 import EstablishmentAdmin from './pages/EstablishmentAdmin'
 import SuperAdminDashboard from './pages/SuperAdminDashboard'
 import Profile from './pages/Profile'
+import DesktopSupportChat from './pages-desktop/DesktopSupportChat'
 
 /**
  * Point d'entree DEDIE a l'application Desktop.
@@ -36,6 +37,10 @@ export default function AppDesktop() {
           element={<ProtectedRoute><Profile /></ProtectedRoute>}
         />
         <Route path="*" element={<DesktopLogin />} />
+        <Route
+          path="/support"
+          element={<ProtectedRoute><DesktopSupportChat /></ProtectedRoute>}
+        />
       </Routes>
     </div>
   )

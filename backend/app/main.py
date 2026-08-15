@@ -56,6 +56,7 @@ app.include_router(platform.router)
 app.include_router(services.router)
 app.include_router(settings_router.router)
 app.include_router(lab_catalog.router)
+app.include_router(support.router)
 
 
 @app.get("/health")

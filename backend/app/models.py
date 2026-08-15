@@ -436,3 +436,14 @@ class Equipment(Base):
     notes = Column(Text, nullable=True)
 
     establishment = relationship("Establishment")
+
+class SupportMessage(Base):
+    """Messagerie support plateforme - patient ou staff <-> Super Admin."""
+    __tablename__ = "support_messages"
+
+    id = Column(UUID(as_uuid=False), primary_key=True, default=gen_uuid)
+    user_id = Column(UUID(as_uuid=False), ForeignKey("users.id"), nullable=False)
+    sender_role = Column(String(20), nullable=False)  # "user" ou "support"
+    sender_name = Column(String(200), nullable=False)
+    content = Column(Text, nullable=False)
+    created_at = Column(DateTime, default=datetime.utcnow)
