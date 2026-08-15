@@ -1,10 +1,10 @@
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import api, { saveSession } from '../api/client'
+import api, { saveSession, getErrorMessage } from '../api/client'
 
 export default function Register() {
   const navigate = useNavigate()
-  const [form, setForm] = useState({ email: '', password: '', full_name: '', phone: '' })
+  const [form, setForm] = useState({ email: '', password: '', full_name: '', phone: '', gender: '', residence: '' })
   const [error, setError] = useState('')
   const [loading, setLoading] = useState(false)
 
@@ -21,8 +21,7 @@ export default function Register() {
       saveSession(data.access_token, data.role, null)
       navigate('/espace-patient')
     } catch (err) {
-      const detail = err.response?.data?.detail
-      setError(Array.isArray(detail) ? detail.map((d) => d.msg).join(' - ') : detail || 'Inscription impossible.')
+      setError(getErrorMessage(err, 'Inscription impossible.'))
     } finally {
       setLoading(false)
     }
@@ -48,6 +47,22 @@ export default function Register() {
           <label className="block text-sm font-medium text-forest-900 mb-1">Telephone</label>
           <input value={form.phone} onChange={(e) => update('phone', e.target.value)}
             placeholder="+229 ..."
+            className="w-full rounded-lg border border-forest-100 px-4 py-2.5 focus:border-forest-500" />
+        </div>
+        <div>
+          <label className="block text-sm font-medium text-forest-900 mb-1">Sexe</label>
+          <select value={form.gender} onChange={(e) => update('gender', e.target.value)}
+            className="w-full rounded-lg border border-forest-100 px-4 py-2.5 focus:border-forest-500 bg-white">
+            <option value="">Ne pas preciser</option>
+            <option value="femme">Femme</option>
+            <option value="homme">Homme</option>
+            <option value="autre">Autre</option>
+          </select>
+        </div>
+        <div>
+          <label className="block text-sm font-medium text-forest-900 mb-1">Lieu de residence</label>
+          <input value={form.residence} onChange={(e) => update('residence', e.target.value)}
+            placeholder="Ville, quartier..."
             className="w-full rounded-lg border border-forest-100 px-4 py-2.5 focus:border-forest-500" />
         </div>
         <div>
