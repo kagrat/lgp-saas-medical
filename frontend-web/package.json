@@ -14,7 +14,8 @@
     "react-router-dom": "^6.26.2",
     "axios": "^1.7.7",
     "recharts": "^2.12.7",
-    "lucide-react": "^0.441.0"
+    "lucide-react": "^0.441.0",
+    "jspdf": "^2.5.2"
   },
   "devDependencies": {
     "@vitejs/plugin-react": "^4.3.1",

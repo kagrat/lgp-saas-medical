@@ -359,6 +359,8 @@ export default function EstablishmentAdmin() {
 
       {tab === 'stats' && isPharmacy && <PharmacyStatsCards />}
 
+{tab === 'stats' && isPharmacy && <PharmacyStatsCards />}
+
 {tab === 'stats' && !isLab && !isPharmacy && stats && (
   <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-4">
     <StatCard label="RDV totaux" value={stats.total_appointments} />

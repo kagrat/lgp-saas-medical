@@ -3,7 +3,7 @@ import api, { getErrorMessage, getRole } from '../api/client'
 
 export default function Profile() {
   const [profile, setProfile] = useState(null)
-  const [infoForm, setInfoForm] = useState({ full_name: '', phone: '', email: '' })
+  const [infoForm, setInfoForm] = useState({ full_name: '', phone: '', email: '', gender: '', residence: '' })
   const [passwordForm, setPasswordForm] = useState({ current_password: '', new_password: '', confirm_password: '' })
   const [error, setError] = useState('')
   const [infoMessage, setInfoMessage] = useState('')
@@ -26,7 +26,13 @@ export default function Profile() {
     try {
       const { data } = await api.get('/auth/me')
       setProfile(data)
-      setInfoForm({ full_name: data.full_name, phone: data.phone || '', email: data.email })
+      setInfoForm({
+        full_name: data.full_name,
+        phone: data.phone || '',
+        email: data.email,
+        gender: data.gender || '',
+        residence: data.residence || '',
+      })
     } catch (err) {
       setError(getErrorMessage(err, 'Impossible de charger ton profil.'))
     }
@@ -137,6 +143,22 @@ export default function Profile() {
             <label className="block text-sm font-medium text-forest-900 mb-1">Telephone</label>
             <input value={infoForm.phone} onChange={(e) => setInfoForm({ ...infoForm, phone: e.target.value })}
               placeholder="+229 ..."
+              className="w-full rounded-lg border border-forest-100 px-4 py-2.5 focus:border-forest-500" />
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-forest-900 mb-1">Sexe</label>
+            <select value={infoForm.gender} onChange={(e) => setInfoForm({ ...infoForm, gender: e.target.value })}
+              className="w-full rounded-lg border border-forest-100 px-4 py-2.5 focus:border-forest-500 bg-white">
+              <option value="">Ne pas preciser</option>
+              <option value="femme">Femme</option>
+              <option value="homme">Homme</option>
+              <option value="autre">Autre</option>
+            </select>
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-forest-900 mb-1">Lieu de residence</label>
+            <input value={infoForm.residence} onChange={(e) => setInfoForm({ ...infoForm, residence: e.target.value })}
+              placeholder="Ville, quartier..."
               className="w-full rounded-lg border border-forest-100 px-4 py-2.5 focus:border-forest-500" />
           </div>
           <div>

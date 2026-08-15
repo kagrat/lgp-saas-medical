@@ -1,12 +1,8 @@
 """
 Module 1 - Authentification et roles + gestion du profil personnel.
 
-NOUVEAU: separation stricte, appliquee cote serveur (pas seulement a
-l'ecran), entre le portail web (patients) et l'application Desktop
-(etablissements + Super Admin). Chaque client (web ou desktop) envoie un
-en-tete X-Client-Type ; le serveur refuse toute connexion incoherente avec
-ce type de client, meme si les identifiants sont corrects. Ca garantit que
-les deux produits sont reellement distincts, pas juste separes a l'ecran.
+Separation stricte web/desktop appliquee cote serveur (X-Client-Type).
+Ajout: sexe et lieu de residence au profil (demande M. Faustin).
 """
 import uuid
 
@@ -33,6 +29,7 @@ def _to_profile_out(user: User) -> UserProfileOut:
     return UserProfileOut(
         id=user.id, email=user.email, full_name=user.full_name, phone=user.phone,
         role=user.role, establishment_id=user.establishment_id,
+        gender=user.gender, residence=user.residence,
     )
 
 
@@ -52,7 +49,6 @@ def login(payload: LoginRequest, db: Session = Depends(get_db),
     if not user.is_active:
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Compte desactive")
 
-    # Separation stricte web/desktop, appliquee ici, pas juste a l'ecran.
     is_staff = user.role in STAFF_ROLES
     if x_client_type == "desktop" and not is_staff:
         raise HTTPException(
@@ -134,6 +130,10 @@ def update_profile(payload: UserProfileUpdate, db: Session = Depends(get_db),
         current_user.full_name = payload.full_name
     if payload.phone is not None:
         current_user.phone = payload.phone
+    if payload.gender is not None:
+        current_user.gender = payload.gender
+    if payload.residence is not None:
+        current_user.residence = payload.residence
 
     db.add(AuditLog(user_id=current_user.id, establishment_id=current_user.establishment_id,
                      action="update_profile", details="Profil modifie"))

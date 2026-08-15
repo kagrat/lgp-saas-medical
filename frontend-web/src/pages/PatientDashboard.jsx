@@ -4,6 +4,7 @@ import { StatusBadge, RESERVATION_STEPS, RESERVATION_STATUS_LABELS } from '../co
 import { DocumentTypeBadge } from '../components/DocumentType'
 import { LabStatusBadge, LAB_STEPS, LAB_STATUS_LABELS } from '../components/LabStatus'
 import { AppointmentStatusBadge } from '../components/AppointmentStatusUI'
+import { downloadDocumentAsPdf } from '../utils/pdf'
 import StatusStepper from '../components/StatusStepper'
 
 export default function PatientDashboard() {
@@ -79,6 +80,33 @@ export default function PatientDashboard() {
     } catch (err) {
       // silencieux
     }
+  }
+
+  function downloadHealthRecordPdf(doc) {
+    downloadDocumentAsPdf({
+      title: doc.title,
+      subtitle: doc.document_type,
+      meta: [
+        `Medecin: ${doc.doctor_name}`,
+        `Etablissement: ${doc.establishment_name}`,
+        `Date: ${new Date(doc.created_at).toLocaleDateString('fr-FR')}`,
+      ],
+      content: doc.content,
+      filename: `${doc.title.replace(/[^a-z0-9]/gi, '_')}.pdf`,
+    })
+  }
+
+  function downloadLabResultPdf(test) {
+    downloadDocumentAsPdf({
+      title: test.test_name,
+      subtitle: 'Resultat d\'analyse',
+      meta: [
+        `Laboratoire: ${test.establishment_name}`,
+        `Date: ${new Date(test.created_at).toLocaleDateString('fr-FR')}`,
+      ],
+      content: test.results_text || 'Resultats non encore disponibles.',
+      filename: `${test.test_name.replace(/[^a-z0-9]/gi, '_')}_resultats.pdf`,
+    })
   }
 
   async function toggleOrderHistory(reservationId) {
@@ -220,7 +248,12 @@ export default function PatientDashboard() {
                 </div>
                 {t.results_text && (
                   <div className="mt-2 pt-2 border-t border-forest-100">
-                    <p className="text-sm text-forest-900 font-medium mb-1">Resultats:</p>
+                    <div className="flex items-center justify-between mb-1">
+                      <p className="text-sm text-forest-900 font-medium">Resultats:</p>
+                      <button onClick={() => downloadLabResultPdf(t)} className="text-xs text-amber-600 hover:underline">
+                        Telecharger PDF
+                      </button>
+                    </div>
                     <p className="text-sm text-forest-700">{t.results_text}</p>
                   </div>
                 )}
@@ -244,7 +277,12 @@ export default function PatientDashboard() {
               <div key={doc.id} className="rounded-xl border border-forest-100 bg-white p-4">
                 <div className="flex items-center justify-between mb-2">
                   <p className="text-forest-900 font-medium">{doc.title}</p>
-                  <DocumentTypeBadge type={doc.document_type} />
+                  <div className="flex items-center gap-2">
+                    <DocumentTypeBadge type={doc.document_type} />
+                    <button onClick={() => downloadHealthRecordPdf(doc)} className="text-xs text-amber-600 hover:underline">
+                      Telecharger PDF
+                    </button>
+                  </div>
                 </div>
                 <p className="text-sm text-forest-700 mb-2">{doc.content}</p>
                 <p className="text-xs text-forest-700">

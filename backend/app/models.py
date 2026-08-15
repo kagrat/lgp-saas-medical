@@ -105,6 +105,8 @@ class User(Base):
     hashed_password = Column(String(255), nullable=False)  # bcrypt - jamais en clair
     full_name = Column(String(200), nullable=False)
     phone = Column(String(30))
+    gender = Column(String(20), nullable=True)
+    residence = Column(String(200), nullable=True)
     role = Column(Enum(UserRole), nullable=False)
     is_active = Column(Boolean, default=True)
     created_at = Column(DateTime, default=datetime.utcnow)
