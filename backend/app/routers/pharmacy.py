@@ -1,16 +1,10 @@
 """
-Module 5 - Pharmacie: gestion du stock + suivi de commande detaille.
-
-Nouveau (module "suivi de commande pharmacie detaille"):
-- Cycle de statuts plus riche: en_attente -> confirmee -> preparation ->
-  prete -> (si livraison) en_livraison -> livree, ou annulee a tout moment.
-- Historique complet de chaque commande (qui a change quoi, quand).
-- Le patient peut desormais VOIR ses propres commandes (ca n'existait pas
-  avant - on ne pouvait que creer une reservation a l'aveugle).
-- L'etablissement peut desormais LISTER toutes ses commandes recues (ca
-  n'existait pas non plus - seul le changement de statut individuel existait).
+Module 5 - Pharmacie: stock, suivi de commande detaille + statistiques
+propres a la pharmacie (nouveau - remplace les cartes generiques RDV/
+Medecins qui n'avaient pas de sens pour ce type d'etablissement).
 """
 import uuid
+from datetime import datetime
 
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
@@ -22,7 +16,7 @@ from app.models import (
 )
 from app.schemas import (
     StockItemCreate, StockItemOut, ReservationCreate, ReservationOut,
-    ReservationStatusUpdate, ReservationHistoryOut,
+    ReservationStatusUpdate, ReservationHistoryOut, PharmacyStatsOut,
 )
 from app.deps import require_roles
 
@@ -80,7 +74,6 @@ def list_stock(db: Session = Depends(get_db),
 
 @router.get("/search", response_model=list[StockItemOut])
 def search_medication(name: str, db: Session = Depends(get_db)):
-    """Recherche publique - pharmacie en ligne. Cherche par nom OU par reference."""
     items = (
         db.query(PharmacyStock)
         .filter(
@@ -91,6 +84,95 @@ def search_medication(name: str, db: Session = Depends(get_db)):
         .all()
     )
     return [_to_stock_out(i) for i in items]
+
+
+@router.get("/stats", response_model=PharmacyStatsOut)
+def pharmacy_stats(db: Session = Depends(get_db),
+                    current_user: User = Depends(require_roles(UserRole.ESTABLISHMENT_ADMIN, UserRole.PHARMACIST))):
+    """NOUVEAU: statistiques propres a la pharmacie, remplace les cartes generiques RDV/Medecins."""
+    establishment_id = current_user.establishment_id
+    now = datetime.utcnow()
+    this_month_start = now.replace(day=1, hour=0, minute=0, second=0, microsecond=0)
+
+    total_orders = db.query(PharmacyReservation).filter(PharmacyReservation.establishment_id == establishment_id).count()
+    orders_this_month = (
+        db.query(PharmacyReservation)
+        .filter(PharmacyReservation.establishment_id == establishment_id, PharmacyReservation.created_at >= this_month_start)
+        .count()
+    )
+    pending_orders = (
+        db.query(PharmacyReservation)
+        .filter(PharmacyReservation.establishment_id == establishment_id, PharmacyReservation.status == ReservationStatus.PENDING)
+        .count()
+    )
+    low_stock_items = (
+        db.query(PharmacyStock)
+        .filter(PharmacyStock.establishment_id == establishment_id, PharmacyStock.quantity <= PharmacyStock.alert_threshold)
+        .count()
+    )
+
+    return PharmacyStatsOut(
+        total_orders=total_orders,
+        orders_this_month=orders_this_month,
+        pending_orders=pending_orders,
+        low_stock_items=low_stock_items,
+    )
+
+
+@router.get("/reservations/mine", response_model=list[ReservationOut])
+def my_reservations(db: Session = Depends(get_db),
+                     current_user: User = Depends(require_roles(UserRole.PATIENT))):
+    patient = db.query(Patient).filter(Patient.user_id == current_user.id).first()
+    if not patient:
+        return []
+    reservations = (
+        db.query(PharmacyReservation)
+        .filter(PharmacyReservation.patient_id == patient.id)
+        .order_by(PharmacyReservation.created_at.desc())
+        .all()
+    )
+    return [_to_reservation_out(r) for r in reservations]
+
+
+@router.get("/reservations/establishment", response_model=list[ReservationOut])
+def establishment_reservations(db: Session = Depends(get_db),
+                                current_user: User = Depends(require_roles(
+                                    UserRole.ESTABLISHMENT_ADMIN, UserRole.PHARMACIST))):
+    reservations = (
+        db.query(PharmacyReservation)
+        .filter(PharmacyReservation.establishment_id == current_user.establishment_id)
+        .order_by(PharmacyReservation.created_at.desc())
+        .all()
+    )
+    return [_to_reservation_out(r) for r in reservations]
+
+
+@router.get("/reservations/{reservation_id}/history", response_model=list[ReservationHistoryOut])
+def reservation_history(reservation_id: str, db: Session = Depends(get_db),
+                         current_user: User = Depends(require_roles(
+                             UserRole.PATIENT, UserRole.ESTABLISHMENT_ADMIN, UserRole.PHARMACIST))):
+    reservation = db.query(PharmacyReservation).filter(PharmacyReservation.id == reservation_id).first()
+    if not reservation:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Reservation introuvable")
+
+    if current_user.role == UserRole.PATIENT:
+        patient = db.query(Patient).filter(Patient.user_id == current_user.id).first()
+        if not patient or reservation.patient_id != patient.id:
+            raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Acces refuse")
+    else:
+        if reservation.establishment_id != current_user.establishment_id:
+            raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Acces refuse")
+
+    history = (
+        db.query(PharmacyReservationStatusHistory)
+        .filter(PharmacyReservationStatusHistory.reservation_id == reservation_id)
+        .order_by(PharmacyReservationStatusHistory.created_at.asc())
+        .all()
+    )
+    return [
+        ReservationHistoryOut(id=h.id, status=h.status, note=h.note, created_at=h.created_at)
+        for h in history
+    ]
 
 
 @router.post("/reservations", response_model=ReservationOut, status_code=status.HTTP_201_CREATED)
@@ -125,65 +207,6 @@ def create_reservation(payload: ReservationCreate, db: Session = Depends(get_db)
     db.commit()
     db.refresh(reservation)
     return _to_reservation_out(reservation)
-
-
-@router.get("/reservations/mine", response_model=list[ReservationOut])
-def my_reservations(db: Session = Depends(get_db),
-                     current_user: User = Depends(require_roles(UserRole.PATIENT))):
-    """NOUVEAU: le patient peut enfin voir ses propres commandes (n'existait pas avant)."""
-    patient = db.query(Patient).filter(Patient.user_id == current_user.id).first()
-    if not patient:
-        return []
-    reservations = (
-        db.query(PharmacyReservation)
-        .filter(PharmacyReservation.patient_id == patient.id)
-        .order_by(PharmacyReservation.created_at.desc())
-        .all()
-    )
-    return [_to_reservation_out(r) for r in reservations]
-
-
-@router.get("/reservations/establishment", response_model=list[ReservationOut])
-def establishment_reservations(db: Session = Depends(get_db),
-                                current_user: User = Depends(require_roles(
-                                    UserRole.ESTABLISHMENT_ADMIN, UserRole.PHARMACIST))):
-    """NOUVEAU: l'etablissement peut enfin lister toutes ses commandes recues (n'existait pas avant)."""
-    reservations = (
-        db.query(PharmacyReservation)
-        .filter(PharmacyReservation.establishment_id == current_user.establishment_id)
-        .order_by(PharmacyReservation.created_at.desc())
-        .all()
-    )
-    return [_to_reservation_out(r) for r in reservations]
-
-
-@router.get("/reservations/{reservation_id}/history", response_model=list[ReservationHistoryOut])
-def reservation_history(reservation_id: str, db: Session = Depends(get_db),
-                         current_user: User = Depends(require_roles(
-                             UserRole.PATIENT, UserRole.ESTABLISHMENT_ADMIN, UserRole.PHARMACIST))):
-    """Timeline complete d'une commande - visible par le patient concerne ou le staff de l'etablissement."""
-    reservation = db.query(PharmacyReservation).filter(PharmacyReservation.id == reservation_id).first()
-    if not reservation:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Reservation introuvable")
-
-    if current_user.role == UserRole.PATIENT:
-        patient = db.query(Patient).filter(Patient.user_id == current_user.id).first()
-        if not patient or reservation.patient_id != patient.id:
-            raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Acces refuse")
-    else:
-        if reservation.establishment_id != current_user.establishment_id:
-            raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Acces refuse")
-
-    history = (
-        db.query(PharmacyReservationStatusHistory)
-        .filter(PharmacyReservationStatusHistory.reservation_id == reservation_id)
-        .order_by(PharmacyReservationStatusHistory.created_at.asc())
-        .all()
-    )
-    return [
-        ReservationHistoryOut(id=h.id, status=h.status, note=h.note, created_at=h.created_at)
-        for h in history
-    ]
 
 
 @router.patch("/reservations/{reservation_id}/status", response_model=ReservationOut)

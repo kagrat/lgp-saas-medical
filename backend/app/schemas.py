@@ -679,3 +679,9 @@ class PatientDetailOut(BaseModel):
     appointments: list[GlobalAppointmentOut]
     orders_count: int
     lab_tests_count: int
+
+class PharmacyStatsOut(BaseModel):
+    total_orders: int
+    orders_this_month: int
+    pending_orders: int
+    low_stock_items: int

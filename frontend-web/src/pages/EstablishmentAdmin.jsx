@@ -15,6 +15,7 @@ import StatusStepper from '../components/StatusStepper'
 import { LabStatsCards, RegisterTestByStaff } from '../components/LabStaffTools'
 import ServicesRoomsManager from '../components/ServicesRoomsManager'
 import LabCatalogManager from '../components/LabCatalogManager'
+import PharmacyStatsCards from '../components/PharmacyStatsCards'
 
 export default function EstablishmentAdmin() {
   const [establishment, setEstablishment] = useState(null)
@@ -356,14 +357,16 @@ export default function EstablishmentAdmin() {
 
       {error && <p className="text-clay-600 mb-6">{error}</p>}
 
-      {tab === 'stats' && stats && (
-        <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-4">
-          <StatCard label="RDV totaux" value={stats.total_appointments} />
-          <StatCard label="RDV ce mois" value={stats.appointments_this_month} trendPct={stats.appointments_trend_pct} />
-          <StatCard label="Medecins actifs" value={stats.total_doctors} />
-          <StatCard label="Alertes stock" value={stats.low_stock_items} highlight={stats.low_stock_items > 0} />
-        </div>
-      )}
+      {tab === 'stats' && isPharmacy && <PharmacyStatsCards />}
+
+{tab === 'stats' && !isLab && !isPharmacy && stats && (
+  <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-4">
+    <StatCard label="RDV totaux" value={stats.total_appointments} />
+    <StatCard label="RDV ce mois" value={stats.appointments_this_month} trendPct={stats.appointments_trend_pct} />
+    <StatCard label="Medecins actifs" value={stats.total_doctors} />
+    <StatCard label="Alertes stock" value={stats.low_stock_items} highlight={stats.low_stock_items > 0} />
+  </div>
+)}
 
      {tab === 'doctors' && !isLab && !isPharmacy && (
         <div>
