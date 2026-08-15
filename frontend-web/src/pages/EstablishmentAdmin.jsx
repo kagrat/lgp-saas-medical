@@ -287,19 +287,26 @@ export default function EstablishmentAdmin() {
   }
 
   const isLab = establishment.type === 'laboratoire'
+  const isPharmacy = establishment.type === 'pharmacie'
 
   const baseTabs = isLab
-    ? [
-        { id: 'stats', label: 'Statistiques' },
-        { id: 'analyses', label: 'Analyses' },
-      ]
-    : [
-        { id: 'stats', label: 'Statistiques' },
-        { id: 'doctors', label: 'Medecins' },
-        { id: 'appointments', label: 'Rendez-vous' },
-        { id: 'pharmacy', label: 'Pharmacie' },
-        { id: 'orders', label: 'Commandes' },
-      ]
+  ? [
+      { id: 'stats', label: 'Statistiques' },
+      { id: 'analyses', label: 'Analyses' },
+    ]
+  : isPharmacy
+  ? [
+      { id: 'stats', label: 'Statistiques' },
+      { id: 'pharmacy', label: 'Pharmacie' },
+      { id: 'orders', label: 'Commandes' },
+    ]
+  : [
+      { id: 'stats', label: 'Statistiques' },
+      { id: 'doctors', label: 'Medecins' },
+      { id: 'appointments', label: 'Rendez-vous' },
+      { id: 'pharmacy', label: 'Pharmacie' },
+      { id: 'orders', label: 'Commandes' },
+    ]
   const extraTabs = isLab
     ? [{ id: 'catalog', label: 'Catalogue' }]
     : [{ id: 'services', label: 'Services' }]
@@ -358,7 +365,7 @@ export default function EstablishmentAdmin() {
         </div>
       )}
 
-      {tab === 'doctors' && !isLab && (
+     {tab === 'doctors' && !isLab && !isPharmacy && (
         <div>
           <form onSubmit={handleAddDoctor} className="grid sm:grid-cols-2 gap-3 bg-white border border-forest-100 rounded-xl p-5 mb-6">
             <input required placeholder="Nom complet" value={newDoctor.full_name}
@@ -411,7 +418,7 @@ export default function EstablishmentAdmin() {
         </div>
       )}
 
-      {tab === 'appointments' && !isLab && (
+      {tab === 'appointments' && !isLab && !isPharmacy && (
         <div>
           <FilterTabs options={appointmentFilterOptions} active={appointmentFilter} onChange={setAppointmentFilter} />
           <div className="space-y-2">
