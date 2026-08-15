@@ -9,8 +9,8 @@ from fastapi.middleware.cors import CORSMiddleware
 
 from app.config import get_settings
 from app.database import Base, engine
-from app.routers import auth, establishments, doctors, appointments, pharmacy, dashboard, health_records, lab, messages, audit, patients, users, opening_hours, platform, services, settings, lab_catalog
-settings = get_settings()
+from app.routers import auth, establishments, doctors, appointments, pharmacy, dashboard, health_records, lab, messages, audit, patients, users, opening_hours, platform, services, lab_catalog
+from app.routers import settings as settings_router
 
 app = FastAPI(
     title="LGP HOLDINGS - Plateforme SaaS Medicale",
@@ -53,7 +53,7 @@ app.include_router(users.router)
 app.include_router(opening_hours.router)
 app.include_router(platform.router)
 app.include_router(services.router)
-app.include_router(settings.router)
+app.include_router(settings_router.router)
 app.include_router(lab_catalog.router)
 
 
