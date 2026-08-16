@@ -1,21 +1,33 @@
 {
-  "name": "lgp-desktop-etablissement",
+  "name": "lgp-console",
   "version": "1.0.0",
-  "description": "Application Desktop LGP HOLDINGS - Tableau de bord etablissement (hopital/clinique/pharmacie)",
+  "description": "LGP Console - Application Desktop pour les etablissements et le Super Admin",
   "main": "main.js",
+  "author": "LGP HOLDINGS",
   "scripts": {
     "start": "electron .",
-    "build": "electron-builder"
+    "build": "electron-builder --win"
   },
   "devDependencies": {
-    "electron": "^32.1.2",
-    "electron-builder": "^25.0.5"
+    "electron": "^31.0.0",
+    "electron-builder": "^24.13.3"
   },
   "build": {
-    "appId": "com.lgpholdings.etablissement",
-    "productName": "LGP Sante - Etablissement",
-    "win": { "target": "nsis" },
-    "mac": { "target": "dmg" },
-    "linux": { "target": "AppImage" }
+    "appId": "com.lgpholdings.console",
+    "productName": "LGP Console",
+    "files": [
+      "main.js",
+      "preload.js"
+    ],
+    "win": {
+      "target": "nsis"
+     
+    },
+    "nsis": {
+      "oneClick": false,
+      "allowToChangeInstallationDirectory": true,
+      "createDesktopShortcut": true,
+      "createStartMenuShortcut": true
+    }
   }
 }

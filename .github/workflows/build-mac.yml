@@ -1,0 +1,33 @@
+name: Construire LGP Console pour Mac
+
+# Se lance manuellement depuis l'onglet "Actions" de GitHub - pas besoin
+# de cloner le code ni d'avoir un Mac soi-meme. Le .dmg fini est
+# telechargeable a la fin, sous "Artifacts".
+on:
+  workflow_dispatch:
+
+jobs:
+  build-mac:
+    runs-on: macos-latest
+    steps:
+      - name: Recupere le code
+        uses: actions/checkout@v4
+
+      - name: Installe Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Installe les dependances
+        working-directory: desktop-app
+        run: npm install
+
+      - name: Construit le .dmg
+        working-directory: desktop-app
+        run: npm run build:mac
+
+      - name: Rend le .dmg telechargeable
+        uses: actions/upload-artifact@v4
+        with:
+          name: LGP-Console-Mac
+          path: desktop-app/dist/*.dmg
