@@ -4,8 +4,8 @@ import { StatusBadge, RESERVATION_STEPS, RESERVATION_STATUS_LABELS } from '../co
 import { DocumentTypeBadge } from '../components/DocumentType'
 import { LabStatusBadge, LAB_STEPS, LAB_STATUS_LABELS } from '../components/LabStatus'
 import { AppointmentStatusBadge } from '../components/AppointmentStatusUI'
-import { downloadDocumentAsPdf } from '../utils/pdf'
 import StatusStepper from '../components/StatusStepper'
+import { downloadDocumentAsPdf } from '../utils/pdf'
 
 export default function PatientDashboard() {
   const [appointments, setAppointments] = useState([])
@@ -20,6 +20,7 @@ export default function PatientDashboard() {
   const [reviewForms, setReviewForms] = useState({})
   const [savingReviewFor, setSavingReviewFor] = useState(null)
   const [reviewMessage, setReviewMessage] = useState('')
+  const [confirmingOrderId, setConfirmingOrderId] = useState(null)
 
   useEffect(() => {
     loadAppointments()
@@ -82,33 +83,6 @@ export default function PatientDashboard() {
     }
   }
 
-  function downloadHealthRecordPdf(doc) {
-    downloadDocumentAsPdf({
-      title: doc.title,
-      subtitle: doc.document_type,
-      meta: [
-        `Medecin: ${doc.doctor_name}`,
-        `Etablissement: ${doc.establishment_name}`,
-        `Date: ${new Date(doc.created_at).toLocaleDateString('fr-FR')}`,
-      ],
-      content: doc.content,
-      filename: `${doc.title.replace(/[^a-z0-9]/gi, '_')}.pdf`,
-    })
-  }
-
-  function downloadLabResultPdf(test) {
-    downloadDocumentAsPdf({
-      title: test.test_name,
-      subtitle: 'Resultat d\'analyse',
-      meta: [
-        `Laboratoire: ${test.establishment_name}`,
-        `Date: ${new Date(test.created_at).toLocaleDateString('fr-FR')}`,
-      ],
-      content: test.results_text || 'Resultats non encore disponibles.',
-      filename: `${test.test_name.replace(/[^a-z0-9]/gi, '_')}_resultats.pdf`,
-    })
-  }
-
   async function toggleOrderHistory(reservationId) {
     if (expandedOrderId === reservationId) {
       setExpandedOrderId(null)
@@ -137,6 +111,32 @@ export default function PatientDashboard() {
     }
   }
 
+  async function confirmOrder(orderId) {
+    setConfirmingOrderId(orderId)
+    setError('')
+    try {
+      await api.post(`/pharmacy/reservations/${orderId}/confirm`)
+      await loadOrders()
+    } catch (err) {
+      setError(getErrorMessage(err, "Impossible de confirmer cette commande."))
+    } finally {
+      setConfirmingOrderId(null)
+    }
+  }
+
+  async function rejectOrder(orderId) {
+    setConfirmingOrderId(orderId)
+    setError('')
+    try {
+      await api.post(`/pharmacy/reservations/${orderId}/reject`)
+      await loadOrders()
+    } catch (err) {
+      setError(getErrorMessage(err, "Impossible de refuser cette commande."))
+    } finally {
+      setConfirmingOrderId(null)
+    }
+  }
+
   async function submitReview(doctorId) {
     setSavingReviewFor(doctorId)
     setReviewMessage('')
@@ -158,6 +158,33 @@ export default function PatientDashboard() {
 
   function updateReviewForm(doctorId, field, value) {
     setReviewForms((forms) => ({ ...forms, [doctorId]: { ...forms[doctorId], [field]: value } }))
+  }
+
+  function downloadHealthRecordPdf(doc) {
+    downloadDocumentAsPdf({
+      title: doc.title,
+      subtitle: doc.document_type,
+      meta: [
+        `Medecin: ${doc.doctor_name}`,
+        `Etablissement: ${doc.establishment_name}`,
+        `Date: ${new Date(doc.created_at).toLocaleDateString('fr-FR')}`,
+      ],
+      content: doc.content,
+      filename: `${doc.title.replace(/[^a-z0-9]/gi, '_')}.pdf`,
+    })
+  }
+
+  function downloadLabResultPdf(test) {
+    downloadDocumentAsPdf({
+      title: test.test_name,
+      subtitle: "Resultat d'analyse",
+      meta: [
+        `Laboratoire: ${test.establishment_name}`,
+        `Date: ${new Date(test.created_at).toLocaleDateString('fr-FR')}`,
+      ],
+      content: test.results_text || 'Resultats non encore disponibles.',
+      filename: `${test.test_name.replace(/[^a-z0-9]/gi, '_')}_resultats.pdf`,
+    })
   }
 
   const upcoming = appointments.filter((a) => a.status === 'confirmed' && new Date(a.scheduled_at) > new Date())
@@ -206,15 +233,43 @@ export default function PatientDashboard() {
                     </button>
                   </div>
                   <p className="text-sm text-forest-700 mb-3">
-                    Quantite: {o.quantity} - {o.delivery_mode === 'delivery' ? 'Livraison' : 'Retrait sur place'}
+                    Quantite demandee: {o.quantity} - {o.delivery_mode === 'delivery' ? 'Livraison' : 'Retrait sur place'}
                   </p>
                   <StatusStepper steps={RESERVATION_STEPS} currentValue={o.status} labels={RESERVATION_STATUS_LABELS} />
+
+                  {o.status === 'awaiting_confirmation' && (
+                    <div className="mt-4 pt-4 border-t border-forest-100 bg-amber-50 -mx-4 px-4 pb-1 rounded-b-xl">
+                      <p className="text-sm font-medium text-forest-900 mb-1">La pharmacie propose :</p>
+                      <p className="text-sm text-forest-700 mb-3">
+                        {o.confirmed_quantity} unite(s) a {o.confirmed_unit_price?.toLocaleString('fr-FR')} FCFA piece
+                        {' '}- Total: {((o.confirmed_quantity || 0) * (o.confirmed_unit_price || 0)).toLocaleString('fr-FR')} FCFA
+                      </p>
+                      {o.pharmacist_note && <p className="text-sm text-forest-700 italic mb-3">Note: {o.pharmacist_note}</p>}
+                      <div className="flex gap-2 pb-3">
+                        <button
+                          onClick={() => confirmOrder(o.id)}
+                          disabled={confirmingOrderId === o.id}
+                          className="rounded-full bg-forest-700 text-white px-5 py-1.5 text-sm font-medium hover:bg-forest-900 transition disabled:opacity-50"
+                        >
+                          {confirmingOrderId === o.id ? '...' : 'Confirmer'}
+                        </button>
+                        <button
+                          onClick={() => rejectOrder(o.id)}
+                          disabled={confirmingOrderId === o.id}
+                          className="rounded-full border border-clay-500 text-clay-600 px-5 py-1.5 text-sm hover:bg-clay-500 hover:text-white transition disabled:opacity-50"
+                        >
+                          Refuser
+                        </button>
+                      </div>
+                    </div>
+                  )}
+
                   {o.estimated_ready_at && (
                     <p className="text-sm text-forest-700 mt-3">
                       Pret estime le {new Date(o.estimated_ready_at).toLocaleString('fr-FR')}
                     </p>
                   )}
-                  {o.pharmacist_note && (
+                  {o.pharmacist_note && o.status !== 'awaiting_confirmation' && (
                     <p className="text-sm text-forest-700 italic">Note de la pharmacie: {o.pharmacist_note}</p>
                   )}
                 </div>
@@ -243,10 +298,12 @@ export default function PatientDashboard() {
               <div key={t.id} className="rounded-xl border border-forest-100 bg-white p-4">
                 <div className="mb-3">
                   <p className="text-forest-900 font-medium">{t.test_name}</p>
-                  <p className="text-sm text-forest-700 mb-3">
-                    {t.establishment_name}
-                    {t.referred_by_establishment_name && ` - Prescrit par ${t.referred_by_doctor_name || 'un medecin'} (${t.referred_by_establishment_name})`}
-                  </p>
+                  <p className="text-sm text-forest-700 mb-1">{t.establishment_name}</p>
+                  {t.referred_by_establishment_name && (
+                    <p className="text-xs text-amber-600 mb-2">
+                      Prescrit par {t.referred_by_doctor_name || 'un medecin'} ({t.referred_by_establishment_name})
+                    </p>
+                  )}
                   <StatusStepper steps={LAB_STEPS} currentValue={t.status} labels={LAB_STATUS_LABELS} />
                 </div>
                 {t.results_text && (

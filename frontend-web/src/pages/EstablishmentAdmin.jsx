@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react'
 import api, { getErrorMessage } from '../api/client'
 import { SPECIALTIES, DAYS_OF_WEEK } from '../constants'
 import StarRating from '../components/StarRating'
-import { RESERVATION_STATUSES, RESERVATION_STATUS_LABELS, RESERVATION_STEPS } from '../components/OrderStatus'
+import { StatusBadge, RESERVATION_STATUSES, RESERVATION_STATUS_LABELS, RESERVATION_STEPS, STAFF_UPDATABLE_STATUSES } from '../components/OrderStatus'
 import { DOCUMENT_TYPES, DOCUMENT_TYPE_LABELS } from '../components/DocumentType'
 import { LAB_STATUSES, LAB_STATUS_LABELS, LAB_STEPS } from '../components/LabStatus'
 import { AppointmentStatusBadge, APPOINTMENT_STATUS_LABELS } from '../components/AppointmentStatusUI'
@@ -17,7 +17,7 @@ import ServicesRoomsManager from '../components/ServicesRoomsManager'
 import LabCatalogManager from '../components/LabCatalogManager'
 import PharmacyStatsCards from '../components/PharmacyStatsCards'
 import LabReferralForm from '../components/LabReferralForm'
-
+import ReservationReviewForm from '../components/ReservationReviewForm'
 
 export default function EstablishmentAdmin() {
   const [establishment, setEstablishment] = useState(null)
@@ -293,23 +293,23 @@ export default function EstablishmentAdmin() {
   const isPharmacy = establishment.type === 'pharmacie'
 
   const baseTabs = isLab
-  ? [
-      { id: 'stats', label: 'Statistiques' },
-      { id: 'analyses', label: 'Analyses' },
-    ]
-  : isPharmacy
-  ? [
-      { id: 'stats', label: 'Statistiques' },
-      { id: 'pharmacy', label: 'Pharmacie' },
-      { id: 'orders', label: 'Commandes' },
-    ]
-  : [
-      { id: 'stats', label: 'Statistiques' },
-      { id: 'doctors', label: 'Medecins' },
-      { id: 'appointments', label: 'Rendez-vous' },
-      { id: 'pharmacy', label: 'Pharmacie' },
-      { id: 'orders', label: 'Commandes' },
-    ]
+    ? [
+        { id: 'stats', label: 'Statistiques' },
+        { id: 'analyses', label: 'Analyses' },
+      ]
+    : isPharmacy
+    ? [
+        { id: 'stats', label: 'Statistiques' },
+        { id: 'pharmacy', label: 'Pharmacie' },
+        { id: 'orders', label: 'Commandes' },
+      ]
+    : [
+        { id: 'stats', label: 'Statistiques' },
+        { id: 'doctors', label: 'Medecins' },
+        { id: 'appointments', label: 'Rendez-vous' },
+        { id: 'pharmacy', label: 'Pharmacie' },
+        { id: 'orders', label: 'Commandes' },
+      ]
   const extraTabs = isLab
     ? [{ id: 'catalog', label: 'Catalogue' }]
     : [{ id: 'services', label: 'Services' }]
@@ -361,18 +361,16 @@ export default function EstablishmentAdmin() {
 
       {tab === 'stats' && isPharmacy && <PharmacyStatsCards />}
 
-{tab === 'stats' && isPharmacy && <PharmacyStatsCards />}
+      {tab === 'stats' && !isLab && !isPharmacy && stats && (
+        <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-4">
+          <StatCard label="RDV totaux" value={stats.total_appointments} />
+          <StatCard label="RDV ce mois" value={stats.appointments_this_month} trendPct={stats.appointments_trend_pct} />
+          <StatCard label="Medecins actifs" value={stats.total_doctors} />
+          <StatCard label="Alertes stock" value={stats.low_stock_items} highlight={stats.low_stock_items > 0} />
+        </div>
+      )}
 
-{tab === 'stats' && !isLab && !isPharmacy && stats && (
-  <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-4">
-    <StatCard label="RDV totaux" value={stats.total_appointments} />
-    <StatCard label="RDV ce mois" value={stats.appointments_this_month} trendPct={stats.appointments_trend_pct} />
-    <StatCard label="Medecins actifs" value={stats.total_doctors} />
-    <StatCard label="Alertes stock" value={stats.low_stock_items} highlight={stats.low_stock_items > 0} />
-  </div>
-)}
-
-     {tab === 'doctors' && !isLab && !isPharmacy && (
+      {tab === 'doctors' && !isLab && !isPharmacy && (
         <div>
           <form onSubmit={handleAddDoctor} className="grid sm:grid-cols-2 gap-3 bg-white border border-forest-100 rounded-xl p-5 mb-6">
             <input required placeholder="Nom complet" value={newDoctor.full_name}
@@ -481,9 +479,6 @@ export default function EstablishmentAdmin() {
                         {expandedAppointmentId === a.id ? 'Fermer' : 'Ajouter au dossier'}
                       </button>
                     )}
-                    {a.status === 'completed' && expandedAppointmentId === a.id && (
-                      <LabReferralForm appointmentId={a.id} onDone={() => {}} />
-                    )}
                   </div>
                 </div>
 
@@ -534,6 +529,8 @@ export default function EstablishmentAdmin() {
                     >
                       {savingDoc ? 'Ajout...' : 'Ajouter au dossier du patient'}
                     </button>
+
+                    <LabReferralForm appointmentId={a.id} onDone={() => {}} />
                   </div>
                 )}
               </div>
@@ -592,46 +589,62 @@ export default function EstablishmentAdmin() {
                 <div className="mb-3">
                   <p className="text-forest-900 font-medium">{o.medication_name} <span className="text-xs text-forest-700 font-normal">({o.medication_reference})</span></p>
                   <p className="text-sm text-forest-700 mb-3">
-                    Quantite: {o.quantity} - {o.delivery_mode === 'delivery' ? 'Livraison' : 'Retrait sur place'}
+                    Quantite demandee: {o.quantity} - {o.delivery_mode === 'delivery' ? 'Livraison' : 'Retrait sur place'}
                   </p>
                   <StatusStepper steps={RESERVATION_STEPS} currentValue={o.status} labels={RESERVATION_STATUS_LABELS} />
                 </div>
-                <div className="flex flex-wrap gap-2 items-end">
-                  <div>
-                    <label className="block text-xs text-forest-700 mb-1">Nouveau statut</label>
-                    <select
-                      value={orderUpdateForm[o.id]?.status || o.status}
-                      onChange={(e) => updateOrderForm(o.id, 'status', e.target.value)}
-                      className="rounded-lg border border-forest-100 px-3 py-1.5 text-sm bg-white"
+
+                {o.status === 'pending' && (
+                  <ReservationReviewForm reservation={o} onDone={loadAll} />
+                )}
+
+                {o.status === 'awaiting_confirmation' && (
+                  <div className="mt-3 pt-3 border-t border-forest-100">
+                    <p className="text-sm text-amber-600 font-medium">En attente de la confirmation du patient</p>
+                    <p className="text-sm text-forest-700">
+                      Proposition envoyee: {o.confirmed_quantity} x {o.confirmed_unit_price?.toLocaleString('fr-FR')} FCFA
+                    </p>
+                  </div>
+                )}
+
+                {STAFF_UPDATABLE_STATUSES.includes(o.status) && (
+                  <div className="mt-3 pt-3 border-t border-forest-100 flex flex-wrap gap-2 items-end">
+                    <div>
+                      <label className="block text-xs text-forest-700 mb-1">Nouveau statut</label>
+                      <select
+                        value={orderUpdateForm[o.id]?.status || o.status}
+                        onChange={(e) => updateOrderForm(o.id, 'status', e.target.value)}
+                        className="rounded-lg border border-forest-100 px-3 py-1.5 text-sm bg-white"
+                      >
+                        {STAFF_UPDATABLE_STATUSES.map((s) => (
+                          <option key={s} value={s}>{RESERVATION_STATUS_LABELS[s]}</option>
+                        ))}
+                      </select>
+                    </div>
+                    <div>
+                      <label className="block text-xs text-forest-700 mb-1">Pret estime (optionnel)</label>
+                      <input type="datetime-local"
+                        value={orderUpdateForm[o.id]?.estimated_ready_at || ''}
+                        onChange={(e) => updateOrderForm(o.id, 'estimated_ready_at', e.target.value)}
+                        className="rounded-lg border border-forest-100 px-3 py-1.5 text-sm" />
+                    </div>
+                    <div className="flex-1 min-w-[200px]">
+                      <label className="block text-xs text-forest-700 mb-1">Note pour le patient (optionnel)</label>
+                      <input type="text"
+                        value={orderUpdateForm[o.id]?.note || ''}
+                        onChange={(e) => updateOrderForm(o.id, 'note', e.target.value)}
+                        placeholder="Ex: en rupture temporaire, disponible demain"
+                        className="w-full rounded-lg border border-forest-100 px-3 py-1.5 text-sm" />
+                    </div>
+                    <button
+                      onClick={() => submitOrderUpdate(o.id)}
+                      disabled={updatingOrderId === o.id}
+                      className="rounded-full bg-forest-700 text-white px-5 py-1.5 text-sm font-medium hover:bg-forest-900 transition disabled:opacity-50"
                     >
-                      {RESERVATION_STATUSES.map((s) => (
-                        <option key={s} value={s}>{RESERVATION_STATUS_LABELS[s]}</option>
-                      ))}
-                    </select>
+                      {updatingOrderId === o.id ? 'Mise a jour...' : 'Mettre a jour'}
+                    </button>
                   </div>
-                  <div>
-                    <label className="block text-xs text-forest-700 mb-1">Pret estime (optionnel)</label>
-                    <input type="datetime-local"
-                      value={orderUpdateForm[o.id]?.estimated_ready_at || ''}
-                      onChange={(e) => updateOrderForm(o.id, 'estimated_ready_at', e.target.value)}
-                      className="rounded-lg border border-forest-100 px-3 py-1.5 text-sm" />
-                  </div>
-                  <div className="flex-1 min-w-[200px]">
-                    <label className="block text-xs text-forest-700 mb-1">Note pour le patient (optionnel)</label>
-                    <input type="text"
-                      value={orderUpdateForm[o.id]?.note || ''}
-                      onChange={(e) => updateOrderForm(o.id, 'note', e.target.value)}
-                      placeholder="Ex: en rupture temporaire, disponible demain"
-                      className="w-full rounded-lg border border-forest-100 px-3 py-1.5 text-sm" />
-                  </div>
-                  <button
-                    onClick={() => submitOrderUpdate(o.id)}
-                    disabled={updatingOrderId === o.id}
-                    className="rounded-full bg-forest-700 text-white px-5 py-1.5 text-sm font-medium hover:bg-forest-900 transition disabled:opacity-50"
-                  >
-                    {updatingOrderId === o.id ? 'Mise a jour...' : 'Mettre a jour'}
-                  </button>
-                </div>
+                )}
               </div>
             ))}
           </div>
@@ -649,6 +662,11 @@ export default function EstablishmentAdmin() {
               <div key={t.id} className="rounded-xl border border-forest-100 bg-white p-4">
                 <div className="mb-3">
                   <p className="text-forest-900 font-medium">{t.test_name}</p>
+                  {t.referred_by_establishment_name && (
+                    <p className="text-xs text-amber-600">
+                      Orientee par {t.referred_by_doctor_name || 'un medecin'} - {t.referred_by_establishment_name}
+                    </p>
+                  )}
                   {t.sample_type && <p className="text-sm text-forest-700">Prelevement: {t.sample_type}</p>}
                   {t.sample_collected_at && (
                     <p className="text-xs text-forest-700 mb-3">Preleve le {new Date(t.sample_collected_at).toLocaleString('fr-FR')}</p>

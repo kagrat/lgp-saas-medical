@@ -62,7 +62,7 @@ class ReservationStatus(str, enum.Enum):
     OUT_FOR_DELIVERY = "out_for_delivery"
     DELIVERED = "delivered"
     CANCELLED = "cancelled"
-
+    AWAITING_CONFIRMATION = "awaiting_confirmation"
 
 class DeliveryMode(str, enum.Enum):
     PICKUP = "pickup"
@@ -229,6 +229,8 @@ class PharmacyReservation(Base):
     estimated_ready_at = Column(DateTime, nullable=True)
     pharmacist_note = Column(Text, nullable=True)
     created_at = Column(DateTime, default=datetime.utcnow)
+    confirmed_quantity = Column(Integer, nullable=True)
+    confirmed_unit_price = Column(Float, nullable=True)
     
     medication = relationship("PharmacyStock", back_populates="reservations")
 

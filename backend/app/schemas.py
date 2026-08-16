@@ -258,6 +258,8 @@ class ReservationOut(BaseModel):
     estimated_ready_at: Optional[datetime] = None
     pharmacist_note: Optional[str] = None
     created_at: datetime
+    confirmed_quantity: Optional[int] = None
+    confirmed_unit_price: Optional[float] = None
 
     model_config = {"from_attributes": True}
 
@@ -721,3 +723,8 @@ class LabReferralCreate(BaseModel):
     lab_establishment_id: str
     test_name: str = Field(min_length=2, max_length=200)
     sample_type: Optional[str] = None
+
+class ReservationReview(BaseModel):
+    confirmed_quantity: int = Field(gt=0)
+    confirmed_unit_price: float = Field(gt=0)
+    note: Optional[str] = Field(default=None, max_length=500)
