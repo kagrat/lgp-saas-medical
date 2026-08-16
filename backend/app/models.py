@@ -333,7 +333,7 @@ class LabTestRequest(Base):
     referred_by_establishment_id = Column(UUID(as_uuid=False), ForeignKey("establishments.id"), nullable=True)
     referred_by_doctor_id = Column(UUID(as_uuid=False), ForeignKey("doctors.id"), nullable=True)
 
-    establishment = relationship("Establishment")
+    establishment = relationship("Establishment", foreign_keys=[establishment_id])
     patient = relationship("Patient")
 
 class MessageSenderRole(str, enum.Enum):
