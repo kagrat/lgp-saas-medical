@@ -691,3 +691,25 @@ class PharmacyStatsOut(BaseModel):
     orders_this_month: int
     pending_orders: int
     low_stock_items: int
+
+class SupportMessageCreate(BaseModel):
+    content: str = Field(min_length=1, max_length=2000)
+
+
+class SupportMessageOut(BaseModel):
+    id: str
+    user_id: str
+    sender_role: str
+    sender_name: str
+    content: str
+    created_at: datetime
+
+    model_config = {"from_attributes": True}
+
+
+class SupportThreadSummaryOut(BaseModel):
+    user_id: str
+    user_name: str
+    user_role: UserRole
+    last_message: Optional[str] = None
+    last_message_at: Optional[datetime] = None
