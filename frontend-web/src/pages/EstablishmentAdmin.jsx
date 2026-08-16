@@ -16,6 +16,8 @@ import { LabStatsCards, RegisterTestByStaff } from '../components/LabStaffTools'
 import ServicesRoomsManager from '../components/ServicesRoomsManager'
 import LabCatalogManager from '../components/LabCatalogManager'
 import PharmacyStatsCards from '../components/PharmacyStatsCards'
+import LabReferralForm from '../components/LabReferralForm'
+
 
 export default function EstablishmentAdmin() {
   const [establishment, setEstablishment] = useState(null)
@@ -478,6 +480,9 @@ export default function EstablishmentAdmin() {
                       >
                         {expandedAppointmentId === a.id ? 'Fermer' : 'Ajouter au dossier'}
                       </button>
+                    )}
+                    {a.status === 'completed' && expandedAppointmentId === a.id && (
+                      <LabReferralForm appointmentId={a.id} onDone={() => {}} />
                     )}
                   </div>
                 </div>

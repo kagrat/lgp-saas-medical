@@ -358,6 +358,8 @@ class LabTestRequestOut(BaseModel):
     results_text: Optional[str] = None
     lab_technician_note: Optional[str] = None
     created_at: datetime
+    referred_by_establishment_name: Optional[str] = None
+    referred_by_doctor_name: Optional[str] = None
 
     model_config = {"from_attributes": True}
 
@@ -713,3 +715,9 @@ class SupportThreadSummaryOut(BaseModel):
     user_role: UserRole
     last_message: Optional[str] = None
     last_message_at: Optional[datetime] = None
+
+class LabReferralCreate(BaseModel):
+    appointment_id: str
+    lab_establishment_id: str
+    test_name: str = Field(min_length=2, max_length=200)
+    sample_type: Optional[str] = None

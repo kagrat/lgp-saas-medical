@@ -330,6 +330,8 @@ class LabTestRequest(Base):
     results_text = Column(Text, nullable=True)
     lab_technician_note = Column(Text, nullable=True)
     created_at = Column(DateTime, default=datetime.utcnow)
+    referred_by_establishment_id = Column(UUID(as_uuid=False), ForeignKey("establishments.id"), nullable=True)
+    referred_by_doctor_id = Column(UUID(as_uuid=False), ForeignKey("doctors.id"), nullable=True)
 
     establishment = relationship("Establishment")
     patient = relationship("Patient")

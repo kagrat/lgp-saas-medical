@@ -243,7 +243,10 @@ export default function PatientDashboard() {
               <div key={t.id} className="rounded-xl border border-forest-100 bg-white p-4">
                 <div className="mb-3">
                   <p className="text-forest-900 font-medium">{t.test_name}</p>
-                  <p className="text-sm text-forest-700 mb-3">{t.establishment_name}</p>
+                  <p className="text-sm text-forest-700 mb-3">
+                    {t.establishment_name}
+                    {t.referred_by_establishment_name && ` - Prescrit par ${t.referred_by_doctor_name || 'un medecin'} (${t.referred_by_establishment_name})`}
+                  </p>
                   <StatusStepper steps={LAB_STEPS} currentValue={t.status} labels={LAB_STATUS_LABELS} />
                 </div>
                 {t.results_text && (
