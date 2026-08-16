@@ -6,7 +6,8 @@
   "author": "LGP HOLDINGS",
   "scripts": {
     "start": "electron .",
-    "build": "electron-builder --win"
+    "build": "electron-builder --win",
+    "build:mac": "electron-builder --mac"
   },
   "devDependencies": {
     "electron": "^31.0.0",
@@ -22,6 +23,10 @@
     "win": {
       "target": "nsis"
      
+    },
+    "mac": {
+      "target": "dmg",
+      "category": "public.app-category.medical"
     },
     "nsis": {
       "oneClick": false,
