@@ -180,6 +180,7 @@ class AppointmentOut(BaseModel):
     establishment_id: str
     doctor_id: str
     patient_id: str
+    patient_name: str
     scheduled_at: datetime
     duration_minutes: int
     status: AppointmentStatus

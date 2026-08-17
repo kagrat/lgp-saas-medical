@@ -23,6 +23,7 @@ export default function DesktopNavbar() {
         </div>
         <nav className="flex items-center gap-5 text-sm font-medium text-forest-100">
           {role === 'establishment_admin' && <Link to="/admin-etablissement" className="hover:text-white">Mon etablissement</Link>}
+          {role === 'doctor' && <Link to="/mon-espace-medecin" className="hover:text-white">Mon espace</Link>}
           {role === 'super_admin' && <Link to="/super-admin" className="hover:text-white">Super Admin</Link>}
           <Link to="/support" className="hover:text-white">Support</Link>
           <Link to="/profil" className="hover:text-white" aria-label="Mon profil">

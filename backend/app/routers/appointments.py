@@ -1,6 +1,11 @@
 """
 Module 3 - Gestion des rendez-vous + moteur de suggestion automatique.
-Nouveau: marquer "arrive" et reporter un rendez-vous.
+
+NOUVEAU: chaque rendez-vous renvoie desormais le nom du patient
+(patient_name) - jusqu'ici, la liste des RDV cote etablissement
+n'affichait que la date et le statut, sans jamais dire de qui il
+s'agissait. Corrige via une fonction commune reutilisee partout dans ce
+fichier, pour garantir que ce champ est toujours rempli correctement.
 """
 import uuid
 
@@ -16,6 +21,20 @@ from app.deps import require_roles, get_current_user
 from app.services.suggestion_engine import find_appointment_or_suggest
 
 router = APIRouter(prefix="/appointments", tags=["rendez-vous"])
+
+
+def _to_appointment_out(appointment: Appointment) -> AppointmentOut:
+    return AppointmentOut(
+        id=appointment.id,
+        establishment_id=appointment.establishment_id,
+        doctor_id=appointment.doctor_id,
+        patient_id=appointment.patient_id,
+        patient_name=appointment.patient.user.full_name if appointment.patient else "Inconnu",
+        scheduled_at=appointment.scheduled_at,
+        duration_minutes=appointment.duration_minutes,
+        status=appointment.status,
+        notes=appointment.notes,
+    )
 
 
 @router.post("/search", response_model=AppointmentSearchResponse)
@@ -82,7 +101,7 @@ def create_appointment(payload: AppointmentCreate, db: Session = Depends(get_db)
                      action="create_appointment", details=f"RDV cree pour patient {patient.dossier_number}"))
     db.commit()
     db.refresh(appointment)
-    return appointment
+    return _to_appointment_out(appointment)
 
 
 @router.get("/mine", response_model=list[AppointmentOut])
@@ -91,7 +110,8 @@ def my_appointments(db: Session = Depends(get_db),
     patient = db.query(Patient).filter(Patient.user_id == current_user.id).first()
     if not patient:
         return []
-    return db.query(Appointment).filter(Appointment.patient_id == patient.id).order_by(Appointment.scheduled_at.desc()).all()
+    appointments = db.query(Appointment).filter(Appointment.patient_id == patient.id).order_by(Appointment.scheduled_at.desc()).all()
+    return [_to_appointment_out(a) for a in appointments]
 
 
 @router.post("/{appointment_id}/cancel", response_model=AppointmentOut)
@@ -116,14 +136,13 @@ def cancel_appointment(appointment_id: str, db: Session = Depends(get_db),
                      action="cancel_appointment", details=f"RDV {appointment.id} annule"))
     db.commit()
     db.refresh(appointment)
-    return appointment
+    return _to_appointment_out(appointment)
 
 
 @router.post("/{appointment_id}/arrive", response_model=AppointmentOut)
 def mark_arrived(appointment_id: str, db: Session = Depends(get_db),
                   current_user: User = Depends(require_roles(
                       UserRole.ESTABLISHMENT_ADMIN, UserRole.SECRETARY, UserRole.DOCTOR))):
-    """NOUVEAU: le patient est arrive sur place, avant que la consultation soit terminee."""
     appointment = db.query(Appointment).filter(Appointment.id == appointment_id).first()
     if not appointment:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Rendez-vous introuvable")
@@ -137,14 +156,13 @@ def mark_arrived(appointment_id: str, db: Session = Depends(get_db),
                      action="mark_arrived", details=f"RDV {appointment.id} marque arrive"))
     db.commit()
     db.refresh(appointment)
-    return appointment
+    return _to_appointment_out(appointment)
 
 
 @router.patch("/{appointment_id}/reschedule", response_model=AppointmentOut)
 def reschedule_appointment(appointment_id: str, payload: AppointmentReschedule, db: Session = Depends(get_db),
                             current_user: User = Depends(require_roles(
                                 UserRole.ESTABLISHMENT_ADMIN, UserRole.SECRETARY, UserRole.DOCTOR))):
-    """NOUVEAU: reporter un rendez-vous a une autre date/heure, avec re-verification du conflit."""
     appointment = db.query(Appointment).filter(Appointment.id == appointment_id).first()
     if not appointment:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Rendez-vous introuvable")
@@ -174,7 +192,7 @@ def reschedule_appointment(appointment_id: str, payload: AppointmentReschedule, 
                      details=f"RDV {appointment.id} reporte de {old_time} a {payload.new_scheduled_at}"))
     db.commit()
     db.refresh(appointment)
-    return appointment
+    return _to_appointment_out(appointment)
 
 
 @router.post("/{appointment_id}/complete", response_model=AppointmentOut)
@@ -194,7 +212,7 @@ def complete_appointment(appointment_id: str, db: Session = Depends(get_db),
                      action="complete_appointment", details=f"RDV {appointment.id} marque termine"))
     db.commit()
     db.refresh(appointment)
-    return appointment
+    return _to_appointment_out(appointment)
 
 
 @router.get("/establishment", response_model=list[AppointmentOut])
@@ -206,4 +224,5 @@ def establishment_appointments(db: Session = Depends(get_db),
         doctor = db.query(Doctor).filter(Doctor.user_id == current_user.id).first()
         if doctor:
             query = query.filter(Appointment.doctor_id == doctor.id)
-    return query.order_by(Appointment.scheduled_at.asc()).all()
+    appointments = query.order_by(Appointment.scheduled_at.asc()).all()
+    return [_to_appointment_out(a) for a in appointments]

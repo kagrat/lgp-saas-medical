@@ -24,6 +24,7 @@ export default function DesktopLogin() {
       const { data } = await api.post('/auth/login', { email, password })
       saveSession(data.access_token, data.role, data.establishment_id)
       if (data.role === 'super_admin') navigate('/super-admin')
+      else if (data.role === 'doctor') navigate('/mon-espace-medecin')
       else navigate('/admin-etablissement')
     } catch (err) {
       setError(getErrorMessage(err, 'Connexion impossible. Verifie tes identifiants.'))
