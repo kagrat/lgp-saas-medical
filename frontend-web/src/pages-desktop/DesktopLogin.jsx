@@ -2,6 +2,15 @@ import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import api, { saveSession, getErrorMessage, consumeSessionExpiredFlag } from '../api/client'
 
+const ROLE_ROUTES = {
+  super_admin: '/super-admin',
+  establishment_admin: '/admin-etablissement',
+  doctor: '/mon-espace-medecin',
+  pharmacist: '/mon-espace-pharmacie',
+  lab_technician: '/mon-espace-laboratoire',
+  secretary: '/mon-espace-secretariat',
+}
+
 export default function DesktopLogin() {
   const navigate = useNavigate()
   const [email, setEmail] = useState('')
@@ -23,9 +32,14 @@ export default function DesktopLogin() {
     try {
       const { data } = await api.post('/auth/login', { email, password })
       saveSession(data.access_token, data.role, data.establishment_id)
-      if (data.role === 'super_admin') navigate('/super-admin')
-      else if (data.role === 'doctor') navigate('/mon-espace-medecin')
-      else navigate('/admin-etablissement')
+      const target = ROLE_ROUTES[data.role]
+      if (target) {
+        navigate(target)
+      } else {
+        // CORRECTIF: avant, un role sans espace dedie renvoyait
+        // silencieusement a la connexion, sans explication.
+        setError("Ce type de compte n'a pas encore d'espace dedie sur cette application.")
+      }
     } catch (err) {
       setError(getErrorMessage(err, 'Connexion impossible. Verifie tes identifiants.'))
     } finally {

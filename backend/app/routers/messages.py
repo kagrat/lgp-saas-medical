@@ -1,25 +1,13 @@
 """
-Module "Chat concierge" (nouveau, dernier module de la liste).
-
-Choix technique deliberé: pas de WebSockets. Le frontend interroge ces
-routes toutes les quelques secondes (polling) pendant que la conversation
-est ouverte. C'est legerement moins "instantane" qu'un vrai WebSocket,
-mais infiniment plus simple a deployer de façon fiable sur Railway/Vercel
-- vu les difficultes deja rencontrees avec le deploiement de fonctionnalites
-bien plus simples, ce choix evite d'ajouter une source de pannes difficile
-a diagnostiquer (connexions persistantes, reverse proxy, timeouts...).
-
-Regle d'eligibilite: un patient ne peut demarrer une conversation qu'avec
-un etablissement avec lequel il a deja une relation reelle (rendez-vous,
-commande pharmacie, ou demande d'analyse) - ca evite le spam vers des
-etablissements au hasard, et reste coherent avec le principe "chaque
-etablissement ne voit que ses propres patients" deja applique ailleurs.
+Module "Chat concierge". Extension: pharmacien et technicien labo peuvent
+desormais eux aussi repondre aux patients (ex: question sur une commande
+ou une analyse) - jusqu'ici reserve a admin/secretaire/medecin.
 """
 import uuid
 from datetime import datetime
 
 from fastapi import APIRouter, Depends, HTTPException, status
-from sqlalchemy import func
+
 from sqlalchemy.orm import Session
 
 from app.database import get_db
@@ -31,6 +19,11 @@ from app.schemas import MessageCreate, MessageOut, ConversationSummaryOut
 from app.deps import require_roles
 
 router = APIRouter(prefix="/messages", tags=["messagerie"])
+
+ESTABLISHMENT_STAFF_ROLES = (
+    UserRole.ESTABLISHMENT_ADMIN, UserRole.SECRETARY, UserRole.DOCTOR,
+    UserRole.PHARMACIST, UserRole.LAB_TECHNICIAN,
+)
 
 
 def _patient_has_relationship(db: Session, patient_id: str, establishment_id: str) -> bool:
@@ -63,7 +56,6 @@ def _to_message_out(message: Message) -> MessageOut:
 @router.get("/establishments", response_model=list[ConversationSummaryOut])
 def my_conversations(db: Session = Depends(get_db),
                       current_user: User = Depends(require_roles(UserRole.PATIENT))):
-    """Etablissements avec lesquels le patient peut discuter (relation existante), avec apercu du dernier message."""
     patient = db.query(Patient).filter(Patient.user_id == current_user.id).first()
     if not patient:
         return []
@@ -139,9 +131,7 @@ def patient_send_message(establishment_id: str, payload: MessageCreate, db: Sess
 
 @router.get("/establishment/patients", response_model=list[ConversationSummaryOut])
 def establishment_conversations(db: Session = Depends(get_db),
-                                 current_user: User = Depends(require_roles(
-                                     UserRole.ESTABLISHMENT_ADMIN, UserRole.SECRETARY, UserRole.DOCTOR))):
-    """Liste des patients ayant deja echange avec l'etablissement, avec apercu du dernier message."""
+                                 current_user: User = Depends(require_roles(*ESTABLISHMENT_STAFF_ROLES))):
     patient_ids = (
         db.query(Message.patient_id)
         .filter(Message.establishment_id == current_user.establishment_id)
@@ -171,8 +161,7 @@ def establishment_conversations(db: Session = Depends(get_db),
 
 @router.get("/establishment/conversation/{patient_id}", response_model=list[MessageOut])
 def establishment_conversation(patient_id: str, db: Session = Depends(get_db),
-                                current_user: User = Depends(require_roles(
-                                    UserRole.ESTABLISHMENT_ADMIN, UserRole.SECRETARY, UserRole.DOCTOR))):
+                                current_user: User = Depends(require_roles(*ESTABLISHMENT_STAFF_ROLES))):
     messages = (
         db.query(Message)
         .filter(Message.patient_id == patient_id, Message.establishment_id == current_user.establishment_id)
@@ -184,8 +173,7 @@ def establishment_conversation(patient_id: str, db: Session = Depends(get_db),
 
 @router.post("/establishment/conversation/{patient_id}", response_model=MessageOut, status_code=status.HTTP_201_CREATED)
 def establishment_send_message(patient_id: str, payload: MessageCreate, db: Session = Depends(get_db),
-                                current_user: User = Depends(require_roles(
-                                    UserRole.ESTABLISHMENT_ADMIN, UserRole.SECRETARY, UserRole.DOCTOR))):
+                                current_user: User = Depends(require_roles(*ESTABLISHMENT_STAFF_ROLES))):
     patient = db.query(Patient).filter(Patient.id == patient_id).first()
     if not patient:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Patient introuvable")

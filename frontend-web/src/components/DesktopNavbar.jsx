@@ -3,6 +3,15 @@ import { UserRound } from 'lucide-react'
 import { getRole, clearSession } from '../api/client'
 import { Link } from 'react-router-dom'
 
+const ROLE_LINKS = {
+  establishment_admin: { to: '/admin-etablissement', label: 'Mon etablissement' },
+  doctor: { to: '/mon-espace-medecin', label: 'Mon espace' },
+  pharmacist: { to: '/mon-espace-pharmacie', label: 'Mon espace' },
+  lab_technician: { to: '/mon-espace-laboratoire', label: 'Mon espace' },
+  secretary: { to: '/mon-espace-secretariat', label: 'Mon espace' },
+  super_admin: { to: '/super-admin', label: 'Super Admin' },
+}
+
 export default function DesktopNavbar() {
   const navigate = useNavigate()
   const role = getRole()
@@ -14,6 +23,8 @@ export default function DesktopNavbar() {
 
   if (!role) return null
 
+  const link = ROLE_LINKS[role]
+
   return (
     <header className="border-b border-forest-100 bg-forest-900">
       <div className="max-w-6xl mx-auto flex items-center justify-between px-6 py-3">
@@ -22,9 +33,7 @@ export default function DesktopNavbar() {
           <span className="font-display text-lg font-semibold text-white">LGP Console</span>
         </div>
         <nav className="flex items-center gap-5 text-sm font-medium text-forest-100">
-          {role === 'establishment_admin' && <Link to="/admin-etablissement" className="hover:text-white">Mon etablissement</Link>}
-          {role === 'doctor' && <Link to="/mon-espace-medecin" className="hover:text-white">Mon espace</Link>}
-          {role === 'super_admin' && <Link to="/super-admin" className="hover:text-white">Super Admin</Link>}
+          {link && <Link to={link.to} className="hover:text-white">{link.label}</Link>}
           <Link to="/support" className="hover:text-white">Support</Link>
           <Link to="/profil" className="hover:text-white" aria-label="Mon profil">
             <UserRound className="w-5 h-5" strokeWidth={1.75} />
