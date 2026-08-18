@@ -3,15 +3,12 @@ import api, { getErrorMessage } from '../api/client'
 import { AppointmentStatusBadge } from '../components/AppointmentStatusUI'
 import FilterTabs from '../components/FilterTabs'
 import PatientDirectory from '../components/PatientDirectory'
-import ChatWindow from '../components/ChatWindow'
 
 export default function DesktopSecretaryDashboard() {
   const [establishment, setEstablishment] = useState(null)
   const [tab, setTab] = useState('appointments')
   const [appointments, setAppointments] = useState([])
   const [appointmentFilter, setAppointmentFilter] = useState('all')
-  const [conversations, setConversations] = useState([])
-  const [selectedPatientId, setSelectedPatientId] = useState(null)
   const [error, setError] = useState('')
 
   const [completingId, setCompletingId] = useState(null)
@@ -24,10 +21,6 @@ export default function DesktopSecretaryDashboard() {
     loadEstablishment()
     loadAppointments()
   }, [])
-
-  useEffect(() => {
-    if (tab === 'messages') loadConversations()
-  }, [tab])
 
   async function loadEstablishment() {
     try {
@@ -44,16 +37,6 @@ export default function DesktopSecretaryDashboard() {
       setAppointments(data)
     } catch (err) {
       setError(getErrorMessage(err, 'Impossible de charger les rendez-vous.'))
-    }
-  }
-
-  async function loadConversations() {
-    try {
-      const { data } = await api.get('/messages/establishment/patients')
-      setConversations(data)
-      if (data.length > 0 && !selectedPatientId) setSelectedPatientId(data[0].patient_id)
-    } catch (err) {
-      setError(getErrorMessage(err, 'Impossible de charger les conversations.'))
     }
   }
 
@@ -118,7 +101,6 @@ export default function DesktopSecretaryDashboard() {
   const tabs = [
     { id: 'appointments', label: 'Rendez-vous' },
     { id: 'patients', label: 'Patients' },
-    { id: 'messages', label: 'Messages' },
   ]
 
   const appointmentFilterOptions = [
@@ -129,7 +111,6 @@ export default function DesktopSecretaryDashboard() {
     { value: 'cancelled', label: 'Annules' },
   ]
   const filteredAppointments = appointmentFilter === 'all' ? appointments : appointments.filter((a) => a.status === appointmentFilter)
-  const selectedConversation = conversations.find((c) => c.patient_id === selectedPatientId)
 
   return (
     <div className="max-w-5xl mx-auto px-6 py-14">
@@ -224,42 +205,6 @@ export default function DesktopSecretaryDashboard() {
       )}
 
       {tab === 'patients' && <PatientDirectory />}
-
-      {tab === 'messages' && (
-        <div>
-          {conversations.length === 0 ? (
-            <p className="text-forest-700">Aucune conversation pour le moment.</p>
-          ) : (
-            <div className="grid sm:grid-cols-3 gap-4">
-              <div className="space-y-2">
-                {conversations.map((c) => (
-                  <button
-                    key={c.patient_id}
-                    onClick={() => setSelectedPatientId(c.patient_id)}
-                    className={`w-full text-left rounded-xl border p-3 transition ${
-                      selectedPatientId === c.patient_id ? 'border-forest-700 bg-forest-50' : 'border-forest-100 bg-white hover:bg-forest-50'
-                    }`}
-                  >
-                    <p className="text-forest-900 font-medium text-sm">{c.patient_name}</p>
-                    {c.last_message && <p className="text-xs text-forest-700 truncate">{c.last_message}</p>}
-                  </button>
-                ))}
-              </div>
-              <div className="sm:col-span-2">
-                {selectedConversation && (
-                  <ChatWindow
-                    key={selectedConversation.patient_id}
-                    fetchUrl={`/messages/establishment/conversation/${selectedConversation.patient_id}`}
-                    sendUrl={`/messages/establishment/conversation/${selectedConversation.patient_id}`}
-                    currentSenderRole="staff"
-                    title={selectedConversation.patient_name}
-                  />
-                )}
-              </div>
-            </div>
-          )}
-        </div>
-      )}
     </div>
   )
 }
