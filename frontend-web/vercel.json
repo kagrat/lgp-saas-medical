@@ -1,6 +1,7 @@
 {
   "rewrites": [
     { "source": "/desktop.html", "destination": "/desktop.html" },
+    { "source": "/images/:path*", "destination": "/images/:path*" },
     { "source": "/(.*)", "destination": "/index.html" }
   ]
 }
