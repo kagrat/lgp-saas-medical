@@ -1,10 +1,10 @@
 import { Link } from 'react-router-dom'
-import { Stethoscope, Pill, FlaskConical, Video } from 'lucide-react'
+import { Video } from 'lucide-react'
 
 const CATEGORIES = [
-  { to: '/rechercher', label: 'Medecins', description: 'Consultations dans les hopitaux et cliniques adherents', icon: Stethoscope },
-  { to: '/pharmacie', label: 'Pharmacies', description: 'Medicaments disponibles pres de chez toi', icon: Pill },
-  { to: '/laboratoire', label: 'Laboratoires', description: 'Analyses medicales et resultats', icon: FlaskConical },
+  { to: '/rechercher', label: 'Medecins', description: 'Consultations dans les hopitaux et cliniques adherents', image: '/images/doctor-consultation.jpg' },
+  { to: '/pharmacie', label: 'Pharmacies', description: 'Medicaments disponibles pres de chez toi', image: '/images/pharmacy-shelves.jpg' },
+  { to: '/laboratoire', label: 'Laboratoires', description: 'Analyses medicales et resultats', image: '/images/lab-equipment.jpg' },
 ]
 
 export default function Care() {
@@ -14,16 +14,21 @@ export default function Care() {
       <h1 className="font-display text-3xl font-semibold text-forest-900 mb-8">Que cherches-tu ?</h1>
 
       <div className="grid sm:grid-cols-3 gap-4 mb-6">
-        {CATEGORIES.map(({ to, label, description, icon: Icon }) => (
+        {CATEGORIES.map(({ to, label, description, image }) => (
           <Link
             key={to} to={to}
-            className="flex flex-col gap-3 rounded-2xl border border-forest-100 bg-white p-6 hover:border-forest-300 hover:shadow-sm transition"
+            className="group relative overflow-hidden rounded-2xl h-64 hover:shadow-lg transition"
           >
-            <span className="w-12 h-12 rounded-full bg-forest-50 flex items-center justify-center">
-              <Icon className="w-6 h-6 text-forest-700" strokeWidth={1.75} />
-            </span>
-            <span className="font-display text-lg text-forest-900 font-semibold">{label}</span>
-            <span className="text-sm text-forest-700">{description}</span>
+            <img
+              src={image}
+              alt={label}
+              className="absolute inset-0 w-full h-full object-cover group-hover:scale-105 transition duration-300"
+            />
+            <div className="absolute inset-0 bg-gradient-to-t from-forest-900/90 via-forest-900/30 to-transparent" />
+            <div className="absolute bottom-0 left-0 right-0 p-5">
+              <span className="font-display text-lg text-white font-semibold block mb-1">{label}</span>
+              <span className="text-sm text-white/85">{description}</span>
+            </div>
           </Link>
         ))}
       </div>

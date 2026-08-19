@@ -37,31 +37,45 @@ export default function Home() {
     )
   }
 
-  // Ecran d'accueil / "splash" pour un visiteur non connecte - un seul
-  // appel a l'action bien visible, plus un lien discret pour se reconnecter.
   return (
-    <div className="max-w-5xl mx-auto px-6 py-20">
-      <p className="text-amber-600 font-medium tracking-wide uppercase text-xs mb-4">LGP HOLDINGS</p>
-      <h1 className="font-display text-5xl font-semibold text-forest-900 leading-tight mb-6 max-w-2xl">
-        La medecine, reservee comme un vol ou une chambre d'hotel.
-      </h1>
-      <p className="text-forest-700 max-w-xl mb-10 text-lg">
-        Cherche un medecin par specialite, verifie ses disponibilites en temps reel,
-        et prends rendez-vous en un clic dans l'un des etablissements adherents au Benin.
-        Si ton medecin n'est pas libre, on te propose toujours une alternative.
-      </p>
-      <div className="flex flex-wrap items-center gap-4">
-        <Link to="/rechercher" className="rounded-full bg-forest-700 text-white px-8 py-3.5 font-medium hover:bg-forest-900 transition">
-          Commencer
-        </Link>
-        <Link to="/pharmacie" className="rounded-full border border-forest-300 text-forest-900 px-8 py-3.5 font-medium hover:bg-forest-50 transition">
-          Pharmacie en ligne
-        </Link>
+    <div className="max-w-6xl mx-auto px-6 py-16 lg:py-20">
+      <div className="grid lg:grid-cols-2 gap-12 lg:gap-16 items-center">
+        <div>
+          <p className="text-amber-600 font-medium tracking-wide uppercase text-xs mb-4">LGP HOLDINGS</p>
+          <h1 className="font-display text-4xl lg:text-5xl font-semibold text-forest-900 leading-tight mb-6">
+            La medecine, reservee comme un vol ou une chambre d'hotel.
+          </h1>
+          <p className="text-forest-700 mb-10 text-lg">
+            Cherche un medecin par specialite, verifie ses disponibilites en temps reel,
+            et prends rendez-vous en un clic dans l'un des etablissements adherents au Benin.
+            Si ton medecin n'est pas libre, on te propose toujours une alternative.
+          </p>
+          <div className="flex flex-wrap items-center gap-4">
+            <Link to="/rechercher" className="rounded-full bg-forest-700 text-white px-8 py-3.5 font-medium hover:bg-forest-900 transition">
+              Commencer
+            </Link>
+            <Link to="/pharmacie" className="rounded-full border border-forest-300 text-forest-900 px-8 py-3.5 font-medium hover:bg-forest-50 transition">
+              Pharmacie en ligne
+            </Link>
+          </div>
+          <p className="text-sm text-forest-700 mt-8">
+            Deja un compte ?{' '}
+            <Link to="/connexion" className="text-amber-600 font-medium hover:underline">Se connecter</Link>
+          </p>
+        </div>
+
+        <div className="relative">
+          <img
+            src="/images/hero-medical-team.jpg"
+            alt="Equipe medicale au Benin"
+            className="w-full h-[420px] lg:h-[520px] object-cover rounded-3xl shadow-lg"
+          />
+          <div className="absolute -bottom-5 -left-5 bg-white rounded-2xl shadow-lg px-5 py-4 hidden sm:block">
+            <p className="font-display text-2xl font-semibold text-forest-900">4</p>
+            <p className="text-xs text-forest-700">types d'etablissements adherents</p>
+          </div>
+        </div>
       </div>
-      <p className="text-sm text-forest-700 mt-8">
-        Deja un compte ?{' '}
-        <Link to="/connexion" className="text-amber-600 font-medium hover:underline">Se connecter</Link>
-      </p>
     </div>
   )
 }

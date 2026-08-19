@@ -45,48 +45,60 @@ export default function Login() {
   }
 
   return (
-    <div className="max-w-md mx-auto px-6 py-16">
-      <h1 className="font-display text-3xl font-semibold text-forest-900 mb-2">Connexion</h1>
-      <p className="text-forest-700 mb-8">
-        {wasStaffSession ? 'Reconnecte-toi pour continuer.' : 'Retrouve tes rendez-vous, tes commandes et tes messages.'}
-      </p>
+    <div className="max-w-5xl mx-auto px-6 py-16">
+      <div className="grid lg:grid-cols-2 gap-12 items-center">
+        <div className="max-w-md mx-auto lg:mx-0 w-full">
+          <h1 className="font-display text-3xl font-semibold text-forest-900 mb-2">Connexion</h1>
+          <p className="text-forest-700 mb-8">
+            {wasStaffSession ? 'Reconnecte-toi pour continuer.' : 'Retrouve tes rendez-vous, tes commandes et tes messages.'}
+          </p>
 
-      {notice && (
-        <p className="text-amber-700 bg-amber-50 border border-amber-200 rounded-lg px-4 py-3 mb-6 text-sm">
-          {notice}
-        </p>
-      )}
+          {notice && (
+            <p className="text-amber-700 bg-amber-50 border border-amber-200 rounded-lg px-4 py-3 mb-6 text-sm">
+              {notice}
+            </p>
+          )}
 
-      <form onSubmit={handleSubmit} className="space-y-4">
-        <div>
-          <label htmlFor="email" className="block text-sm font-medium text-forest-900 mb-1">Email</label>
-          <input
-            id="email" type="email" required value={email} onChange={(e) => setEmail(e.target.value)}
-            className="w-full rounded-lg border border-forest-100 px-4 py-2.5 focus:border-forest-500"
+          <form onSubmit={handleSubmit} className="space-y-4">
+            <div>
+              <label htmlFor="email" className="block text-sm font-medium text-forest-900 mb-1">Email</label>
+              <input
+                id="email" type="email" required value={email} onChange={(e) => setEmail(e.target.value)}
+                className="w-full rounded-lg border border-forest-100 px-4 py-2.5 focus:border-forest-500"
+              />
+            </div>
+            <div>
+              <label htmlFor="password" className="block text-sm font-medium text-forest-900 mb-1">Mot de passe</label>
+              <input
+                id="password" type="password" required value={password} onChange={(e) => setPassword(e.target.value)}
+                className="w-full rounded-lg border border-forest-100 px-4 py-2.5 focus:border-forest-500"
+              />
+            </div>
+            {error && <p className="text-clay-600 text-sm">{error}</p>}
+            <button
+              type="submit" disabled={loading}
+              className="w-full rounded-full bg-forest-700 text-white py-3 font-medium hover:bg-forest-900 transition disabled:opacity-50"
+            >
+              {loading ? 'Connexion...' : 'Se connecter'}
+            </button>
+          </form>
+
+          {!wasStaffSession && (
+            <p className="text-sm text-forest-700 mt-6">
+              Nouveau patient ?{' '}
+              <Link to="/inscription" className="text-amber-600 font-medium hover:underline">Creer un compte</Link>
+            </p>
+          )}
+        </div>
+
+        <div className="hidden lg:block">
+          <img
+            src="/images/login-background.jpg"
+            alt="Etablissement de sante"
+            className="w-full h-[480px] object-cover rounded-3xl shadow-lg"
           />
         </div>
-        <div>
-          <label htmlFor="password" className="block text-sm font-medium text-forest-900 mb-1">Mot de passe</label>
-          <input
-            id="password" type="password" required value={password} onChange={(e) => setPassword(e.target.value)}
-            className="w-full rounded-lg border border-forest-100 px-4 py-2.5 focus:border-forest-500"
-          />
-        </div>
-        {error && <p className="text-clay-600 text-sm">{error}</p>}
-        <button
-          type="submit" disabled={loading}
-          className="w-full rounded-full bg-forest-700 text-white py-3 font-medium hover:bg-forest-900 transition disabled:opacity-50"
-        >
-          {loading ? 'Connexion...' : 'Se connecter'}
-        </button>
-      </form>
-
-      {!wasStaffSession && (
-        <p className="text-sm text-forest-700 mt-6">
-          Nouveau patient ?{' '}
-          <Link to="/inscription" className="text-amber-600 font-medium hover:underline">Creer un compte</Link>
-        </p>
-      )}
+      </div>
     </div>
   )
 }
