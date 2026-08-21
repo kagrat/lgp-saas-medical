@@ -13,7 +13,7 @@ from fastapi.security import OAuth2PasswordBearer
 from sqlalchemy.orm import Session
 
 from app.database import get_db
-from app.models import User, UserRole
+from app.models import User, UserRole, Establishment, EstablishmentType
 from app.security import decode_access_token
 
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/auth/login")
@@ -49,6 +49,32 @@ def require_roles(*allowed_roles: UserRole):
             raise HTTPException(
                 status_code=status.HTTP_403_FORBIDDEN,
                 detail="Acces refuse: privileges insuffisants pour cette action",
+            )
+        return current_user
+    return _check
+
+
+def require_establishment_types(*allowed_types: EstablishmentType):
+    """
+    Factory de dependance: restreint une route aux comptes dont l'ETABLISSEMENT
+    (pas le role individuel) est d'un des types donnes. Complementaire a
+    require_roles: un role (ex: establishment_admin) peut exister dans
+    n'importe quel type d'etablissement, donc le controle par role seul ne
+    suffit pas a empecher, par exemple, l'admin d'un hopital d'appeler des
+    endpoints reserves aux pharmacies.
+    Usage:
+        @router.get(..., dependencies=[Depends(require_establishment_types(EstablishmentType.PHARMACIE))])
+    """
+    def _check(current_user: User = Depends(get_current_user), db: Session = Depends(get_db)) -> User:
+        if current_user.role == UserRole.SUPER_ADMIN:
+            return current_user
+        if current_user.establishment_id is None:
+            raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Compte non rattache a un etablissement")
+        establishment = db.query(Establishment).filter(Establishment.id == current_user.establishment_id).first()
+        if not establishment or establishment.type not in allowed_types:
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="Cette action n'est pas disponible pour ce type d'etablissement",
             )
         return current_user
     return _check

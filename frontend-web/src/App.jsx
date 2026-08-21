@@ -6,6 +6,7 @@ import Login from './pages/Login'
 import Register from './pages/Register'
 import Care from './pages/Care'
 import PatientSearch from './pages/PatientSearch'
+import Consultation from './pages/Consultation'
 import PatientDashboard from './pages/PatientDashboard'
 import Pharmacy from './pages/Pharmacy'
 import Laboratory from './pages/Laboratory'
@@ -26,6 +27,7 @@ export default function App() {
         <Route path="/inscription" element={<Register />} />
         <Route path="/soins" element={<Care />} />
         <Route path="/rechercher" element={<PatientSearch />} />
+        <Route path="/consultation" element={<Consultation />} />
         <Route path="/pharmacie" element={<Pharmacy />} />
         <Route path="/laboratoire" element={<Laboratory />} />
         <Route path="/medecin/:doctorId" element={<DoctorProfile />} />

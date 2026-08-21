@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react'
 import api, { getErrorMessage } from '../api/client'
 import PharmacyStatsCards from '../components/PharmacyStatsCards'
-import { RESERVATION_STATUSES, RESERVATION_STATUS_LABELS, RESERVATION_STEPS, STAFF_UPDATABLE_STATUSES } from '../components/OrderStatus'
+import { RESERVATION_STATUSES, RESERVATION_STATUS_LABELS, RESERVATION_STEPS, STAFF_UPDATABLE_STATUSES, STAFF_ACTIONABLE_STATUSES } from '../components/OrderStatus'
 import FilterTabs from '../components/FilterTabs'
 import StatusStepper from '../components/StatusStepper'
 import ReservationReviewForm from '../components/ReservationReviewForm'
@@ -191,9 +191,15 @@ export default function DesktopPharmacistDashboard() {
             {filteredOrders.map((o) => (
               <div key={o.id} className="rounded-xl border border-forest-100 bg-white p-4">
                 <div className="mb-3">
-                  <p className="text-forest-900 font-medium">{o.medication_name} <span className="text-xs text-forest-700 font-normal">({o.medication_reference})</span></p>
+                  <div className="space-y-1 mb-2">
+                    {o.items.map((item) => (
+                      <p key={item.id} className="text-forest-900 font-medium">
+                        {item.quantity}x {item.medication_name} <span className="text-xs text-forest-700 font-normal">({item.medication_reference})</span>
+                      </p>
+                    ))}
+                  </div>
                   <p className="text-sm text-forest-700 mb-3">
-                    Quantite demandee: {o.quantity} - {o.delivery_mode === 'delivery' ? 'Livraison' : 'Retrait sur place'}
+                    {o.delivery_mode === 'delivery' ? 'Livraison' : 'Retrait sur place'}
                   </p>
                   <StatusStepper steps={RESERVATION_STEPS} currentValue={o.status} labels={RESERVATION_STATUS_LABELS} />
                 </div>
@@ -203,13 +209,18 @@ export default function DesktopPharmacistDashboard() {
                 {o.status === 'awaiting_confirmation' && (
                   <div className="mt-3 pt-3 border-t border-forest-100">
                     <p className="text-sm text-amber-600 font-medium">En attente de la confirmation du patient</p>
-                    <p className="text-sm text-forest-700">
-                      Proposition envoyee: {o.confirmed_quantity} x {o.confirmed_unit_price?.toLocaleString('fr-FR')} FCFA
-                    </p>
+                    {o.items.map((item) => (
+                      <p key={item.id} className="text-sm text-forest-700">
+                        {item.medication_name}: {item.confirmed_quantity} x {item.confirmed_unit_price?.toLocaleString('fr-FR')} FCFA
+                      </p>
+                    ))}
+                    {o.total_amount !== null && o.total_amount !== undefined && (
+                      <p className="text-sm text-forest-900 font-medium mt-1">Total: {o.total_amount.toLocaleString('fr-FR')} FCFA</p>
+                    )}
                   </div>
                 )}
 
-                {STAFF_UPDATABLE_STATUSES.includes(o.status) && (
+                {STAFF_ACTIONABLE_STATUSES.includes(o.status) && (
                   <div className="mt-3 pt-3 border-t border-forest-100 flex flex-wrap gap-2 items-end">
                     <div>
                       <label className="block text-xs text-forest-700 mb-1">Nouveau statut</label>

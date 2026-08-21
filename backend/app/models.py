@@ -212,27 +212,51 @@ class PharmacyStock(Base):
     unit_price = Column(Float, default=0)
 
     establishment = relationship("Establishment", back_populates="stock_items")
-    reservations = relationship("PharmacyReservation", back_populates="medication")
+    order_items = relationship("PharmacyOrderItem", back_populates="medication")
 
 
 class PharmacyReservation(Base):
-    """Reservation patient via le portail web (pharmacie en ligne)."""
+    """
+    Commande patient via le portail web (pharmacie en ligne).
+
+    RESTRUCTURATION (panier multi-articles): cette table ne porte plus les
+    champs medication_id/quantity/confirmed_quantity/confirmed_unit_price -
+    ils vivent desormais sur PharmacyOrderItem (une ligne par medicament).
+    Cette table ne garde que les champs au niveau de la COMMANDE ENTIERE
+    (livraison, statut, note du pharmacien...).
+    """
     __tablename__ = "pharmacy_reservations"
 
     id = Column(UUID(as_uuid=False), primary_key=True, default=gen_uuid)
     establishment_id = Column(UUID(as_uuid=False), ForeignKey("establishments.id"), nullable=False)
     patient_id = Column(UUID(as_uuid=False), ForeignKey("patients.id"), nullable=False)
-    medication_id = Column(UUID(as_uuid=False), ForeignKey("pharmacy_stock.id"), nullable=False)
-    quantity = Column(Integer, nullable=False, default=1)
     delivery_mode = Column(Enum(DeliveryMode), default=DeliveryMode.PICKUP)
     status = Column(Enum(ReservationStatus), default=ReservationStatus.PENDING)
     estimated_ready_at = Column(DateTime, nullable=True)
     pharmacist_note = Column(Text, nullable=True)
     created_at = Column(DateTime, default=datetime.utcnow)
+
+    items = relationship("PharmacyOrderItem", back_populates="reservation", cascade="all, delete-orphan")
+
+
+class PharmacyOrderItem(Base):
+    """
+    NOUVEAU - une ligne de commande (un medicament + une quantite) au sein
+    d'une PharmacyReservation. Permet a une commande de contenir plusieurs
+    medicaments differents (panier), la ou avant une commande = un seul
+    medicament.
+    """
+    __tablename__ = "pharmacy_order_items"
+
+    id = Column(UUID(as_uuid=False), primary_key=True, default=gen_uuid)
+    reservation_id = Column(UUID(as_uuid=False), ForeignKey("pharmacy_reservations.id"), nullable=False)
+    medication_id = Column(UUID(as_uuid=False), ForeignKey("pharmacy_stock.id"), nullable=False)
+    quantity = Column(Integer, nullable=False, default=1)
     confirmed_quantity = Column(Integer, nullable=True)
     confirmed_unit_price = Column(Float, nullable=True)
-    
-    medication = relationship("PharmacyStock", back_populates="reservations")
+
+    reservation = relationship("PharmacyReservation", back_populates="items")
+    medication = relationship("PharmacyStock", back_populates="order_items")
 
 
 class AuditLog(Base):

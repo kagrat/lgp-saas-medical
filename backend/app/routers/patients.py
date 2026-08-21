@@ -13,18 +13,27 @@ from sqlalchemy.orm import Session
 
 from app.database import get_db
 from app.models import (
-    Patient, User, UserRole, Appointment, PharmacyReservation, LabTestRequest, Dependent,
+    Patient, User, UserRole, Appointment, PharmacyReservation, LabTestRequest, Dependent, EstablishmentType,
 )
 from app.schemas import PatientDirectoryOut, DependentCreate, DependentOut
-from app.deps import require_roles
+from app.deps import require_roles, require_establishment_types
 
 router = APIRouter(prefix="/patients", tags=["patients"])
 
 
-@router.get("/establishment", response_model=list[PatientDirectoryOut])
+@router.get("/establishment", response_model=list[PatientDirectoryOut],
+            dependencies=[Depends(require_establishment_types(EstablishmentType.HOPITAL, EstablishmentType.CLINIQUE))])
 def establishment_patient_directory(search: Optional[str] = None, db: Session = Depends(get_db),
                                      current_user: User = Depends(require_roles(
                                          UserRole.ESTABLISHMENT_ADMIN, UserRole.SECRETARY, UserRole.DOCTOR))):
+    """
+    Reserve aux hopitaux/cliniques (require_establishment_types ci-dessus):
+    une pharmacie ou un laboratoire ne gere pas de dossier patient au sens
+    consultation - seuls des rendez-vous medicaux justifient cet annuaire.
+    Avant ce correctif, un establishment_admin de pharmacie pouvait recuperer
+    ici nom/email/telephone/numero de dossier de tous ses clients via la
+    jointure PharmacyReservation, sans jamais passer par l'onglet frontend.
+    """
     establishment_id = current_user.establishment_id
 
     patient_ids = set()

@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react'
 import api, { getErrorMessage } from '../api/client'
 import { SPECIALTIES, DAYS_OF_WEEK } from '../constants'
 import StarRating from '../components/StarRating'
-import { StatusBadge, RESERVATION_STATUSES, RESERVATION_STATUS_LABELS, RESERVATION_STEPS, STAFF_UPDATABLE_STATUSES } from '../components/OrderStatus'
+import { StatusBadge, RESERVATION_STATUSES, RESERVATION_STATUS_LABELS, RESERVATION_STEPS, STAFF_UPDATABLE_STATUSES, STAFF_ACTIONABLE_STATUSES } from '../components/OrderStatus'
 import { DOCUMENT_TYPES, DOCUMENT_TYPE_LABELS } from '../components/DocumentType'
 import { LAB_STATUSES, LAB_STATUS_LABELS, LAB_STEPS } from '../components/LabStatus'
 import { AppointmentStatusBadge, APPOINTMENT_STATUS_LABELS } from '../components/AppointmentStatusUI'
@@ -304,18 +304,26 @@ export default function EstablishmentAdmin() {
         { id: 'orders', label: 'Commandes' },
       ]
     : [
+        // Pharmacie/Commandes retires ici (demande M. Faustin): un hopital
+        // ou une clinique n'a pas de metier pharmacie a gerer depuis son
+        // propre tableau de bord - reserve au type d'etablissement pharmacie
+        // ci-dessus. Cote serveur, les endpoints /pharmacy/* correspondants
+        // sont desormais aussi bloques pour ce type (voir pharmacy.py).
         { id: 'stats', label: 'Statistiques' },
         { id: 'doctors', label: 'Medecins' },
         { id: 'appointments', label: 'Rendez-vous' },
-        { id: 'pharmacy', label: 'Pharmacie' },
-        { id: 'orders', label: 'Commandes' },
       ]
   const extraTabs = isLab
     ? [{ id: 'catalog', label: 'Catalogue' }]
     : [{ id: 'services', label: 'Services' }]
+  // Onglet Patients reserve aux hopitaux/cliniques: une pharmacie ou un
+  // laboratoire n'a pas de dossier de consultation a afficher - seuls des
+  // rendez-vous medicaux justifient cet annuaire (meme regle appliquee
+  // cote serveur dans patients.py::establishment_patient_directory).
+  const showPatientsTab = !isPharmacy && !isLab
   const tabs = [
     ...baseTabs,
-    { id: 'patients', label: 'Patients' },
+    ...(showPatientsTab ? [{ id: 'patients', label: 'Patients' }] : []),
     { id: 'messages', label: 'Messages' },
     { id: 'team', label: 'Equipe' },
     { id: 'hours', label: 'Horaires' },
@@ -587,9 +595,15 @@ export default function EstablishmentAdmin() {
             {filteredOrders.map((o) => (
               <div key={o.id} className="rounded-xl border border-forest-100 bg-white p-4">
                 <div className="mb-3">
-                  <p className="text-forest-900 font-medium">{o.medication_name} <span className="text-xs text-forest-700 font-normal">({o.medication_reference})</span></p>
+                  <div className="space-y-1 mb-2">
+                    {o.items.map((item) => (
+                      <p key={item.id} className="text-forest-900 font-medium">
+                        {item.quantity}x {item.medication_name} <span className="text-xs text-forest-700 font-normal">({item.medication_reference})</span>
+                      </p>
+                    ))}
+                  </div>
                   <p className="text-sm text-forest-700 mb-3">
-                    Quantite demandee: {o.quantity} - {o.delivery_mode === 'delivery' ? 'Livraison' : 'Retrait sur place'}
+                    {o.delivery_mode === 'delivery' ? 'Livraison' : 'Retrait sur place'}
                   </p>
                   <StatusStepper steps={RESERVATION_STEPS} currentValue={o.status} labels={RESERVATION_STATUS_LABELS} />
                 </div>
@@ -601,13 +615,18 @@ export default function EstablishmentAdmin() {
                 {o.status === 'awaiting_confirmation' && (
                   <div className="mt-3 pt-3 border-t border-forest-100">
                     <p className="text-sm text-amber-600 font-medium">En attente de la confirmation du patient</p>
-                    <p className="text-sm text-forest-700">
-                      Proposition envoyee: {o.confirmed_quantity} x {o.confirmed_unit_price?.toLocaleString('fr-FR')} FCFA
-                    </p>
+                    {o.items.map((item) => (
+                      <p key={item.id} className="text-sm text-forest-700">
+                        {item.medication_name}: {item.confirmed_quantity} x {item.confirmed_unit_price?.toLocaleString('fr-FR')} FCFA
+                      </p>
+                    ))}
+                    {o.total_amount !== null && o.total_amount !== undefined && (
+                      <p className="text-sm text-forest-900 font-medium mt-1">Total: {o.total_amount.toLocaleString('fr-FR')} FCFA</p>
+                    )}
                   </div>
                 )}
 
-                {STAFF_UPDATABLE_STATUSES.includes(o.status) && (
+                {STAFF_ACTIONABLE_STATUSES.includes(o.status) && (
                   <div className="mt-3 pt-3 border-t border-forest-100 flex flex-wrap gap-2 items-end">
                     <div>
                       <label className="block text-xs text-forest-700 mb-1">Nouveau statut</label>

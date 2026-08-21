@@ -3,7 +3,7 @@ import { Stethoscope, Pill, FlaskConical, Calendar, MessageCircle, UserRound } f
 import { getRole } from '../api/client'
 
 const QUICK_ACTIONS = [
-  { to: '/rechercher', label: 'Trouver un medecin', icon: Stethoscope },
+  { to: '/consultation', label: 'Consultation', icon: Stethoscope },
   { to: '/pharmacie', label: 'Pharmacie', icon: Pill },
   { to: '/laboratoire', label: 'Laboratoire', icon: FlaskConical },
   { to: '/espace-patient', label: 'Mes rendez-vous', icon: Calendar },
@@ -51,7 +51,7 @@ export default function Home() {
             Si ton medecin n'est pas libre, on te propose toujours une alternative.
           </p>
           <div className="flex flex-wrap items-center gap-4">
-            <Link to="/rechercher" className="rounded-full bg-forest-700 text-white px-8 py-3.5 font-medium hover:bg-forest-900 transition">
+            <Link to="/consultation" className="rounded-full bg-forest-700 text-white px-8 py-3.5 font-medium hover:bg-forest-900 transition">
               Commencer
             </Link>
             <Link to="/pharmacie" className="rounded-full border border-forest-300 text-forest-900 px-8 py-3.5 font-medium hover:bg-forest-50 transition">

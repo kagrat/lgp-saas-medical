@@ -7,19 +7,21 @@ d'etablissement, ni un super admin. C'est le meme principe que pour la
 creation de medecins (deja en place): pas d'auto-elevation de privilege.
 """
 import uuid
+from typing import Optional
 
 from fastapi import APIRouter, Depends, HTTPException, status
+from sqlalchemy import func
 from sqlalchemy.orm import Session
 
 from app.database import get_db
-from app.models import Establishment, User, UserRole, AuditLog
+from app.models import Establishment, Doctor, User, UserRole, AuditLog
 from app.schemas import (
-    EstablishmentCreate, EstablishmentOut, EstablishmentStatusUpdate, EstablishmentUpdate,
-    StaffCreate, StaffOut,
+    EstablishmentCreate, EstablishmentOut, EstablishmentSearchResult,
+    EstablishmentStatusUpdate, EstablishmentUpdate, StaffCreate, StaffOut,
 )
 from app.deps import require_roles, get_current_user
 from app.security import hash_password
-from app.services.geo import resolve_city_coordinates
+from app.services.geo import resolve_city_coordinates, haversine_km
 
 router = APIRouter(prefix="/establishments", tags=["etablissements"])
 
@@ -82,6 +84,51 @@ def my_establishment(db: Session = Depends(get_db), current_user: User = Depends
     if not establishment:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Etablissement introuvable")
     return establishment
+
+
+@router.get("/search", response_model=list[EstablishmentSearchResult])
+def search_establishments(specialty: str, city: Optional[str] = None, db: Session = Depends(get_db)):
+    """
+    NOUVEAU - parcours "Consultation" etablissement-first (remplace l'ancien
+    "Trouver medecin" ou le patient choisissait d'abord un creneau propose
+    automatiquement). Ici le patient choisit d'abord une specialite, puis
+    voit les etablissements qui ont au moins un medecin actif de cette
+    specialite, tries par distance reelle (haversine) depuis sa ville.
+    Public (pas d'auth requise), comme /doctors/search.
+    """
+    reference_coords = resolve_city_coordinates(city) if city else None
+
+    rows = (
+        db.query(Establishment, func.count(Doctor.id).label("doctor_count"))
+        .join(Doctor, Doctor.establishment_id == Establishment.id)
+        .filter(
+            Establishment.is_active == True,
+            Doctor.is_active == True,
+            Doctor.specialty.ilike(f"%{specialty}%"),
+        )
+        .group_by(Establishment.id)
+        .all()
+    )
+
+    results: list[EstablishmentSearchResult] = []
+    for establishment, doctor_count in rows:
+        distance_km = None
+        if reference_coords and establishment.latitude is not None and establishment.longitude is not None:
+            distance_km = haversine_km(
+                reference_coords[0], reference_coords[1],
+                establishment.latitude, establishment.longitude,
+            )
+        results.append(EstablishmentSearchResult(
+            id=establishment.id, name=establishment.name, type=establishment.type,
+            city=establishment.city, address=establishment.address,
+            distance_km=round(distance_km, 1) if distance_km is not None else None,
+            doctor_count=doctor_count,
+        ))
+
+    # Etablissements les plus proches d'abord; sans ville de reference (ou
+    # sans coordonnees connues), on retombe sur un tri alphabetique stable.
+    results.sort(key=lambda r: (r.distance_km if r.distance_km is not None else float("inf"), r.name))
+    return results
 
 
 @router.patch("/{establishment_id}", response_model=EstablishmentOut,

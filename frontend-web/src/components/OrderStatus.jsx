@@ -32,5 +32,18 @@ export const RESERVATION_STATUSES = Object.keys(STATUS_LABELS)
 export const RESERVATION_STATUS_LABELS = STATUS_LABELS
 // Ordre du "chemin normal" (sans annulee) - utilise par le stepper visuel.
 export const RESERVATION_STEPS = ['pending', 'awaiting_confirmation', 'confirmed', 'preparing', 'ready', 'out_for_delivery', 'delivered']
-// Statuts geres via l'ancien endpoint generique (staff, apres confirmation) - exclut les etapes desormais dediees.
+
+// BUG CORRIGE: ces deux constantes servaient toutes les deux a un seul et
+// meme tableau auparavant, ce qui cachait le bloc d'action pharmacien des
+// qu'une commande passait a "confirmed" (le statut n'etait pas dans la
+// liste). Le backend acceptait deja la transition depuis "confirmed" -
+// seul l'affichage la bloquait. Desormais separees explicitement:
+
+// 1) Statuts COURANTS d'une commande a partir desquels le staff a encore
+//    une action a faire -> controle la VISIBILITE du bloc de mise a jour.
+export const STAFF_ACTIONABLE_STATUSES = ['confirmed', 'preparing', 'ready', 'out_for_delivery']
+
+// 2) Statuts CIBLES selectionnables dans le menu deroulant -> n'inclut pas
+//    "confirmed" (etape deja passee, geree par /confirm) ni "pending"/
+//    "awaiting_confirmation" (gerees par /review, dediees au pharmacien).
 export const STAFF_UPDATABLE_STATUSES = ['preparing', 'ready', 'out_for_delivery', 'delivered', 'cancelled']

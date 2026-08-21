@@ -20,20 +20,30 @@ Nouveau flux:
 """
 import uuid
 from datetime import datetime
+from typing import Optional
 
 from fastapi import APIRouter, Depends, HTTPException, status
+from sqlalchemy import func
 from sqlalchemy.orm import Session
 
 from app.database import get_db
 from app.models import (
-    PharmacyStock, PharmacyReservation, PharmacyReservationStatusHistory,
-    Patient, User, UserRole, ReservationStatus, AuditLog,
+    PharmacyStock, PharmacyReservation, PharmacyOrderItem, PharmacyReservationStatusHistory,
+    Patient, User, UserRole, ReservationStatus, EstablishmentType, Establishment, AuditLog,
 )
 from app.schemas import (
-    StockItemCreate, StockItemOut, ReservationCreate, ReservationOut,
+    StockItemCreate, StockItemOut, ReservationCreate, ReservationOut, ReservationItemOut,
     ReservationStatusUpdate, ReservationHistoryOut, PharmacyStatsOut, ReservationReview,
+    PharmacySearchResult,
 )
-from app.deps import require_roles
+from app.deps import require_roles, require_establishment_types
+from app.services.geo import resolve_city_coordinates, haversine_km
+
+# Endpoints de gestion pharmacie (stock/commandes cote etablissement) reserves
+# aux etablissements de type pharmacie - un hopital ou une clinique peut avoir
+# un compte establishment_admin, mais ce n'est pas son metier (point souleve
+# par M. Faustin: ne garder Pharmacie/Commandes que pour le type Pharmacie).
+_PHARMACY_ONLY = Depends(require_establishment_types(EstablishmentType.PHARMACIE))
 
 router = APIRouter(prefix="/pharmacy", tags=["pharmacie"])
 
@@ -51,19 +61,32 @@ def _to_stock_out(item: PharmacyStock) -> StockItemOut:
 
 
 def _to_reservation_out(reservation: PharmacyReservation) -> ReservationOut:
+    items = [
+        ReservationItemOut(
+            id=item.id, medication_id=item.medication_id,
+            medication_name=item.medication.medication_name,
+            medication_reference=item.medication.reference,
+            quantity=item.quantity,
+            confirmed_quantity=item.confirmed_quantity,
+            confirmed_unit_price=item.confirmed_unit_price,
+        )
+        for item in reservation.items
+    ]
+    total_amount = None
+    if all(i.confirmed_quantity is not None and i.confirmed_unit_price is not None for i in items) and items:
+        total_amount = sum(i.confirmed_quantity * i.confirmed_unit_price for i in items)
+
     return ReservationOut(
         id=reservation.id, establishment_id=reservation.establishment_id,
-        patient_id=reservation.patient_id, medication_id=reservation.medication_id,
-        medication_name=reservation.medication.medication_name,
-        medication_reference=reservation.medication.reference,
-        quantity=reservation.quantity, delivery_mode=reservation.delivery_mode,
+        patient_id=reservation.patient_id, items=items,
+        delivery_mode=reservation.delivery_mode,
         status=reservation.status, estimated_ready_at=reservation.estimated_ready_at,
         pharmacist_note=reservation.pharmacist_note, created_at=reservation.created_at,
-        confirmed_quantity=reservation.confirmed_quantity, confirmed_unit_price=reservation.confirmed_unit_price,
+        total_amount=total_amount,
     )
 
 
-@router.post("/stock", response_model=StockItemOut, status_code=status.HTTP_201_CREATED)
+@router.post("/stock", response_model=StockItemOut, status_code=status.HTTP_201_CREATED, dependencies=[_PHARMACY_ONLY])
 def add_stock_item(payload: StockItemCreate, db: Session = Depends(get_db),
                     current_user: User = Depends(require_roles(UserRole.ESTABLISHMENT_ADMIN, UserRole.PHARMACIST))):
     existing_reference = (
@@ -85,7 +108,7 @@ def add_stock_item(payload: StockItemCreate, db: Session = Depends(get_db),
     return _to_stock_out(item)
 
 
-@router.get("/stock", response_model=list[StockItemOut])
+@router.get("/stock", response_model=list[StockItemOut], dependencies=[_PHARMACY_ONLY])
 def list_stock(db: Session = Depends(get_db),
                current_user: User = Depends(require_roles(UserRole.ESTABLISHMENT_ADMIN, UserRole.PHARMACIST))):
     items = db.query(PharmacyStock).filter(PharmacyStock.establishment_id == current_user.establishment_id).all()
@@ -94,6 +117,10 @@ def list_stock(db: Session = Depends(get_db),
 
 @router.get("/search", response_model=list[StockItemOut])
 def search_medication(name: str, db: Session = Depends(get_db)):
+    """ANCIEN comportement (recherche directe par medicament, toutes
+    pharmacies confondues) - conserve pour compatibilite mais plus utilise
+    par le nouveau parcours pharmacie-first (voir /pharmacies/search puis
+    /stock/public ci-dessous)."""
     items = (
         db.query(PharmacyStock)
         .filter(
@@ -106,7 +133,62 @@ def search_medication(name: str, db: Session = Depends(get_db)):
     return [_to_stock_out(i) for i in items]
 
 
-@router.get("/stats", response_model=PharmacyStatsOut)
+@router.get("/pharmacies/search", response_model=list[PharmacySearchResult])
+def search_pharmacies(name: Optional[str] = None, city: Optional[str] = None, db: Session = Depends(get_db)):
+    """
+    NOUVEAU (parcours pharmacie-first, demande M. Faustin): le patient
+    cherche d'abord une PHARMACIE (par ville et/ou nom), avant de choisir
+    des medicaments - inverse de l'ancien comportement. Public, comme
+    /doctors/search et /establishments/search.
+    """
+    reference_coords = resolve_city_coordinates(city) if city else None
+
+    query = db.query(Establishment).filter(
+        Establishment.type == EstablishmentType.PHARMACIE,
+        Establishment.is_active == True,
+    )
+    if name:
+        query = query.filter(Establishment.name.ilike(f"%{name}%"))
+
+    results: list[PharmacySearchResult] = []
+    for establishment in query.limit(100).all():
+        distance_km = None
+        if reference_coords and establishment.latitude is not None and establishment.longitude is not None:
+            distance_km = haversine_km(
+                reference_coords[0], reference_coords[1],
+                establishment.latitude, establishment.longitude,
+            )
+        results.append(PharmacySearchResult(
+            id=establishment.id, name=establishment.name, city=establishment.city,
+            address=establishment.address,
+            distance_km=round(distance_km, 1) if distance_km is not None else None,
+        ))
+
+    results.sort(key=lambda r: (r.distance_km if r.distance_km is not None else float("inf"), r.name))
+    return results
+
+
+@router.get("/stock/public", response_model=list[StockItemOut])
+def browse_pharmacy_stock(establishment_id: str, name: Optional[str] = None, db: Session = Depends(get_db)):
+    """
+    NOUVEAU (parcours pharmacie-first): une fois la pharmacie choisie, le
+    patient parcourt/recherche SES medicaments en stock, pour en ajouter
+    plusieurs a son panier. Public (pas d'auth), en lecture seule, filtre
+    aux articles disponibles (quantity > 0) comme l'ancienne recherche.
+    """
+    query = db.query(PharmacyStock).filter(
+        PharmacyStock.establishment_id == establishment_id,
+        PharmacyStock.quantity > 0,
+    )
+    if name:
+        query = query.filter(
+            (PharmacyStock.medication_name.ilike(f"%{name}%")) | (PharmacyStock.reference.ilike(f"%{name}%"))
+        )
+    items = query.order_by(PharmacyStock.medication_name).limit(100).all()
+    return [_to_stock_out(i) for i in items]
+
+
+@router.get("/stats", response_model=PharmacyStatsOut, dependencies=[_PHARMACY_ONLY])
 def pharmacy_stats(db: Session = Depends(get_db),
                     current_user: User = Depends(require_roles(UserRole.ESTABLISHMENT_ADMIN, UserRole.PHARMACIST))):
     establishment_id = current_user.establishment_id
@@ -153,7 +235,7 @@ def my_reservations(db: Session = Depends(get_db),
     return [_to_reservation_out(r) for r in reservations]
 
 
-@router.get("/reservations/establishment", response_model=list[ReservationOut])
+@router.get("/reservations/establishment", response_model=list[ReservationOut], dependencies=[_PHARMACY_ONLY])
 def establishment_reservations(db: Session = Depends(get_db),
                                 current_user: User = Depends(require_roles(
                                     UserRole.ESTABLISHMENT_ADMIN, UserRole.PHARMACIST))):
@@ -197,54 +279,98 @@ def reservation_history(reservation_id: str, db: Session = Depends(get_db),
 @router.post("/reservations", response_model=ReservationOut, status_code=status.HTTP_201_CREATED)
 def create_reservation(payload: ReservationCreate, db: Session = Depends(get_db),
                         current_user: User = Depends(require_roles(UserRole.PATIENT))):
-    """NOUVEAU COMPORTEMENT: ne decompte plus le stock ici. Simple demande,
-    verifiee et confirmee dans les etapes suivantes."""
-    stock_item = db.query(PharmacyStock).filter(PharmacyStock.id == payload.medication_id).first()
-    if not stock_item:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Medicament introuvable")
-    if stock_item.quantity < payload.quantity:
-        raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail="Stock insuffisant pour cette quantite")
-
+    """
+    RESTRUCTURE (panier multi-articles): la commande contient desormais
+    plusieurs lignes. Ne decompte pas le stock ici (comme avant) - simple
+    demande, verifiee et confirmee dans les etapes suivantes.
+    """
     patient = db.query(Patient).filter(Patient.user_id == current_user.id).first()
     if not patient:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Dossier patient introuvable")
 
+    stock_items: dict[str, PharmacyStock] = {}
+    for line in payload.items:
+        stock_item = db.query(PharmacyStock).filter(PharmacyStock.id == line.medication_id).first()
+        if not stock_item:
+            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Medicament introuvable")
+        if stock_item.quantity < line.quantity:
+            raise HTTPException(
+                status_code=status.HTTP_409_CONFLICT,
+                detail=f"Stock insuffisant pour {stock_item.medication_name}",
+            )
+        stock_items[line.medication_id] = stock_item
+
+    # Toutes les lignes doivent venir de la MEME pharmacie (le panier se
+    # construit depuis une seule pharmacie choisie au depart) - protection
+    # cote serveur meme si le frontend ne devrait jamais permettre de
+    # melanger deux etablissements dans un seul panier.
+    establishment_ids = {s.establishment_id for s in stock_items.values()}
+    if len(establishment_ids) > 1:
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            detail="Une commande ne peut contenir que des medicaments d'une seule pharmacie",
+        )
+    establishment_id = establishment_ids.pop()
+
     reservation = PharmacyReservation(
-        id=str(uuid.uuid4()), establishment_id=stock_item.establishment_id,
-        patient_id=patient.id, medication_id=stock_item.id,
-        quantity=payload.quantity, delivery_mode=payload.delivery_mode,
+        id=str(uuid.uuid4()), establishment_id=establishment_id,
+        patient_id=patient.id, delivery_mode=payload.delivery_mode,
         status=ReservationStatus.PENDING,
     )
     db.add(reservation)
     db.flush()
 
+    details_parts = []
+    for line in payload.items:
+        stock_item = stock_items[line.medication_id]
+        db.add(PharmacyOrderItem(
+            id=str(uuid.uuid4()), reservation_id=reservation.id,
+            medication_id=stock_item.id, quantity=line.quantity,
+        ))
+        details_parts.append(f"{line.quantity}x {stock_item.medication_name}")
+
     db.add(PharmacyReservationStatusHistory(
         id=str(uuid.uuid4()), reservation_id=reservation.id,
         status=ReservationStatus.PENDING, note="Commande recue, en attente de verification", changed_by_user_id=current_user.id,
     ))
-    db.add(AuditLog(user_id=current_user.id, establishment_id=stock_item.establishment_id,
-                     action="create_reservation", details=f"Demande {payload.quantity}x {stock_item.medication_name}"))
+    db.add(AuditLog(user_id=current_user.id, establishment_id=establishment_id,
+                     action="create_reservation", details="Demande: " + ", ".join(details_parts)))
     db.commit()
     db.refresh(reservation)
     return _to_reservation_out(reservation)
 
 
-@router.patch("/reservations/{reservation_id}/review", response_model=ReservationOut)
+@router.patch("/reservations/{reservation_id}/review", response_model=ReservationOut, dependencies=[_PHARMACY_ONLY])
 def review_reservation(reservation_id: str, payload: ReservationReview, db: Session = Depends(get_db),
                         current_user: User = Depends(require_roles(UserRole.ESTABLISHMENT_ADMIN, UserRole.PHARMACIST))):
-    """NOUVEAU: le pharmacien verifie disponibilite/prix et transmet une proposition finale au patient."""
+    """NOUVEAU: le pharmacien verifie disponibilite/prix LIGNE PAR LIGNE
+    (une ligne peut etre en rupture alors qu'une autre est disponible) et
+    transmet une proposition finale au patient."""
     reservation = db.query(PharmacyReservation).filter(PharmacyReservation.id == reservation_id).first()
     if not reservation or reservation.establishment_id != current_user.establishment_id:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Reservation introuvable")
     if reservation.status != ReservationStatus.PENDING:
         raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail="Seule une commande en attente peut etre verifiee")
 
-    stock_item = db.query(PharmacyStock).filter(PharmacyStock.id == reservation.medication_id).first()
-    if stock_item and payload.confirmed_quantity > stock_item.quantity:
-        raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail="Quantite proposee superieure au stock disponible")
+    items_by_id = {item.id: item for item in reservation.items}
+    reviewed_ids = {line.item_id for line in payload.items}
+    if reviewed_ids != set(items_by_id.keys()):
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            detail="Toutes les lignes de la commande doivent etre verifiees (aucune omise, aucune inconnue)",
+        )
 
-    reservation.confirmed_quantity = payload.confirmed_quantity
-    reservation.confirmed_unit_price = payload.confirmed_unit_price
+    for line in payload.items:
+        item = items_by_id[line.item_id]
+        stock_item = db.query(PharmacyStock).filter(PharmacyStock.id == item.medication_id).first()
+        if stock_item and line.confirmed_quantity > stock_item.quantity:
+            raise HTTPException(
+                status_code=status.HTTP_409_CONFLICT,
+                detail=f"Quantite proposee superieure au stock disponible pour {stock_item.medication_name}",
+            )
+        item.confirmed_quantity = line.confirmed_quantity
+        item.confirmed_unit_price = line.confirmed_unit_price
+
     reservation.pharmacist_note = payload.note
     reservation.status = ReservationStatus.AWAITING_CONFIRMATION
 
@@ -263,7 +389,8 @@ def confirm_reservation(reservation_id: str, db: Session = Depends(get_db),
     """
     NOUVEAU: le patient accepte la proposition du pharmacien. C'EST LE SEUL
     ENDROIT DE TOUT LE CODE ou le stock est decompte - garantit qu'il n'y a
-    aucun risque de double-decompte via un autre chemin.
+    aucun risque de double-decompte via un autre chemin. Decompte
+    desormais LIGNE PAR LIGNE (une ligne = un medicament).
     """
     patient = db.query(Patient).filter(Patient.user_id == current_user.id).first()
     reservation = db.query(PharmacyReservation).filter(PharmacyReservation.id == reservation_id).first()
@@ -272,12 +399,21 @@ def confirm_reservation(reservation_id: str, db: Session = Depends(get_db),
     if reservation.status != ReservationStatus.AWAITING_CONFIRMATION:
         raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail="Cette commande n'attend pas de confirmation")
 
-    stock_item = db.query(PharmacyStock).filter(PharmacyStock.id == reservation.medication_id).first()
-    if not stock_item or stock_item.quantity < reservation.confirmed_quantity:
-        raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail="Stock insuffisant, contacte la pharmacie")
+    # On verifie TOUT le stock d'abord, avant de decompter quoi que ce soit -
+    # evite de decompter la moitie des lignes puis d'echouer sur la derniere.
+    stock_items: dict[str, PharmacyStock] = {}
+    for item in reservation.items:
+        stock_item = db.query(PharmacyStock).filter(PharmacyStock.id == item.medication_id).first()
+        if not stock_item or item.confirmed_quantity is None or stock_item.quantity < item.confirmed_quantity:
+            raise HTTPException(
+                status_code=status.HTTP_409_CONFLICT,
+                detail=f"Stock insuffisant pour {stock_item.medication_name if stock_item else 'un article'}, contacte la pharmacie",
+            )
+        stock_items[item.id] = stock_item
 
-    stock_item.quantity -= reservation.confirmed_quantity
-    reservation.quantity = reservation.confirmed_quantity
+    for item in reservation.items:
+        stock_items[item.id].quantity -= item.confirmed_quantity
+        item.quantity = item.confirmed_quantity
     reservation.status = ReservationStatus.CONFIRMED
 
     db.add(PharmacyReservationStatusHistory(
@@ -310,7 +446,32 @@ def reject_reservation(reservation_id: str, db: Session = Depends(get_db),
     return _to_reservation_out(reservation)
 
 
-@router.patch("/reservations/{reservation_id}/status", response_model=ReservationOut)
+@router.post("/reservations/{reservation_id}/mark-received", response_model=ReservationOut)
+def mark_received(reservation_id: str, db: Session = Depends(get_db),
+                   current_user: User = Depends(require_roles(UserRole.PATIENT))):
+    """NOUVEAU: le patient confirme avoir recu sa commande (retrait sur place
+    une fois 'prete', ou livraison une fois 'en livraison')."""
+    patient = db.query(Patient).filter(Patient.user_id == current_user.id).first()
+    reservation = db.query(PharmacyReservation).filter(PharmacyReservation.id == reservation_id).first()
+    if not reservation or not patient or reservation.patient_id != patient.id:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Reservation introuvable")
+    if reservation.status not in (ReservationStatus.READY, ReservationStatus.OUT_FOR_DELIVERY):
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail="Cette commande n'est pas encore prete a etre recuperee ou livree",
+        )
+
+    reservation.status = ReservationStatus.DELIVERED
+    db.add(PharmacyReservationStatusHistory(
+        id=str(uuid.uuid4()), reservation_id=reservation.id,
+        status=ReservationStatus.DELIVERED, note="Reception confirmee par le patient", changed_by_user_id=current_user.id,
+    ))
+    db.commit()
+    db.refresh(reservation)
+    return _to_reservation_out(reservation)
+
+
+@router.patch("/reservations/{reservation_id}/status", response_model=ReservationOut, dependencies=[_PHARMACY_ONLY])
 def update_reservation_status(reservation_id: str, payload: ReservationStatusUpdate, db: Session = Depends(get_db),
                                current_user: User = Depends(require_roles(UserRole.ESTABLISHMENT_ADMIN, UserRole.PHARMACIST))):
     """

@@ -21,6 +21,7 @@ export default function PatientDashboard() {
   const [savingReviewFor, setSavingReviewFor] = useState(null)
   const [reviewMessage, setReviewMessage] = useState('')
   const [confirmingOrderId, setConfirmingOrderId] = useState(null)
+  const [receivingOrderId, setReceivingOrderId] = useState(null)
 
   useEffect(() => {
     loadAppointments()
@@ -137,6 +138,19 @@ export default function PatientDashboard() {
     }
   }
 
+  async function markOrderReceived(orderId) {
+    setReceivingOrderId(orderId)
+    setError('')
+    try {
+      await api.post(`/pharmacy/reservations/${orderId}/mark-received`)
+      await loadOrders()
+    } catch (err) {
+      setError(getErrorMessage(err, "Impossible de confirmer la reception de cette commande."))
+    } finally {
+      setReceivingOrderId(null)
+    }
+  }
+
   async function submitReview(doctorId) {
     setSavingReviewFor(doctorId)
     setReviewMessage('')
@@ -227,23 +241,35 @@ export default function PatientDashboard() {
               <div key={o.id} className="rounded-xl border border-forest-100 bg-white p-4">
                 <div className="mb-3">
                   <div className="flex items-center justify-between mb-2">
-                    <p className="text-forest-900 font-medium">{o.medication_name} <span className="text-xs text-forest-700 font-normal">({o.medication_reference})</span></p>
-                    <button onClick={() => toggleOrderHistory(o.id)} className="text-xs text-amber-600 hover:underline">
+                    <div className="space-y-0.5">
+                      {o.items.map((item) => (
+                        <p key={item.id} className="text-forest-900 font-medium">
+                          {item.quantity}x {item.medication_name} <span className="text-xs text-forest-700 font-normal">({item.medication_reference})</span>
+                        </p>
+                      ))}
+                    </div>
+                    <button onClick={() => toggleOrderHistory(o.id)} className="text-xs text-amber-600 hover:underline shrink-0 ml-3">
                       {expandedOrderId === o.id ? 'Masquer le suivi' : 'Voir le suivi'}
                     </button>
                   </div>
                   <p className="text-sm text-forest-700 mb-3">
-                    Quantite demandee: {o.quantity} - {o.delivery_mode === 'delivery' ? 'Livraison' : 'Retrait sur place'}
+                    {o.delivery_mode === 'delivery' ? 'Livraison' : 'Retrait sur place'}
                   </p>
                   <StatusStepper steps={RESERVATION_STEPS} currentValue={o.status} labels={RESERVATION_STATUS_LABELS} />
 
                   {o.status === 'awaiting_confirmation' && (
                     <div className="mt-4 pt-4 border-t border-forest-100 bg-amber-50 -mx-4 px-4 pb-1 rounded-b-xl">
                       <p className="text-sm font-medium text-forest-900 mb-1">La pharmacie propose :</p>
-                      <p className="text-sm text-forest-700 mb-3">
-                        {o.confirmed_quantity} unite(s) a {o.confirmed_unit_price?.toLocaleString('fr-FR')} FCFA piece
-                        {' '}- Total: {((o.confirmed_quantity || 0) * (o.confirmed_unit_price || 0)).toLocaleString('fr-FR')} FCFA
-                      </p>
+                      <div className="text-sm text-forest-700 mb-2">
+                        {o.items.map((item) => (
+                          <p key={item.id}>
+                            {item.medication_name}: {item.confirmed_quantity} unite(s) a {item.confirmed_unit_price?.toLocaleString('fr-FR')} FCFA piece
+                          </p>
+                        ))}
+                      </div>
+                      {o.total_amount !== null && o.total_amount !== undefined && (
+                        <p className="text-sm text-forest-900 font-medium mb-3">Total: {o.total_amount.toLocaleString('fr-FR')} FCFA</p>
+                      )}
                       {o.pharmacist_note && <p className="text-sm text-forest-700 italic mb-3">Note: {o.pharmacist_note}</p>}
                       <div className="flex gap-2 pb-3">
                         <button
@@ -271,6 +297,18 @@ export default function PatientDashboard() {
                   )}
                   {o.pharmacist_note && o.status !== 'awaiting_confirmation' && (
                     <p className="text-sm text-forest-700 italic">Note de la pharmacie: {o.pharmacist_note}</p>
+                  )}
+
+                  {(o.status === 'ready' || o.status === 'out_for_delivery') && (
+                    <div className="mt-3 pt-3 border-t border-forest-100">
+                      <button
+                        onClick={() => markOrderReceived(o.id)}
+                        disabled={receivingOrderId === o.id}
+                        className="rounded-full bg-forest-700 text-white px-5 py-1.5 text-sm font-medium hover:bg-forest-900 transition disabled:opacity-50"
+                      >
+                        {receivingOrderId === o.id ? '...' : "J'ai recu ma commande"}
+                      </button>
+                    </div>
                   )}
                 </div>
                 {expandedOrderId === o.id && orderHistory[o.id] && (

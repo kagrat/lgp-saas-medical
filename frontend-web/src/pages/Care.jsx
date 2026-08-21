@@ -2,7 +2,7 @@ import { Link } from 'react-router-dom'
 import { Video } from 'lucide-react'
 
 const CATEGORIES = [
-  { to: '/rechercher', label: 'Medecins', description: 'Consultations dans les hopitaux et cliniques adherents', image: '/images/doctor-consultation.jpg' },
+  { to: '/consultation', label: 'Medecins', description: 'Consultations dans les hopitaux et cliniques adherents', image: '/images/doctor-consultation.jpg' },
   { to: '/pharmacie', label: 'Pharmacies', description: 'Medicaments disponibles pres de chez toi', image: '/images/pharmacy-shelves.jpg' },
   { to: '/laboratoire', label: 'Laboratoires', description: 'Analyses medicales et resultats', image: '/images/lab-equipment.jpg' },
 ]

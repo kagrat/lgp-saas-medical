@@ -75,6 +75,33 @@ class EstablishmentOut(BaseModel):
     model_config = {"from_attributes": True}
 
 
+class EstablishmentSearchResult(BaseModel):
+    """NOUVEAU (parcours Consultation etablissement-first): resultat de
+    recherche public d'un etablissement par specialite, avec distance
+    calculee si une ville de reference est fournie."""
+    id: str
+    name: str
+    type: EstablishmentType
+    city: str
+    address: Optional[str] = None
+    distance_km: Optional[float] = None
+    doctor_count: int
+
+    model_config = {"from_attributes": True}
+
+
+class PharmacySearchResult(BaseModel):
+    """NOUVEAU (pharmacie-first): resultat de recherche public d'une
+    pharmacie, avec distance calculee si une ville de reference est fournie."""
+    id: str
+    name: str
+    city: str
+    address: Optional[str] = None
+    distance_km: Optional[float] = None
+
+    model_config = {"from_attributes": True}
+
+
 class EstablishmentStatusUpdate(BaseModel):
     is_active: bool
     subscription_status: Optional[SubscriptionStatus] = None
@@ -240,27 +267,46 @@ class StockItemOut(BaseModel):
     model_config = {"from_attributes": True}
 
 
-class ReservationCreate(BaseModel):
+class ReservationItemCreate(BaseModel):
+    """NOUVEAU: une ligne du panier (un medicament + une quantite)."""
     medication_id: str
     quantity: int = Field(ge=1)
+
+
+class ReservationCreate(BaseModel):
+    """
+    RESTRUCTURE (panier multi-articles): une commande contient desormais
+    une liste de lignes au lieu d'un seul medication_id/quantity.
+    """
+    items: list[ReservationItemCreate] = Field(min_length=1)
     delivery_mode: DeliveryMode = DeliveryMode.PICKUP
+
+
+class ReservationItemOut(BaseModel):
+    id: str
+    medication_id: str
+    medication_name: str
+    medication_reference: str
+    quantity: int
+    confirmed_quantity: Optional[int] = None
+    confirmed_unit_price: Optional[float] = None
+
+    model_config = {"from_attributes": True}
 
 
 class ReservationOut(BaseModel):
     id: str
     establishment_id: str
     patient_id: str
-    medication_id: str
-    medication_name: str
-    medication_reference: str
-    quantity: int
+    items: list[ReservationItemOut]
     delivery_mode: DeliveryMode
     status: ReservationStatus
     estimated_ready_at: Optional[datetime] = None
     pharmacist_note: Optional[str] = None
     created_at: datetime
-    confirmed_quantity: Optional[int] = None
-    confirmed_unit_price: Optional[float] = None
+    total_amount: Optional[float] = None
+    """Somme (confirmed_quantity * confirmed_unit_price) sur toutes les
+    lignes - None tant que le pharmacien n'a pas encore tout verifie."""
 
     model_config = {"from_attributes": True}
 
@@ -725,7 +771,18 @@ class LabReferralCreate(BaseModel):
     test_name: str = Field(min_length=2, max_length=200)
     sample_type: Optional[str] = None
 
+class ReservationItemReview(BaseModel):
+    """NOUVEAU: verification d'une ligne precise (par son id de ligne)."""
+    item_id: str
+    confirmed_quantity: int = Field(ge=0)
+    confirmed_unit_price: float = Field(ge=0)
+
+
 class ReservationReview(BaseModel):
-    confirmed_quantity: int = Field(gt=0)
-    confirmed_unit_price: float = Field(gt=0)
+    """
+    RESTRUCTURE (panier multi-articles): le pharmacien verifie chaque
+    ligne separement (une ligne peut etre en rupture alors qu'une autre
+    est disponible), plus une note globale pour la commande entiere.
+    """
+    items: list[ReservationItemReview] = Field(min_length=1)
     note: Optional[str] = Field(default=None, max_length=500)
