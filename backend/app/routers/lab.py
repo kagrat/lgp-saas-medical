@@ -57,13 +57,17 @@ def _to_lab_test_out(request: LabTestRequest, db: Session) -> LabTestRequestOut:
 
 
 @router.get("/search", response_model=list[LabOut])
-def search_labs(city: Optional[str] = None, db: Session = Depends(get_db)):
+def search_labs(city: Optional[str] = None, name: Optional[str] = None, db: Session = Depends(get_db)):
+    """NOUVEAU: recherche aussi par nom de laboratoire (demande M. Faustin),
+    en plus de la ville deja disponible."""
     query = db.query(Establishment).filter(
         Establishment.type == EstablishmentType.LABORATOIRE,
         Establishment.is_active == True,
     )
     if city:
         query = query.filter(Establishment.city.ilike(f"%{city}%"))
+    if name:
+        query = query.filter(Establishment.name.ilike(f"%{name}%"))
     return [LabOut(id=e.id, name=e.name, city=e.city, address=e.address) for e in query.limit(50).all()]
 
 

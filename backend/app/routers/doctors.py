@@ -2,6 +2,7 @@
 Module 4 - Gestion des medecins + Notes/avis + page profil public (nouveau).
 """
 import uuid
+from datetime import datetime
 from typing import Optional
 
 from fastapi import APIRouter, Depends, HTTPException, status
@@ -11,11 +12,13 @@ from sqlalchemy.orm import Session
 from app.database import get_db
 from app.models import (
     Doctor, User, UserRole, DoctorAvailability, DoctorAbsence, Establishment,
-    DoctorReview, Patient, Appointment, AppointmentStatus,
+    DoctorReview, Patient, Appointment, AppointmentStatus, MedicalDocument, PatientRecordShare,
 )
 from app.schemas import (
     DoctorCreate, DoctorOut, DoctorAvailabilityCreate, DoctorAbsenceCreate,
     DoctorAvailabilityOut, DoctorReviewCreate, DoctorReviewOut, DoctorDetailOut,
+    DoctorPatientOut, DoctorPatientDetailOut, DoctorPatientAppointmentOut,
+    PatientRecordShareCreate, PatientRecordShareOut, MedicalDocumentOut,
 )
 from app.deps import require_roles, get_current_user
 from app.security import hash_password
@@ -80,6 +83,7 @@ def search_doctors(
     specialty: Optional[str] = None,
     city: Optional[str] = None,
     establishment_id: Optional[str] = None,
+    name: Optional[str] = None,
     db: Session = Depends(get_db),
 ):
     query = db.query(Doctor).join(Establishment).filter(Doctor.is_active == True, Establishment.is_active == True)
@@ -89,6 +93,8 @@ def search_doctors(
         query = query.filter(Establishment.city.ilike(f"%{city}%"))
     if establishment_id:
         query = query.filter(Doctor.establishment_id == establishment_id)
+    if name:
+        query = query.join(User, User.id == Doctor.user_id).filter(User.full_name.ilike(f"%{name}%"))
 
     return [_to_doctor_out(db, doctor) for doctor in query.limit(50).all()]
 
@@ -287,3 +293,172 @@ def _get_doctor_in_scope(db: Session, doctor_id: str, current_user: User) -> Doc
     if doctor.establishment_id != current_user.establishment_id:
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Acces refuse a ce medecin")
     return doctor
+
+
+def _current_doctor(db: Session, current_user: User) -> Doctor:
+    doctor = db.query(Doctor).filter(Doctor.user_id == current_user.id).first()
+    if not doctor:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Profil medecin introuvable")
+    return doctor
+
+
+# ---------- MES PATIENTS (nouveau, demande M. Faustin) ----------
+# Distinct du repertoire etablissement (patients.py::establishment_patient_directory,
+# qui montre TOUS les patients de l'etablissement pour l'admin/secretariat):
+# ici, uniquement les patients que CE medecin a personnellement consultes
+# (rendez-vous termine), avec la possibilite de completer leur dossier.
+
+@router.get("/me/patients", response_model=list[DoctorPatientOut])
+def my_patients(search: Optional[str] = None, db: Session = Depends(get_db),
+                 current_user: User = Depends(require_roles(UserRole.DOCTOR))):
+    doctor = _current_doctor(db, current_user)
+
+    completed = (
+        db.query(Appointment)
+        .filter(Appointment.doctor_id == doctor.id, Appointment.status == AppointmentStatus.COMPLETED)
+        .all()
+    )
+    by_patient: dict[str, list[Appointment]] = {}
+    for appt in completed:
+        by_patient.setdefault(appt.patient_id, []).append(appt)
+
+    results = []
+    for patient_id, appts in by_patient.items():
+        patient = db.query(Patient).filter(Patient.id == patient_id).first()
+        if not patient:
+            continue
+        if search and search.strip() and search.strip().lower() not in patient.user.full_name.lower():
+            continue
+        last_visit = max(a.scheduled_at for a in appts)
+        results.append(DoctorPatientOut(
+            id=patient.id, full_name=patient.user.full_name, dossier_number=patient.dossier_number,
+            last_visit=last_visit, visits_count=len(appts),
+        ))
+
+    results.sort(key=lambda p: p.last_visit or datetime.min, reverse=True)
+    return results
+
+
+@router.get("/me/patients/{patient_id}", response_model=DoctorPatientDetailOut)
+def my_patient_detail(patient_id: str, db: Session = Depends(get_db),
+                       current_user: User = Depends(require_roles(UserRole.DOCTOR))):
+    doctor = _current_doctor(db, current_user)
+    patient = db.query(Patient).filter(Patient.id == patient_id).first()
+    if not patient:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Patient introuvable")
+
+    own_appointments = (
+        db.query(Appointment)
+        .filter(Appointment.doctor_id == doctor.id, Appointment.patient_id == patient_id,
+                Appointment.status == AppointmentStatus.COMPLETED)
+        .order_by(Appointment.scheduled_at.desc())
+        .all()
+    )
+
+    viewed_via_share_from = None
+    if own_appointments:
+        source_appointments = own_appointments
+        can_add_document = True
+    else:
+        # Pas son propre patient: n'autorise la consultation que si un
+        # confrere lui a explicitement partage ce dossier (lecture seule -
+        # completer le dossier reste reserve au medecin traitant, voir
+        # MedicalDocument et son principe de tracabilite par rendez-vous).
+        share = (
+            db.query(PatientRecordShare)
+            .filter(PatientRecordShare.to_doctor_id == doctor.id, PatientRecordShare.patient_id == patient_id)
+            .order_by(PatientRecordShare.created_at.desc())
+            .first()
+        )
+        if not share:
+            raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Ce patient ne fait pas partie de tes patients")
+        source_appointments = (
+            db.query(Appointment)
+            .filter(Appointment.doctor_id == share.from_doctor_id, Appointment.patient_id == patient_id,
+                    Appointment.status == AppointmentStatus.COMPLETED)
+            .order_by(Appointment.scheduled_at.desc())
+            .all()
+        )
+        can_add_document = False
+        viewed_via_share_from = share.from_doctor.user.full_name
+
+    appointment_ids = [a.id for a in source_appointments]
+    documents = (
+        db.query(MedicalDocument)
+        .filter(MedicalDocument.appointment_id.in_(appointment_ids))
+        .order_by(MedicalDocument.created_at.desc())
+        .all() if appointment_ids else []
+    )
+
+    return DoctorPatientDetailOut(
+        id=patient.id, full_name=patient.user.full_name, dossier_number=patient.dossier_number,
+        appointments=[DoctorPatientAppointmentOut(id=a.id, scheduled_at=a.scheduled_at) for a in source_appointments],
+        documents=[
+            MedicalDocumentOut(
+                id=d.id, appointment_id=d.appointment_id, patient_id=d.patient_id,
+                doctor_name=d.doctor.user.full_name if d.doctor else "Inconnu",
+                establishment_name=d.establishment.name if d.establishment else "Inconnu",
+                document_type=d.document_type, title=d.title, content=d.content, created_at=d.created_at,
+            ) for d in documents
+        ],
+        can_add_document=can_add_document,
+        viewed_via_share_from=viewed_via_share_from,
+    )
+
+
+# ---------- ENVOYER LE DOSSIER A UN CONFRERE (nouveau, demande M. Faustin) ----------
+
+@router.post("/me/patients/{patient_id}/share", response_model=PatientRecordShareOut, status_code=status.HTTP_201_CREATED)
+def share_patient_record(patient_id: str, payload: PatientRecordShareCreate, db: Session = Depends(get_db),
+                          current_user: User = Depends(require_roles(UserRole.DOCTOR))):
+    doctor = _current_doctor(db, current_user)
+
+    is_own_patient = (
+        db.query(Appointment)
+        .filter(Appointment.doctor_id == doctor.id, Appointment.patient_id == patient_id,
+                Appointment.status == AppointmentStatus.COMPLETED)
+        .first()
+    )
+    if not is_own_patient:
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Tu ne peux envoyer que le dossier de tes propres patients")
+
+    to_doctor = db.query(Doctor).filter(Doctor.id == payload.to_doctor_id, Doctor.is_active == True).first()
+    if not to_doctor:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Medecin destinataire introuvable")
+    if to_doctor.id == doctor.id:
+        raise HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_ENTITY, detail="Tu ne peux pas t'envoyer un dossier a toi-meme")
+
+    share = PatientRecordShare(
+        id=str(uuid.uuid4()), patient_id=patient_id, from_doctor_id=doctor.id,
+        to_doctor_id=to_doctor.id, note=payload.note,
+    )
+    db.add(share)
+    db.commit()
+    db.refresh(share)
+
+    patient = db.query(Patient).filter(Patient.id == patient_id).first()
+    return PatientRecordShareOut(
+        id=share.id, patient_id=share.patient_id, patient_name=patient.user.full_name,
+        from_doctor_id=doctor.id, from_doctor_name=current_user.full_name,
+        to_doctor_id=to_doctor.id, note=share.note, created_at=share.created_at,
+    )
+
+
+@router.get("/me/shared-with-me", response_model=list[PatientRecordShareOut])
+def shares_received(db: Session = Depends(get_db),
+                     current_user: User = Depends(require_roles(UserRole.DOCTOR))):
+    doctor = _current_doctor(db, current_user)
+    shares = (
+        db.query(PatientRecordShare)
+        .filter(PatientRecordShare.to_doctor_id == doctor.id)
+        .order_by(PatientRecordShare.created_at.desc())
+        .all()
+    )
+    return [
+        PatientRecordShareOut(
+            id=s.id, patient_id=s.patient_id, patient_name=s.patient.user.full_name,
+            from_doctor_id=s.from_doctor_id, from_doctor_name=s.from_doctor.user.full_name,
+            to_doctor_id=s.to_doctor_id, note=s.note, created_at=s.created_at,
+        )
+        for s in shares
+    ]

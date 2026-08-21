@@ -3,7 +3,7 @@ import api, { getErrorMessage } from '../api/client'
 import { AppointmentStatusBadge } from '../components/AppointmentStatusUI'
 import { DOCUMENT_TYPES, DOCUMENT_TYPE_LABELS } from '../components/DocumentType'
 import ChatWindow from '../components/ChatWindow'
-import PatientDirectory from '../components/PatientDirectory'
+import MyPatients from '../components/MyPatients'
 import LabReferralForm from '../components/LabReferralForm'
 
 export default function DesktopDoctorDashboard() {
@@ -23,11 +23,15 @@ export default function DesktopDoctorDashboard() {
   const [docForm, setDocForm] = useState({ document_type: 'consultation_note', title: '', content: '' })
   const [savingDoc, setSavingDoc] = useState(false)
   const [docMessage, setDocMessage] = useState('')
+  const [showCompleted, setShowCompleted] = useState(false)
 
   useEffect(() => {
     loadEstablishment()
-    loadAppointments()
   }, [])
+
+  useEffect(() => {
+    loadAppointments()
+  }, [showCompleted])
 
   useEffect(() => {
     if (tab === 'messages') loadConversations()
@@ -44,7 +48,7 @@ export default function DesktopDoctorDashboard() {
 
   async function loadAppointments() {
     try {
-      const { data } = await api.get('/appointments/establishment')
+      const { data } = await api.get('/appointments/establishment', { params: { include_completed: showCompleted } })
       setAppointments(data)
     } catch (err) {
       setError(getErrorMessage(err, 'Impossible de charger tes rendez-vous.'))
@@ -175,6 +179,17 @@ export default function DesktopDoctorDashboard() {
 
       {tab === 'appointments' && (
         <div className="space-y-2">
+          <div className="flex justify-between items-center mb-2">
+            <p className="text-xs text-forest-700">
+              Les rendez-vous termines ne s'affichent plus ici par defaut - retrouve tes patients et leur dossier dans l'onglet "Patients".
+            </p>
+            <button
+              onClick={() => setShowCompleted((v) => !v)}
+              className="text-xs text-amber-600 font-medium hover:underline shrink-0 ml-3"
+            >
+              {showCompleted ? 'Masquer les termines' : 'Afficher aussi les termines'}
+            </button>
+          </div>
           {appointments.length === 0 && <p className="text-forest-700">Aucun rendez-vous.</p>}
           {appointments.map((a) => (
             <div key={a.id} className="rounded-xl border border-forest-100 bg-white p-4">
@@ -287,7 +302,7 @@ export default function DesktopDoctorDashboard() {
         </div>
       )}
 
-      {tab === 'patients' && <PatientDirectory />}
+      {tab === 'patients' && <MyPatients />}
 
       {tab === 'messages' && (
         <div>

@@ -3,6 +3,7 @@ import api, { getRole, getErrorMessage } from '../api/client'
 
 export default function Laboratory() {
   const [city, setCity] = useState('')
+  const [name, setName] = useState('')
   const [labs, setLabs] = useState([])
   const [error, setError] = useState('')
   const [message, setMessage] = useState('')
@@ -15,7 +16,7 @@ export default function Laboratory() {
     setError('')
     setMessage('')
     try {
-      const { data } = await api.get('/lab/search', { params: city ? { city } : {} })
+      const { data } = await api.get('/lab/search', { params: { city: city || undefined, name: name || undefined } })
       setLabs(data)
     } catch (err) {
       setError(getErrorMessage(err, 'La recherche a echoue.'))
@@ -59,15 +60,22 @@ export default function Laboratory() {
         Trouve un laboratoire adhérent et demande ton analyse.
       </h1>
 
-      <form onSubmit={handleSearch} className="flex gap-3 mb-8">
+      <form onSubmit={handleSearch} className="grid sm:grid-cols-2 gap-3 mb-8">
         <input
-          value={city} onChange={(e) => setCity(e.target.value)}
-          placeholder="Ville (optionnel)..."
-          className="flex-1 rounded-lg border border-forest-100 px-4 py-2.5 focus:border-forest-500"
+          value={name} onChange={(e) => setName(e.target.value)}
+          placeholder="Nom du laboratoire (optionnel)..."
+          className="rounded-lg border border-forest-100 px-4 py-2.5 focus:border-forest-500"
         />
-        <button type="submit" className="rounded-full bg-forest-700 text-white px-6 py-2.5 font-medium hover:bg-forest-900 transition">
-          Rechercher
-        </button>
+        <div className="flex gap-3">
+          <input
+            value={city} onChange={(e) => setCity(e.target.value)}
+            placeholder="Ville (optionnel)..."
+            className="flex-1 rounded-lg border border-forest-100 px-4 py-2.5 focus:border-forest-500"
+          />
+          <button type="submit" className="rounded-full bg-forest-700 text-white px-6 py-2.5 font-medium hover:bg-forest-900 transition">
+            Rechercher
+          </button>
+        </div>
       </form>
 
       {error && <p className="text-clay-600 mb-4">{error}</p>}

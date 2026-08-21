@@ -216,7 +216,7 @@ def complete_appointment(appointment_id: str, db: Session = Depends(get_db),
 
 
 @router.get("/establishment", response_model=list[AppointmentOut])
-def establishment_appointments(db: Session = Depends(get_db),
+def establishment_appointments(include_completed: bool = False, db: Session = Depends(get_db),
                                 current_user: User = Depends(require_roles(
                                     UserRole.ESTABLISHMENT_ADMIN, UserRole.SECRETARY, UserRole.DOCTOR))):
     query = db.query(Appointment).filter(Appointment.establishment_id == current_user.establishment_id)
@@ -224,5 +224,12 @@ def establishment_appointments(db: Session = Depends(get_db),
         doctor = db.query(Doctor).filter(Doctor.user_id == current_user.id).first()
         if doctor:
             query = query.filter(Appointment.doctor_id == doctor.id)
+        # NOUVEAU (demande M. Faustin): une fois termine, un rendez-vous
+        # quitte la liste "Mes rendez-vous" du medecin par defaut - le
+        # patient et son historique se retrouvent desormais dans l'onglet
+        # "Mes patients" (voir doctors.py::my_patients). L'admin/secretariat
+        # continue de tout voir (utile pour le suivi/la facturation).
+        if not include_completed:
+            query = query.filter(Appointment.status != AppointmentStatus.COMPLETED)
     appointments = query.order_by(Appointment.scheduled_at.asc()).all()
     return [_to_appointment_out(a) for a in appointments]

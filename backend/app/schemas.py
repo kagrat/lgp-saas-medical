@@ -380,6 +380,53 @@ class MedicalDocumentOut(BaseModel):
 
     model_config = {"from_attributes": True}
 
+
+class DoctorPatientOut(BaseModel):
+    """NOUVEAU: une ligne de la liste 'Mes patients' d'un medecin - distinct
+    du repertoire etablissement (PatientDirectoryOut), filtre a CE medecin."""
+    id: str
+    full_name: str
+    dossier_number: str
+    last_visit: Optional[datetime] = None
+    visits_count: int
+
+
+class DoctorPatientAppointmentOut(BaseModel):
+    id: str
+    scheduled_at: datetime
+
+
+class DoctorPatientDetailOut(BaseModel):
+    """NOUVEAU: fiche patient vue par un medecin - ses propres rendez-vous
+    termines avec ce patient + les documents associes. can_add_document
+    indique si CE medecin peut completer le dossier (patient traite
+    personnellement) ou le consulte seulement via un partage recu d'un
+    confrere (lecture seule)."""
+    id: str
+    full_name: str
+    dossier_number: str
+    appointments: list[DoctorPatientAppointmentOut]
+    documents: list[MedicalDocumentOut]
+    can_add_document: bool
+    viewed_via_share_from: Optional[str] = None
+
+
+class PatientRecordShareCreate(BaseModel):
+    to_doctor_id: str
+    note: Optional[str] = Field(default=None, max_length=500)
+
+
+class PatientRecordShareOut(BaseModel):
+    id: str
+    patient_id: str
+    patient_name: str
+    from_doctor_id: str
+    from_doctor_name: str
+    to_doctor_id: str
+    note: Optional[str] = None
+    created_at: datetime
+
+
 class LabOut(BaseModel):
     id: str
     name: str

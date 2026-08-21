@@ -330,6 +330,31 @@ class MedicalDocument(Base):
     doctor = relationship("Doctor")
     establishment = relationship("Establishment")
 
+
+class PatientRecordShare(Base):
+    """
+    NOUVEAU - permet a un medecin d'envoyer le dossier d'UN DE SES PATIENTS
+    (verifie: au moins un rendez-vous termine ensemble) a un confrere, qui
+    peut alors CONSULTER (lecture seule) l'historique de ce patient avec le
+    medecin emetteur. Le medecin destinataire ne peut PAS ajouter de
+    documents via ce partage - seul le medecin traitant (avec un rendez-vous
+    reel) peut completer le dossier, conformement au principe de tracabilite
+    deja en place (voir MedicalDocument).
+    """
+    __tablename__ = "patient_record_shares"
+
+    id = Column(UUID(as_uuid=False), primary_key=True, default=gen_uuid)
+    patient_id = Column(UUID(as_uuid=False), ForeignKey("patients.id"), nullable=False)
+    from_doctor_id = Column(UUID(as_uuid=False), ForeignKey("doctors.id"), nullable=False)
+    to_doctor_id = Column(UUID(as_uuid=False), ForeignKey("doctors.id"), nullable=False)
+    note = Column(Text, nullable=True)
+    created_at = Column(DateTime, default=datetime.utcnow)
+
+    patient = relationship("Patient")
+    from_doctor = relationship("Doctor", foreign_keys=[from_doctor_id])
+    to_doctor = relationship("Doctor", foreign_keys=[to_doctor_id])
+
+
 class LabTestStatus(str, enum.Enum):
     REQUESTED = "requested"
     SAMPLE_COLLECTED = "sample_collected"
