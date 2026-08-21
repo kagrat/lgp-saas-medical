@@ -63,7 +63,7 @@ export default function PatientSearch() {
       }
       setStep(2)
     } catch (err) {
-      setError(getErrorMessage(err, "La recherche a echoue. Verifie les champs et reessaie."))
+      setError(getErrorMessage(err, "La recherche a échoué. Vérifie les champs et reessaie."))
     } finally {
       setLoading(false)
     }
@@ -100,20 +100,20 @@ export default function PatientSearch() {
 
   return (
     <div className="max-w-4xl mx-auto px-6 py-14">
-      <p className="text-amber-600 font-medium tracking-wide uppercase text-xs mb-3">Recherche et decouverte</p>
+      <p className="text-amber-600 font-medium tracking-wide uppercase text-xs mb-3">Recherche et découverte</p>
       <h1 className="font-display text-4xl font-semibold text-forest-900 mb-3">
-        Trouve un medecin, on te propose toujours un creneau.
+        Trouve un médecin, on te propose toujours un créneau.
       </h1>
       <p className="text-forest-700 max-w-2xl mb-10">
-        Si le medecin demande n'est pas disponible, la plateforme suggere automatiquement
-        d'autres creneaux, d'autres medecins de la meme specialite, ou un autre etablissement adherent proche.
+        Si le médecin demande n'est pas disponible, la plateforme suggere automatiquement
+        d'autres créneaux, d'autres médecins de la meme spécialité, ou un autre établissement adhérent proche.
       </p>
 
       {step < 3 && <StepIndicator current={step} total={3} label={step === 1 ? 'Recherche' : 'Choisis ton creneau'} />}
 
       {confirmation ? (
         <div className="rounded-2xl border border-forest-300 bg-forest-50 p-6">
-          <p className="font-display text-xl text-forest-900 font-semibold mb-1">Rendez-vous confirme</p>
+          <p className="font-display text-xl text-forest-900 font-semibold mb-1">Rendez-vous confirmé</p>
           <p className="text-forest-700">
             Le {new Date(confirmation.scheduled_at).toLocaleString('fr-FR')} - une confirmation te sera envoyee par email/SMS.
           </p>
@@ -146,10 +146,10 @@ export default function PatientSearch() {
 
         <form onSubmit={handleSearch} className="grid sm:grid-cols-2 gap-4 bg-white rounded-2xl p-6 border border-forest-100 shadow-sm">
           <div>
-            <label className="block text-sm font-medium text-forest-900 mb-1">Specialite</label>
+            <label className="block text-sm font-medium text-forest-900 mb-1">Spécialité</label>
             <select required value={form.specialty} onChange={(e) => update('specialty', e.target.value)}
               className="w-full rounded-lg border border-forest-100 px-4 py-2.5 focus:border-forest-500 bg-white">
-              <option value="" disabled>Choisis une specialite</option>
+              <option value="" disabled>Choisis une spécialité</option>
               {SPECIALTIES.map((s) => (
                 <option key={s} value={s}>{s}</option>
               ))}
@@ -163,7 +163,7 @@ export default function PatientSearch() {
           </div>
           <div>
             <label className="block text-sm font-medium text-forest-900 mb-1">
-              Date souhaitee {quickRange === 'week' && <span className="text-forest-700 font-normal">(ignoree - recherche sur 7 jours)</span>}
+              Date souhaitee {quickRange === 'week' && <span className="text-forest-700 font-normal">(ignorée - recherche sur 7 jours)</span>}
             </label>
             <input type="date" required={quickRange !== 'week'} disabled={quickRange === 'week'}
               value={form.preferred_date}
@@ -171,7 +171,7 @@ export default function PatientSearch() {
               className="w-full rounded-lg border border-forest-100 px-4 py-2.5 focus:border-forest-500 disabled:bg-forest-50" />
           </div>
           <div>
-            <label className="block text-sm font-medium text-forest-900 mb-1">Heure souhaitee (optionnel)</label>
+            <label className="block text-sm font-medium text-forest-900 mb-1">Heure souhaitée (optionnel)</label>
             <input type="time" value={form.preferred_time} onChange={(e) => update('preferred_time', e.target.value)}
               className="w-full rounded-lg border border-forest-100 px-4 py-2.5 focus:border-forest-500" />
           </div>
@@ -186,15 +186,15 @@ export default function PatientSearch() {
       ) : (
         <div>
           {result.exact_match_available ? (
-            <p className="text-forest-900 font-medium mb-4">Creneau exact disponible :</p>
+            <p className="text-forest-900 font-medium mb-4">Créneau exact disponible :</p>
           ) : (
             <p className="text-forest-900 font-medium mb-4">
-              Le creneau exact n'est pas disponible. Voici les meilleures alternatives :
+              Le créneau exact n'est pas disponible. Voici les meilleures alternatives :
             </p>
           )}
 
           {result.suggestions.length === 0 && (
-            <p className="text-forest-700">Aucun creneau disponible pour ces criteres dans les prochains jours.</p>
+            <p className="text-forest-700">Aucun créneau disponible pour ces critères dans les prochains jours.</p>
           )}
 
           <div className="grid sm:grid-cols-2 gap-4">
@@ -213,7 +213,7 @@ export default function PatientSearch() {
                   onClick={() => chooseSlot(slot)}
                   className="mt-2 rounded-full bg-amber-500 text-forest-900 py-2 font-semibold hover:bg-amber-400 transition"
                 >
-                  Choisir ce creneau
+                  Choisir ce créneau
                 </button>
               </div>
             ))}
@@ -226,7 +226,7 @@ export default function PatientSearch() {
           {role !== 'patient' && (
             <p className="text-sm text-forest-700 mt-6">
               <Link to="/connexion" className="text-amber-600 font-medium hover:underline">Connecte-toi</Link> ou{' '}
-              <Link to="/inscription" className="text-amber-600 font-medium hover:underline">cree un compte patient</Link> pour confirmer un rendez-vous.
+              <Link to="/inscription" className="text-amber-600 font-medium hover:underline">créer un compte patient</Link> pour confirmer un rendez-vous.
             </p>
           )}
         </div>

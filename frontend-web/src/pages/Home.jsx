@@ -43,12 +43,12 @@ export default function Home() {
         <div>
           <p className="text-amber-600 font-medium tracking-wide uppercase text-xs mb-4">LGP HOLDINGS</p>
           <h1 className="font-display text-4xl lg:text-5xl font-semibold text-forest-900 leading-tight mb-6">
-            La medecine, reservee comme un vol ou une chambre d'hotel.
+            La medecine, réservée comme un vol ou une chambre d'hotel.
           </h1>
           <p className="text-forest-700 mb-10 text-lg">
-            Cherche un medecin par specialite, verifie ses disponibilites en temps reel,
-            et prends rendez-vous en un clic dans l'un des etablissements adherents au Benin.
-            Si ton medecin n'est pas libre, on te propose toujours une alternative.
+            Cherche un médecin par spécialité, vérifie ses disponibilités en temps reel,
+            et prends rendez-vous en un clic dans l'un des établissements adhérents au Benin.
+            Si ton médecin n'est pas libre, on te propose toujours une alternative.
           </p>
           <div className="flex flex-wrap items-center gap-4">
             <Link to="/consultation" className="rounded-full bg-forest-700 text-white px-8 py-3.5 font-medium hover:bg-forest-900 transition">
@@ -72,7 +72,7 @@ export default function Home() {
           />
           <div className="absolute -bottom-5 -left-5 bg-white rounded-2xl shadow-lg px-5 py-4 hidden sm:block">
             <p className="font-display text-2xl font-semibold text-forest-900">4</p>
-            <p className="text-xs text-forest-700">types d'etablissements adherents</p>
+            <p className="text-xs text-forest-700">types d'établissements adhérents</p>
           </div>
         </div>
       </div>

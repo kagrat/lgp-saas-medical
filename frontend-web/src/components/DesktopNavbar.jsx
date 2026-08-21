@@ -4,7 +4,7 @@ import { getRole, clearSession } from '../api/client'
 import { Link } from 'react-router-dom'
 
 const ROLE_LINKS = {
-  establishment_admin: { to: '/admin-etablissement', label: 'Mon etablissement' },
+  establishment_admin: { to: '/admin-etablissement', label: 'Mon établissement' },
   doctor: { to: '/mon-espace-medecin', label: 'Mon espace' },
   pharmacist: { to: '/mon-espace-pharmacie', label: 'Mon espace' },
   lab_technician: { to: '/mon-espace-laboratoire', label: 'Mon espace' },

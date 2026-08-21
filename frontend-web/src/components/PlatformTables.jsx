@@ -7,7 +7,7 @@ import FilterTabs from './FilterTabs'
 const TABLES = [
   { value: 'appointments', label: 'Rendez-vous' },
   { value: 'orders', label: 'Commandes' },
-  { value: 'doctors', label: 'Medecins' },
+  { value: 'doctors', label: 'Médecins' },
   { value: 'pharmacies', label: 'Pharmacies' },
   { value: 'laboratories', label: 'Laboratoires' },
 ]
@@ -99,7 +99,7 @@ function TableView({ rows, columns, render }) {
           ))}
         </tbody>
       </table>
-      {rows.length === 0 && <p className="text-forest-700 p-4">Aucune donnee.</p>}
+      {rows.length === 0 && <p className="text-forest-700 p-4">Aucune donnée.</p>}
     </div>
   )
 }

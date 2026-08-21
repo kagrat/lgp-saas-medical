@@ -56,7 +56,7 @@ export default function Laboratory() {
     <div className="max-w-4xl mx-auto px-6 py-14">
       <p className="text-amber-600 font-medium tracking-wide uppercase text-xs mb-3">Laboratoire</p>
       <h1 className="font-display text-4xl font-semibold text-forest-900 mb-6">
-        Trouve un laboratoire adherent et demande ton analyse.
+        Trouve un laboratoire adhérent et demande ton analyse.
       </h1>
 
       <form onSubmit={handleSearch} className="flex gap-3 mb-8">

@@ -48,7 +48,7 @@ export default function LabCatalogManager() {
       setRefForm({ test_name: '', unit: '', min_value: '', max_value: '', notes: '' })
       await load()
     } catch (err) {
-      setError(getErrorMessage(err, "Impossible d'ajouter cette valeur de reference."))
+      setError(getErrorMessage(err, "Impossible d'ajouter cette valeur de référence."))
     } finally {
       setSavingRef(false)
     }
@@ -72,7 +72,7 @@ export default function LabCatalogManager() {
       setEquipForm({ name: '', status: 'fonctionnel', notes: '' })
       await load()
     } catch (err) {
-      setError(getErrorMessage(err, "Impossible d'ajouter cet equipement."))
+      setError(getErrorMessage(err, "Impossible d'ajouter cet équipement."))
     } finally {
       setSavingEquip(false)
     }
@@ -91,7 +91,7 @@ export default function LabCatalogManager() {
     <div>
       {error && <p className="text-clay-600 mb-4">{error}</p>}
 
-      <h3 className="font-display text-lg text-forest-900 font-semibold mb-3">Valeurs de reference</h3>
+      <h3 className="font-display text-lg text-forest-900 font-semibold mb-3">Valeurs de référence</h3>
       <form onSubmit={handleAddRef} className="grid sm:grid-cols-2 gap-3 bg-white border border-forest-100 rounded-xl p-5 mb-4">
         <input required placeholder="Nom de l'analyse (ex: Glycemie)" value={refForm.test_name}
           onChange={(e) => setRefForm({ ...refForm, test_name: e.target.value })}
@@ -114,7 +114,7 @@ export default function LabCatalogManager() {
         </button>
       </form>
       <div className="space-y-2 mb-8">
-        {refValues.length === 0 && <p className="text-forest-700 text-sm">Aucune valeur de reference enregistree.</p>}
+        {refValues.length === 0 && <p className="text-forest-700 text-sm">Aucune valeur de référence enregistrée.</p>}
         {refValues.map((r) => (
           <div key={r.id} className="rounded-xl border border-forest-100 bg-white p-4 flex justify-between items-center">
             <div>
@@ -130,9 +130,9 @@ export default function LabCatalogManager() {
         ))}
       </div>
 
-      <h3 className="font-display text-lg text-forest-900 font-semibold mb-3">Equipements</h3>
+      <h3 className="font-display text-lg text-forest-900 font-semibold mb-3">Équipements</h3>
       <form onSubmit={handleAddEquip} className="grid sm:grid-cols-3 gap-3 bg-white border border-forest-100 rounded-xl p-5 mb-4">
-        <input required placeholder="Nom de l'equipement" value={equipForm.name}
+        <input required placeholder="Nom de l'équipement" value={equipForm.name}
           onChange={(e) => setEquipForm({ ...equipForm, name: e.target.value })}
           className="rounded-lg border border-forest-100 px-3 py-2" />
         <select value={equipForm.status} onChange={(e) => setEquipForm({ ...equipForm, status: e.target.value })}
@@ -150,7 +150,7 @@ export default function LabCatalogManager() {
         </button>
       </form>
       <div className="space-y-2">
-        {equipment.length === 0 && <p className="text-forest-700 text-sm">Aucun equipement enregistre.</p>}
+        {equipment.length === 0 && <p className="text-forest-700 text-sm">Aucun équipement enregistré.</p>}
         {equipment.map((e) => (
           <div key={e.id} className="rounded-xl border border-forest-100 bg-white p-4 flex justify-between items-center">
             <div>

@@ -26,7 +26,7 @@ export default function ActivityLog() {
           <thead>
             <tr className="border-b border-forest-100 text-left text-forest-700">
               <th className="px-4 py-3 font-medium">Utilisateur</th>
-              <th className="px-4 py-3 font-medium">Etablissement</th>
+              <th className="px-4 py-3 font-medium">Établissement</th>
               <th className="px-4 py-3 font-medium">Action</th>
               <th className="px-4 py-3 font-medium">Details</th>
               <th className="px-4 py-3 font-medium">Date</th>
@@ -46,7 +46,7 @@ export default function ActivityLog() {
             ))}
           </tbody>
         </table>
-        {logs.length === 0 && <p className="text-forest-700 p-4">Aucune activite enregistree.</p>}
+        {logs.length === 0 && <p className="text-forest-700 p-4">Aucune activité enregistrée.</p>}
       </div>
     </div>
   )

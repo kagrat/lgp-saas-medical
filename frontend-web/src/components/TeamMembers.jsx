@@ -63,7 +63,7 @@ export default function TeamMembers() {
         <input required type="email" placeholder="Email" value={form.email}
           onChange={(e) => setForm({ ...form, email: e.target.value })}
           className="rounded-lg border border-forest-100 px-3 py-2" />
-        <input placeholder="Telephone (optionnel)" value={form.phone}
+        <input placeholder="Téléphone (optionnel)" value={form.phone}
           onChange={(e) => setForm({ ...form, phone: e.target.value })}
           className="rounded-lg border border-forest-100 px-3 py-2" />
         <select value={form.role} onChange={(e) => setForm({ ...form, role: e.target.value })}
@@ -82,7 +82,7 @@ export default function TeamMembers() {
       {error && <p className="text-clay-600 mb-4">{error}</p>}
 
       <div className="space-y-2">
-        {staff.length === 0 && <p className="text-forest-700">Aucun membre d'equipe ajoute pour le moment.</p>}
+        {staff.length === 0 && <p className="text-forest-700">Aucun membre d'équipe ajouté pour le moment.</p>}
         {staff.map((s) => (
           <div key={s.id} className="rounded-xl border border-forest-100 bg-white p-4 flex justify-between items-center">
             <div>

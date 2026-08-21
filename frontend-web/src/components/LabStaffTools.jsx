@@ -88,7 +88,7 @@ export function RegisterTestByStaff({ onRegistered }) {
 
   return (
     <div className="rounded-xl border border-forest-100 bg-white p-5 mb-6">
-      <p className="font-medium text-forest-900 mb-3">Enregistrer une analyse pour un patient present sur place</p>
+      <p className="font-medium text-forest-900 mb-3">Enregistrer une analyse pour un patient présent sur place</p>
 
       <form onSubmit={searchPatients} className="flex gap-2 mb-3">
         <input

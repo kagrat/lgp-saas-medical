@@ -55,8 +55,8 @@ export default function DesktopLogin() {
           <span className="font-display text-2xl font-semibold text-white">LGP Console</span>
         </div>
         <div className="bg-white rounded-2xl p-8">
-          <h1 className="font-display text-2xl text-forest-900 font-semibold mb-1">Espace etablissement</h1>
-          <p className="text-forest-700 text-sm mb-6">Reserve aux etablissements adherents et a l'administration LGP HOLDINGS.</p>
+          <h1 className="font-display text-2xl text-forest-900 font-semibold mb-1">Espace établissement</h1>
+          <p className="text-forest-700 text-sm mb-6">Réserve aux établissements adhérents et a l'administration LGP HOLDINGS.</p>
 
           {notice && (
             <p className="text-amber-700 bg-amber-50 border border-amber-200 rounded-lg px-4 py-3 mb-4 text-sm">

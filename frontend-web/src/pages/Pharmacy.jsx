@@ -147,9 +147,9 @@ export default function Pharmacy() {
 
       {confirmation ? (
         <div className="rounded-2xl border border-forest-300 bg-forest-50 p-6">
-          <p className="font-display text-xl text-forest-900 font-semibold mb-1">Commande envoyee</p>
+          <p className="font-display text-xl text-forest-900 font-semibold mb-1">Commande envoyée</p>
           <p className="text-forest-700 mb-4">
-            La pharmacie va verifier la disponibilite et te transmettra une proposition a confirmer.
+            La pharmacie va vérifier la disponibilité et te transmettra une proposition a confirmer.
             Retrouve le suivi dans "Mon espace" - Mes commandes pharmacie.
           </p>
           <button onClick={startOver} className="rounded-full bg-forest-700 text-white px-6 py-2.5 font-medium hover:bg-forest-900 transition">
@@ -160,7 +160,7 @@ export default function Pharmacy() {
         <>
           <form onSubmit={searchPharmacies} className="grid sm:grid-cols-2 gap-4 bg-white rounded-2xl p-6 border border-forest-100 shadow-sm mb-6">
             <div>
-              <label className="block text-sm font-medium text-forest-900 mb-1">Ta ville (pour trier par proximite)</label>
+              <label className="block text-sm font-medium text-forest-900 mb-1">Ta ville (pour trier par proximité)</label>
               <input value={city} onChange={(e) => setCity(e.target.value)}
                 placeholder="Cotonou, Parakou, Porto-Novo..."
                 className="w-full rounded-lg border border-forest-100 px-4 py-2.5 focus:border-forest-500" />
@@ -194,7 +194,7 @@ export default function Pharmacy() {
               </button>
             ))}
             {pharmacies.length === 0 && !loading && (
-              <p className="text-forest-700 sm:col-span-2">Lance une recherche pour voir les pharmacies adherentes.</p>
+              <p className="text-forest-700 sm:col-span-2">Lance une recherche pour voir les pharmacies adhérentes.</p>
             )}
           </div>
         </>
@@ -210,7 +210,7 @@ export default function Pharmacy() {
           <form onSubmit={searchProducts} className="flex gap-3 mb-6">
             <input
               value={productQuery} onChange={(e) => setProductQuery(e.target.value)}
-              placeholder="Nom du medicament ou reference..."
+              placeholder="Nom du médicament ou référence..."
               className="flex-1 rounded-lg border border-forest-100 px-4 py-2.5 focus:border-forest-500"
             />
             <button type="submit" disabled={loading} className="rounded-full bg-forest-700 text-white px-6 py-2.5 font-medium hover:bg-forest-900 transition disabled:opacity-50">
@@ -241,14 +241,14 @@ export default function Pharmacy() {
               )
             })}
             {products.length === 0 && !loading && (
-              <p className="text-forest-700 sm:col-span-2">Aucun medicament trouve dans cette pharmacie.</p>
+              <p className="text-forest-700 sm:col-span-2">Aucun médicament trouvé dans cette pharmacie.</p>
             )}
           </div>
 
           <div className="rounded-2xl border border-forest-100 bg-white p-6">
             <p className="font-display text-lg text-forest-900 font-semibold mb-4">Ton panier</p>
             {cart.length === 0 ? (
-              <p className="text-forest-700 mb-4">Ton panier est vide - ajoute des medicaments ci-dessus.</p>
+              <p className="text-forest-700 mb-4">Ton panier est vide - ajoute des médicaments ci-dessus.</p>
             ) : (
               <div className="space-y-3 mb-4">
                 {cart.map((line) => (
@@ -274,7 +274,7 @@ export default function Pharmacy() {
               <>
                 <p className="text-forest-900 font-semibold mb-4">Total: {cartTotal.toLocaleString('fr-FR')} FCFA</p>
                 <div className="mb-4">
-                  <label className="block text-sm font-medium text-forest-900 mb-1">Mode de reception</label>
+                  <label className="block text-sm font-medium text-forest-900 mb-1">Mode de réception</label>
                   <select value={deliveryMode} onChange={(e) => setDeliveryMode(e.target.value)}
                     className="w-full sm:w-auto rounded-lg border border-forest-100 px-4 py-2.5 bg-white">
                     <option value="pickup">Retrait sur place</option>

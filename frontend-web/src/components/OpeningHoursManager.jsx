@@ -77,7 +77,7 @@ export default function OpeningHoursManager() {
       {error && <p className="text-clay-600 mb-4">{error}</p>}
 
       <div className="flex flex-wrap gap-2">
-        {hours.length === 0 && <p className="text-forest-700 text-sm">Aucun horaire renseigne pour le moment.</p>}
+        {hours.length === 0 && <p className="text-forest-700 text-sm">Aucun horaire renseigné pour le moment.</p>}
         {hours.map((h) => (
           <div key={h.id} className="flex items-center gap-2 rounded-full bg-forest-50 px-3 py-1.5 text-sm text-forest-900">
             <span>

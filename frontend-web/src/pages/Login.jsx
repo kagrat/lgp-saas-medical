@@ -86,7 +86,7 @@ export default function Login() {
           {!wasStaffSession && (
             <p className="text-sm text-forest-700 mt-6">
               Nouveau patient ?{' '}
-              <Link to="/inscription" className="text-amber-600 font-medium hover:underline">Creer un compte</Link>
+              <Link to="/inscription" className="text-amber-600 font-medium hover:underline">Créer un compte</Link>
             </p>
           )}
         </div>
@@ -94,7 +94,7 @@ export default function Login() {
         <div className="hidden lg:block">
           <img
             src="/images/login-background.jpg"
-            alt="Etablissement de sante"
+            alt="Établissement de santé"
             className="w-full h-[480px] object-cover rounded-3xl shadow-lg"
           />
         </div>

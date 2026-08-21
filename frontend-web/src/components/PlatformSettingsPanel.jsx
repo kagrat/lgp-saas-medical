@@ -35,7 +35,7 @@ export default function PlatformSettingsPanel() {
   return (
     <div>
       <p className="text-sm text-forest-700 mb-4">
-        Reglages generaux de la plateforme. D'autres parametres (paiements, roles avances)
+        Reglages généraux de la plateforme. D'autres parametres (paiements, roles avances)
         arriveront quand l'infrastructure correspondante sera en place.
       </p>
       {error && <p className="text-clay-600 mb-4">{error}</p>}
@@ -52,7 +52,7 @@ export default function PlatformSettingsPanel() {
             className="w-full rounded-lg border border-forest-100 px-4 py-2.5 focus:border-forest-500" />
         </div>
         <div>
-          <label className="block text-sm font-medium text-forest-900 mb-1">Telephone de support</label>
+          <label className="block text-sm font-medium text-forest-900 mb-1">Téléphone de support</label>
           <input value={form.support_phone} onChange={(e) => setForm({ ...form, support_phone: e.target.value })}
             className="w-full rounded-lg border border-forest-100 px-4 py-2.5 focus:border-forest-500" />
         </div>

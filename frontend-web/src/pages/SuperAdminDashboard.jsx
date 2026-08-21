@@ -84,7 +84,7 @@ export default function SuperAdminDashboard() {
       })
       await loadAll()
     } catch (err) {
-      setError(getErrorMessage(err, "Impossible de creer cet etablissement."))
+      setError(getErrorMessage(err, "Impossible de créer cet établissement."))
     }
   }
 
@@ -129,7 +129,7 @@ export default function SuperAdminDashboard() {
       setEditingId(null)
       await loadAll()
     } catch (err) {
-      setError(getErrorMessage(err, "Impossible de modifier cet etablissement."))
+      setError(getErrorMessage(err, "Impossible de modifier cet établissement."))
     } finally {
       setSavingEdit(false)
     }
@@ -181,14 +181,14 @@ export default function SuperAdminDashboard() {
         </div>
       )}
 
-      <h2 className="font-display text-xl font-semibold text-forest-900 mb-4">Ajouter un etablissement adherent</h2>
+      <h2 className="font-display text-xl font-semibold text-forest-900 mb-4">Ajouter un établissement adhérent</h2>
       <form onSubmit={handleCreate} className="grid sm:grid-cols-2 gap-3 bg-white border border-forest-100 rounded-xl p-5 mb-10">
-        <input required placeholder="Nom de l'etablissement" value={newEstablishment.name}
+        <input required placeholder="Nom de l'établissement" value={newEstablishment.name}
           onChange={(e) => setNewEstablishment({ ...newEstablishment, name: e.target.value })}
           className="rounded-lg border border-forest-100 px-3 py-2" />
         <select value={newEstablishment.type} onChange={(e) => setNewEstablishment({ ...newEstablishment, type: e.target.value })}
           className="rounded-lg border border-forest-100 px-3 py-2">
-          <option value="hopital">Hopital</option>
+          <option value="hopital">Hôpital</option>
           <option value="clinique">Clinique</option>
           <option value="pharmacie">Pharmacie</option>
           <option value="laboratoire">Laboratoire</option>
@@ -210,7 +210,7 @@ export default function SuperAdminDashboard() {
         <p className="sm:col-span-2 text-xs text-forest-700 -mt-2">
           Laisse vide pour utiliser la position approximative de la ville.
         </p>
-        <input required placeholder="Nom admin etablissement" value={newEstablishment.admin_full_name}
+        <input required placeholder="Nom admin établissement" value={newEstablishment.admin_full_name}
           onChange={(e) => setNewEstablishment({ ...newEstablishment, admin_full_name: e.target.value })}
           className="rounded-lg border border-forest-100 px-3 py-2" />
         <input required type="email" placeholder="Email admin" value={newEstablishment.admin_email}
@@ -220,11 +220,11 @@ export default function SuperAdminDashboard() {
           onChange={(e) => setNewEstablishment({ ...newEstablishment, admin_password: e.target.value })}
           className="rounded-lg border border-forest-100 px-3 py-2 sm:col-span-2" />
         <button type="submit" className="sm:col-span-2 rounded-full bg-forest-700 text-white py-2.5 font-medium hover:bg-forest-900 transition">
-          Creer l'etablissement
+          Créer l'établissement
         </button>
       </form>
 
-      <h2 className="font-display text-xl font-semibold text-forest-900 mb-4">Etablissements adherents</h2>
+      <h2 className="font-display text-xl font-semibold text-forest-900 mb-4">Établissements adhérents</h2>
       <div className="space-y-2 mb-10">
         {establishments.map((est) => (
           <div key={est.id} className="rounded-xl border border-forest-100 bg-white p-4">
@@ -234,7 +234,7 @@ export default function SuperAdminDashboard() {
                   placeholder="Nom" className="rounded-lg border border-forest-100 px-3 py-2" />
                 <select value={editForm.type} onChange={(e) => setEditForm({ ...editForm, type: e.target.value })}
                   className="rounded-lg border border-forest-100 px-3 py-2">
-                  <option value="hopital">Hopital</option>
+                  <option value="hopital">Hôpital</option>
                   <option value="clinique">Clinique</option>
                   <option value="pharmacie">Pharmacie</option>
                   <option value="laboratoire">Laboratoire</option>
@@ -295,7 +295,7 @@ export default function SuperAdminDashboard() {
 </div>
 {showSupportInbox && <div className="mb-10"><SupportInbox /></div>}
       <div className="flex items-center justify-between mb-4">
-        <h2 className="font-display text-xl font-semibold text-forest-900">Parametres generaux</h2>
+        <h2 className="font-display text-xl font-semibold text-forest-900">Parametres généraux</h2>
         <button onClick={() => setShowSettings(!showSettings)}
           className="text-sm rounded-full border border-forest-300 px-4 py-1.5 hover:bg-forest-50 transition">
           {showSettings ? 'Masquer' : 'Afficher'}
@@ -322,7 +322,7 @@ export default function SuperAdminDashboard() {
       {showUsers && <div className="mb-10"><UserDirectory /></div>}
 
       <div className="flex items-center justify-between mb-4">
-        <h2 className="font-display text-xl font-semibold text-forest-900">Journal d'activite</h2>
+        <h2 className="font-display text-xl font-semibold text-forest-900">Journal d'activité</h2>
         <button onClick={() => setShowActivityLog(!showActivityLog)}
           className="text-sm rounded-full border border-forest-300 px-4 py-1.5 hover:bg-forest-50 transition">
           {showActivityLog ? 'Masquer' : 'Afficher'}

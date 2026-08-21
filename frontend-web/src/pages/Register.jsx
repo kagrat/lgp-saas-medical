@@ -31,8 +31,8 @@ export default function Register() {
     <div className="max-w-5xl mx-auto px-6 py-16">
       <div className="grid lg:grid-cols-2 gap-12 items-center">
         <div className="max-w-md mx-auto lg:mx-0 w-full">
-          <h1 className="font-display text-3xl font-semibold text-forest-900 mb-2">Creer un compte patient</h1>
-          <p className="text-forest-700 mb-8">Prends rendez-vous en ligne et reserve tes medicaments en quelques clics.</p>
+          <h1 className="font-display text-3xl font-semibold text-forest-900 mb-2">Créer un compte patient</h1>
+          <p className="text-forest-700 mb-8">Prends rendez-vous en ligne et réserve tes médicaments en quelques clics.</p>
 
           <form onSubmit={handleSubmit} className="space-y-4">
             <div>
@@ -46,7 +46,7 @@ export default function Register() {
                 className="w-full rounded-lg border border-forest-100 px-4 py-2.5 focus:border-forest-500" />
             </div>
             <div>
-              <label className="block text-sm font-medium text-forest-900 mb-1">Telephone</label>
+              <label className="block text-sm font-medium text-forest-900 mb-1">Téléphone</label>
               <input value={form.phone} onChange={(e) => update('phone', e.target.value)}
                 placeholder="+229 ..."
                 className="w-full rounded-lg border border-forest-100 px-4 py-2.5 focus:border-forest-500" />
@@ -55,14 +55,14 @@ export default function Register() {
               <label className="block text-sm font-medium text-forest-900 mb-1">Sexe</label>
               <select value={form.gender} onChange={(e) => update('gender', e.target.value)}
                 className="w-full rounded-lg border border-forest-100 px-4 py-2.5 focus:border-forest-500 bg-white">
-                <option value="">Ne pas preciser</option>
+                <option value="">Ne pas préciser</option>
                 <option value="femme">Femme</option>
                 <option value="homme">Homme</option>
                 <option value="autre">Autre</option>
               </select>
             </div>
             <div>
-              <label className="block text-sm font-medium text-forest-900 mb-1">Lieu de residence</label>
+              <label className="block text-sm font-medium text-forest-900 mb-1">Lieu de résidence</label>
               <input value={form.residence} onChange={(e) => update('residence', e.target.value)}
                 placeholder="Ville, quartier..."
                 className="w-full rounded-lg border border-forest-100 px-4 py-2.5 focus:border-forest-500" />
@@ -71,7 +71,7 @@ export default function Register() {
               <label className="block text-sm font-medium text-forest-900 mb-1">Mot de passe</label>
               <input type="password" required value={form.password} onChange={(e) => update('password', e.target.value)}
                 className="w-full rounded-lg border border-forest-100 px-4 py-2.5 focus:border-forest-500" />
-              <p className="text-xs text-forest-700 mt-1">Min. 8 caracteres, une majuscule, un chiffre.</p>
+              <p className="text-xs text-forest-700 mt-1">Min. 8 caractères, une majuscule, un chiffre.</p>
             </div>
             {error && <p className="text-clay-600 text-sm">{error}</p>}
             <button type="submit" disabled={loading}
@@ -83,7 +83,7 @@ export default function Register() {
 
         <div className="hidden lg:block">
           <img
-            src="/images/register-illustration.jpg"
+            src="/images/register-illustration.webp"
             alt="Rejoindre la plateforme"
             className="w-full h-[560px] object-cover rounded-3xl shadow-lg"
           />

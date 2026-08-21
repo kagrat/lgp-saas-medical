@@ -71,7 +71,7 @@ export default function EstablishmentAdmin() {
       const { data } = await api.get('/establishments/me')
       setEstablishment(data)
     } catch (err) {
-      setError(getErrorMessage(err, "Impossible de charger les informations de l'etablissement."))
+      setError(getErrorMessage(err, "Impossible de charger les informations de l'établissement."))
     }
   }
 
@@ -120,7 +120,7 @@ export default function EstablishmentAdmin() {
         setLabUpdateForm(initialLabForms)
       }
     } catch (err) {
-      setError(getErrorMessage(err, "Impossible de charger le tableau de bord. Verifie que tu es bien connecte en tant qu'admin etablissement."))
+      setError(getErrorMessage(err, "Impossible de charger le tableau de bord. Vérifie que tu es bien connecte en tant qu'admin établissement."))
     }
   }
 
@@ -132,7 +132,7 @@ export default function EstablishmentAdmin() {
       setNewDoctor({ email: '', password: '', full_name: '', phone: '', specialty: SPECIALTIES[0], consultation_price: '' })
       await loadAll()
     } catch (err) {
-      setError(getErrorMessage(err, "Impossible d'ajouter ce medecin."))
+      setError(getErrorMessage(err, "Impossible d'ajouter ce médecin."))
     }
   }
 
@@ -149,7 +149,7 @@ export default function EstablishmentAdmin() {
       setNewStock({ reference: '', medication_name: '', category: '', quantity: '', alert_threshold: 10, unit_price: '' })
       await loadAll()
     } catch (err) {
-      setError(getErrorMessage(err, "Impossible d'ajouter ce medicament."))
+      setError(getErrorMessage(err, "Impossible d'ajouter ce médicament."))
     }
   }
 
@@ -310,7 +310,7 @@ export default function EstablishmentAdmin() {
         // ci-dessus. Cote serveur, les endpoints /pharmacy/* correspondants
         // sont desormais aussi bloques pour ce type (voir pharmacy.py).
         { id: 'stats', label: 'Statistiques' },
-        { id: 'doctors', label: 'Medecins' },
+        { id: 'doctors', label: 'Médecins' },
         { id: 'appointments', label: 'Rendez-vous' },
       ]
   const extraTabs = isLab
@@ -336,7 +336,7 @@ export default function EstablishmentAdmin() {
     { value: 'all', label: 'Tous' },
     { value: 'confirmed', label: 'Confirmes' },
     { value: 'arrived', label: 'Arrives' },
-    { value: 'completed', label: 'Termines' },
+    { value: 'completed', label: 'Terminés' },
     { value: 'cancelled', label: 'Annules' },
   ]
   const filteredAppointments = appointmentFilter === 'all' ? appointments : appointments.filter((a) => a.status === appointmentFilter)
@@ -387,7 +387,7 @@ export default function EstablishmentAdmin() {
             <input required type="email" placeholder="Email" value={newDoctor.email}
               onChange={(e) => setNewDoctor({ ...newDoctor, email: e.target.value })}
               className="rounded-lg border border-forest-100 px-3 py-2" />
-            <input placeholder="Telephone (ex: +229 ...)" value={newDoctor.phone}
+            <input placeholder="Téléphone (ex: +229 ...)" value={newDoctor.phone}
               onChange={(e) => setNewDoctor({ ...newDoctor, phone: e.target.value })}
               className="rounded-lg border border-forest-100 px-3 py-2" />
             <input required type="password" placeholder="Mot de passe temporaire" value={newDoctor.password}
@@ -401,7 +401,7 @@ export default function EstablishmentAdmin() {
               onChange={(e) => setNewDoctor({ ...newDoctor, consultation_price: e.target.value })}
               className="rounded-lg border border-forest-100 px-3 py-2" />
             <button type="submit" className="sm:col-span-2 rounded-full bg-forest-700 text-white py-2.5 font-medium hover:bg-forest-900 transition">
-              Ajouter ce medecin
+              Ajouter ce médecin
             </button>
           </form>
 
@@ -435,7 +435,7 @@ export default function EstablishmentAdmin() {
         <div>
           <FilterTabs options={appointmentFilterOptions} active={appointmentFilter} onChange={setAppointmentFilter} />
           <div className="space-y-2">
-            {filteredAppointments.length === 0 && <p className="text-forest-700">Aucun rendez-vous dans cette categorie.</p>}
+            {filteredAppointments.length === 0 && <p className="text-forest-700">Aucun rendez-vous dans cette catégorie.</p>}
             {filteredAppointments.map((a) => (
               <div key={a.id} className="rounded-xl border border-forest-100 bg-white p-4">
                 <div className="flex justify-between items-center flex-wrap gap-2">
@@ -524,7 +524,7 @@ export default function EstablishmentAdmin() {
                       />
                     </div>
                     <textarea
-                      placeholder="Contenu (traitement prescrit, resultat, observations...)"
+                      placeholder="Contenu (traitement prescrit, résultat, observations...)"
                       value={docForm.content}
                       onChange={(e) => setDocForm({ ...docForm, content: e.target.value })}
                       rows={3}
@@ -550,13 +550,13 @@ export default function EstablishmentAdmin() {
       {tab === 'pharmacy' && !isLab && (
         <div>
           <form onSubmit={handleAddStock} className="grid sm:grid-cols-2 gap-3 bg-white border border-forest-100 rounded-xl p-5 mb-6">
-            <input required placeholder="Reference (ex: MED-00123)" value={newStock.reference}
+            <input required placeholder="Référence (ex: MED-00123)" value={newStock.reference}
               onChange={(e) => setNewStock({ ...newStock, reference: e.target.value })}
               className="rounded-lg border border-forest-100 px-3 py-2" />
-            <input required placeholder="Nom du medicament" value={newStock.medication_name}
+            <input required placeholder="Nom du médicament" value={newStock.medication_name}
               onChange={(e) => setNewStock({ ...newStock, medication_name: e.target.value })}
               className="rounded-lg border border-forest-100 px-3 py-2" />
-            <input placeholder="Categorie" value={newStock.category}
+            <input placeholder="Catégorie" value={newStock.category}
               onChange={(e) => setNewStock({ ...newStock, category: e.target.value })}
               className="rounded-lg border border-forest-100 px-3 py-2" />
             <input required type="number" placeholder="Quantite" value={newStock.quantity}
@@ -591,7 +591,7 @@ export default function EstablishmentAdmin() {
         <div>
           <FilterTabs options={orderFilterOptions} active={orderFilter} onChange={setOrderFilter} />
           <div className="space-y-3">
-            {filteredOrders.length === 0 && <p className="text-forest-700">Aucune commande dans cette categorie.</p>}
+            {filteredOrders.length === 0 && <p className="text-forest-700">Aucune commande dans cette catégorie.</p>}
             {filteredOrders.map((o) => (
               <div key={o.id} className="rounded-xl border border-forest-100 bg-white p-4">
                 <div className="mb-3">
@@ -641,7 +641,7 @@ export default function EstablishmentAdmin() {
                       </select>
                     </div>
                     <div>
-                      <label className="block text-xs text-forest-700 mb-1">Pret estime (optionnel)</label>
+                      <label className="block text-xs text-forest-700 mb-1">Prêt estimé (optionnel)</label>
                       <input type="datetime-local"
                         value={orderUpdateForm[o.id]?.estimated_ready_at || ''}
                         onChange={(e) => updateOrderForm(o.id, 'estimated_ready_at', e.target.value)}
@@ -676,7 +676,7 @@ export default function EstablishmentAdmin() {
           <RegisterTestByStaff onRegistered={loadAll} />
           <FilterTabs options={labFilterOptions} active={labFilter} onChange={setLabFilter} />
           <div className="space-y-3">
-            {filteredLabTests.length === 0 && <p className="text-forest-700">Aucune analyse dans cette categorie.</p>}
+            {filteredLabTests.length === 0 && <p className="text-forest-700">Aucune analyse dans cette catégorie.</p>}
             {filteredLabTests.map((t) => (
               <div key={t.id} className="rounded-xl border border-forest-100 bg-white p-4">
                 <div className="mb-3">
@@ -708,7 +708,7 @@ export default function EstablishmentAdmin() {
                   />
                 </div>
                 <textarea
-                  placeholder="Resultats (a remplir quand l'analyse est validee)"
+                  placeholder="Résultats (a remplir quand l'analyse est validee)"
                   value={labUpdateForm[t.id]?.results_text || ''}
                   onChange={(e) => updateLabForm(t.id, 'results_text', e.target.value)}
                   rows={2}
@@ -793,7 +793,7 @@ function DoctorAvailabilities({ doctorId }) {
       const { data } = await api.get(`/doctors/${doctorId}/availabilities`)
       setAvailabilities(data)
     } catch (err) {
-      setError('Impossible de charger les disponibilites.')
+      setError('Impossible de charger les disponibilités.')
     }
   }
 
@@ -810,7 +810,7 @@ function DoctorAvailabilities({ doctorId }) {
       })
       await load()
     } catch (err) {
-      setError(getErrorMessage(err, "Impossible d'ajouter ce creneau. Verifie que l'heure de fin est bien apres l'heure de debut."))
+      setError(getErrorMessage(err, "Impossible d'ajouter ce créneau. Vérifie que l'heure de fin est bien apres l'heure de debut."))
     } finally {
       setSaving(false)
     }
@@ -828,7 +828,7 @@ function DoctorAvailabilities({ doctorId }) {
   return (
     <div className="mt-4 pt-4 border-t border-forest-100">
       <p className="text-sm font-medium text-forest-900 mb-3">
-        Disponibilites hebdomadaires (se repetent chaque semaine)
+        Disponibilités hebdomadaires (se repetent chaque semaine)
       </p>
 
       <form onSubmit={handleAdd} className="flex flex-wrap gap-2 items-end mb-4">
@@ -864,7 +864,7 @@ function DoctorAvailabilities({ doctorId }) {
       {error && <p className="text-clay-600 text-sm mb-3">{error}</p>}
 
       {availabilities.length === 0 ? (
-        <p className="text-sm text-forest-700">Aucune disponibilite enregistree pour ce medecin.</p>
+        <p className="text-sm text-forest-700">Aucune disponibilité enregistrée pour ce médecin.</p>
       ) : (
         <div className="flex flex-wrap gap-2">
           {availabilities.map((a) => (
@@ -872,7 +872,7 @@ function DoctorAvailabilities({ doctorId }) {
               <span>
                 {DAYS_OF_WEEK.find((d) => d.value === a.day_of_week)?.label} {a.start_time.slice(0, 5)}-{a.end_time.slice(0, 5)}
               </span>
-              <button onClick={() => handleDelete(a.id)} className="text-clay-600 hover:text-clay-500 font-bold" aria-label="Supprimer ce creneau">
+              <button onClick={() => handleDelete(a.id)} className="text-clay-600 hover:text-clay-500 font-bold" aria-label="Supprimer ce créneau">
                 x
               </button>
             </div>

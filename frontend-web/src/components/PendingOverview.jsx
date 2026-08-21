@@ -18,7 +18,7 @@ export default function PendingOverview() {
     { label: 'RDV a venir', value: data.pending_appointments },
     { label: 'Commandes en attente', value: data.pending_orders, highlight: data.pending_orders > 0 },
     { label: 'RDV annules', value: data.cancelled_appointments },
-    { label: 'Stock bas (tous etablissements)', value: data.low_stock_items, highlight: data.low_stock_items > 0 },
+    { label: 'Stock bas (tous établissements)', value: data.low_stock_items, highlight: data.low_stock_items > 0 },
     { label: 'Analyses en attente', value: data.pending_lab_tests },
   ]
 

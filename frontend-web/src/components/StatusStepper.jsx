@@ -8,7 +8,7 @@ export default function StatusStepper({ steps, currentValue, labels }) {
   if (currentValue === 'cancelled' || currentValue === 'annulee') {
     return (
       <div className="text-sm font-medium text-clay-600 bg-clay-500/10 rounded-full px-4 py-2 inline-block">
-        Annulee
+        Annulée
       </div>
     )
   }

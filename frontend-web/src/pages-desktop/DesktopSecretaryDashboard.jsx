@@ -27,7 +27,7 @@ export default function DesktopSecretaryDashboard() {
       const { data } = await api.get('/establishments/me')
       setEstablishment(data)
     } catch (err) {
-      setError(getErrorMessage(err, "Impossible de charger les informations de l'etablissement."))
+      setError(getErrorMessage(err, "Impossible de charger les informations de l'établissement."))
     }
   }
 
@@ -107,7 +107,7 @@ export default function DesktopSecretaryDashboard() {
     { value: 'all', label: 'Tous' },
     { value: 'confirmed', label: 'Confirmes' },
     { value: 'arrived', label: 'Arrives' },
-    { value: 'completed', label: 'Termines' },
+    { value: 'completed', label: 'Terminés' },
     { value: 'cancelled', label: 'Annules' },
   ]
   const filteredAppointments = appointmentFilter === 'all' ? appointments : appointments.filter((a) => a.status === appointmentFilter)
@@ -117,7 +117,7 @@ export default function DesktopSecretaryDashboard() {
       <h1 className="font-display text-3xl font-semibold text-forest-900 mb-2">
         {establishment ? establishment.name : 'Chargement...'}
       </h1>
-      <p className="text-forest-700 mb-8">Ton espace secretariat - tous les rendez-vous de l'etablissement.</p>
+      <p className="text-forest-700 mb-8">Ton espace secrétariat - tous les rendez-vous de l'établissement.</p>
 
       <div className="flex gap-2 mb-8 border-b border-forest-100 flex-wrap">
         {tabs.map((t) => (
@@ -136,7 +136,7 @@ export default function DesktopSecretaryDashboard() {
         <div>
           <FilterTabs options={appointmentFilterOptions} active={appointmentFilter} onChange={setAppointmentFilter} />
           <div className="space-y-2">
-            {filteredAppointments.length === 0 && <p className="text-forest-700">Aucun rendez-vous dans cette categorie.</p>}
+            {filteredAppointments.length === 0 && <p className="text-forest-700">Aucun rendez-vous dans cette catégorie.</p>}
             {filteredAppointments.map((a) => (
               <div key={a.id} className="rounded-xl border border-forest-100 bg-white p-4">
                 <div className="flex justify-between items-center flex-wrap gap-2">

@@ -108,7 +108,7 @@ export default function ServicesRoomsManager() {
         </button>
       </form>
       <div className="space-y-2 mb-8">
-        {services.length === 0 && <p className="text-forest-700 text-sm">Aucun service enregistre.</p>}
+        {services.length === 0 && <p className="text-forest-700 text-sm">Aucun service enregistré.</p>}
         {services.map((s) => (
           <div key={s.id} className="rounded-xl border border-forest-100 bg-white p-4 flex justify-between items-center">
             <div>
@@ -141,7 +141,7 @@ export default function ServicesRoomsManager() {
         </button>
       </form>
       <div className="space-y-2">
-        {rooms.length === 0 && <p className="text-forest-700 text-sm">Aucune salle enregistree.</p>}
+        {rooms.length === 0 && <p className="text-forest-700 text-sm">Aucune salle enregistrée.</p>}
         {rooms.map((r) => (
           <div key={r.id} className="rounded-xl border border-forest-100 bg-white p-4 flex justify-between items-center">
             <div>

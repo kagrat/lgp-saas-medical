@@ -35,7 +35,7 @@ export default function DesktopPharmacistDashboard() {
       const { data } = await api.get('/establishments/me')
       setEstablishment(data)
     } catch (err) {
-      setError(getErrorMessage(err, "Impossible de charger les informations de l'etablissement."))
+      setError(getErrorMessage(err, "Impossible de charger les informations de l'établissement."))
     }
   }
 
@@ -85,7 +85,7 @@ export default function DesktopPharmacistDashboard() {
       setNewStock({ reference: '', medication_name: '', category: '', quantity: '', alert_threshold: 10, unit_price: '' })
       await loadStock()
     } catch (err) {
-      setError(getErrorMessage(err, "Impossible d'ajouter ce medicament."))
+      setError(getErrorMessage(err, "Impossible d'ajouter ce médicament."))
     }
   }
 
@@ -147,13 +147,13 @@ export default function DesktopPharmacistDashboard() {
       {tab === 'pharmacy' && (
         <div>
           <form onSubmit={handleAddStock} className="grid sm:grid-cols-2 gap-3 bg-white border border-forest-100 rounded-xl p-5 mb-6">
-            <input required placeholder="Reference (ex: MED-00123)" value={newStock.reference}
+            <input required placeholder="Référence (ex: MED-00123)" value={newStock.reference}
               onChange={(e) => setNewStock({ ...newStock, reference: e.target.value })}
               className="rounded-lg border border-forest-100 px-3 py-2" />
-            <input required placeholder="Nom du medicament" value={newStock.medication_name}
+            <input required placeholder="Nom du médicament" value={newStock.medication_name}
               onChange={(e) => setNewStock({ ...newStock, medication_name: e.target.value })}
               className="rounded-lg border border-forest-100 px-3 py-2" />
-            <input placeholder="Categorie" value={newStock.category}
+            <input placeholder="Catégorie" value={newStock.category}
               onChange={(e) => setNewStock({ ...newStock, category: e.target.value })}
               className="rounded-lg border border-forest-100 px-3 py-2" />
             <input required type="number" placeholder="Quantite" value={newStock.quantity}
@@ -187,7 +187,7 @@ export default function DesktopPharmacistDashboard() {
         <div>
           <FilterTabs options={orderFilterOptions} active={orderFilter} onChange={setOrderFilter} />
           <div className="space-y-3">
-            {filteredOrders.length === 0 && <p className="text-forest-700">Aucune commande dans cette categorie.</p>}
+            {filteredOrders.length === 0 && <p className="text-forest-700">Aucune commande dans cette catégorie.</p>}
             {filteredOrders.map((o) => (
               <div key={o.id} className="rounded-xl border border-forest-100 bg-white p-4">
                 <div className="mb-3">
@@ -233,7 +233,7 @@ export default function DesktopPharmacistDashboard() {
                       </select>
                     </div>
                     <div>
-                      <label className="block text-xs text-forest-700 mb-1">Pret estime (optionnel)</label>
+                      <label className="block text-xs text-forest-700 mb-1">Prêt estimé (optionnel)</label>
                       <input type="datetime-local"
                         value={orderUpdateForm[o.id]?.estimated_ready_at || ''}
                         onChange={(e) => updateOrderForm(o.id, 'estimated_ready_at', e.target.value)}

@@ -83,7 +83,7 @@ export default function PatientDirectory() {
                   <p className="font-display text-xl text-forest-900 font-semibold">{detail.lab_tests_count}</p>
                 </div>
               </div>
-              <p className="text-sm font-medium text-forest-900 mb-2">Rendez-vous dans cet etablissement</p>
+              <p className="text-sm font-medium text-forest-900 mb-2">Rendez-vous dans cet établissement</p>
               {detail.appointments.length === 0 && <p className="text-sm text-forest-700">Aucun rendez-vous.</p>}
               <div className="space-y-2">
                 {detail.appointments.map((a) => (
@@ -99,7 +99,7 @@ export default function PatientDirectory() {
       )}
 
       <div className="space-y-2">
-        {patients.length === 0 && <p className="text-forest-700">Aucun patient trouve.</p>}
+        {patients.length === 0 && <p className="text-forest-700">Aucun patient trouvé.</p>}
         {patients.map((p) => (
           <button
             key={p.id}

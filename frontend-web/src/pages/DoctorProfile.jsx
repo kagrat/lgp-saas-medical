@@ -104,7 +104,7 @@ export default function DoctorProfile() {
 
       {confirmation ? (
         <div className="rounded-2xl border border-forest-300 bg-forest-50 p-6 mb-6">
-          <p className="font-display text-xl text-forest-900 font-semibold mb-1">Rendez-vous confirme</p>
+          <p className="font-display text-xl text-forest-900 font-semibold mb-1">Rendez-vous confirmé</p>
           <p className="text-forest-700">
             Le {new Date(confirmation.scheduled_at).toLocaleString('fr-FR')} - une confirmation te sera envoyee par email/SMS.
           </p>
@@ -120,12 +120,12 @@ export default function DoctorProfile() {
       ) : (
         <div className="rounded-2xl border border-forest-100 bg-white p-6 mb-6">
           <StepIndicator current={1} total={2} label="Choisis un creneau" />
-          <h2 className="font-display text-xl text-forest-900 font-semibold mb-4">Choisis un creneau</h2>
+          <h2 className="font-display text-xl text-forest-900 font-semibold mb-4">Choisis un créneau</h2>
           <form onSubmit={handleSearch} className="grid sm:grid-cols-2 gap-3 mb-4">
             <input type="date" required value={searchDate} onChange={(e) => setSearchDate(e.target.value)}
               className="rounded-lg border border-forest-100 px-4 py-2.5 focus:border-forest-500" />
             <input type="time" value={searchTime} onChange={(e) => setSearchTime(e.target.value)}
-              placeholder="Heure preferee (optionnel)"
+              placeholder="Heure préférée (optionnel)"
               className="rounded-lg border border-forest-100 px-4 py-2.5 focus:border-forest-500" />
             <button type="submit" disabled={searching}
               className="sm:col-span-2 rounded-full bg-forest-700 text-white py-2.5 font-medium hover:bg-forest-900 transition disabled:opacity-50">
@@ -136,13 +136,13 @@ export default function DoctorProfile() {
           {suggestions && (
             <div>
               {suggestions.suggestions.length === 0 ? (
-                <p className="text-forest-700 text-sm">Aucun creneau disponible pour cette date.</p>
+                <p className="text-forest-700 text-sm">Aucun créneau disponible pour cette date.</p>
               ) : (
                 <div className="grid sm:grid-cols-2 gap-3">
                   {suggestions.suggestions.map((slot, idx) => (
                     <button
                       key={idx}
-                      onClick={() => role === 'patient' ? setPendingSlot(slot) : setError('Connecte-toi avec un compte patient pour reserver.')}
+                      onClick={() => role === 'patient' ? setPendingSlot(slot) : setError('Connecte-toi avec un compte patient pour réserver.')}
                       className="text-left rounded-xl border border-forest-100 p-3 hover:border-forest-300 transition"
                     >
                       <p className="text-sm text-forest-900 font-medium">
@@ -155,7 +155,7 @@ export default function DoctorProfile() {
               {role !== 'patient' && (
                 <p className="text-sm text-forest-700 mt-4">
                   <Link to="/connexion" className="text-amber-600 font-medium hover:underline">Connecte-toi</Link> ou{' '}
-                  <Link to="/inscription" className="text-amber-600 font-medium hover:underline">cree un compte patient</Link> pour reserver.
+                  <Link to="/inscription" className="text-amber-600 font-medium hover:underline">créer un compte patient</Link> pour réserver.
                 </p>
               )}
             </div>

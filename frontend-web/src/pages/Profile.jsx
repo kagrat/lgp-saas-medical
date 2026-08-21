@@ -140,7 +140,7 @@ export default function Profile() {
               className="w-full rounded-lg border border-forest-100 px-4 py-2.5 focus:border-forest-500" />
           </div>
           <div>
-            <label className="block text-sm font-medium text-forest-900 mb-1">Telephone</label>
+            <label className="block text-sm font-medium text-forest-900 mb-1">Téléphone</label>
             <input value={infoForm.phone} onChange={(e) => setInfoForm({ ...infoForm, phone: e.target.value })}
               placeholder="+229 ..."
               className="w-full rounded-lg border border-forest-100 px-4 py-2.5 focus:border-forest-500" />
@@ -149,14 +149,14 @@ export default function Profile() {
             <label className="block text-sm font-medium text-forest-900 mb-1">Sexe</label>
             <select value={infoForm.gender} onChange={(e) => setInfoForm({ ...infoForm, gender: e.target.value })}
               className="w-full rounded-lg border border-forest-100 px-4 py-2.5 focus:border-forest-500 bg-white">
-              <option value="">Ne pas preciser</option>
+              <option value="">Ne pas préciser</option>
               <option value="femme">Femme</option>
               <option value="homme">Homme</option>
               <option value="autre">Autre</option>
             </select>
           </div>
           <div>
-            <label className="block text-sm font-medium text-forest-900 mb-1">Lieu de residence</label>
+            <label className="block text-sm font-medium text-forest-900 mb-1">Lieu de résidence</label>
             <input value={infoForm.residence} onChange={(e) => setInfoForm({ ...infoForm, residence: e.target.value })}
               placeholder="Ville, quartier..."
               className="w-full rounded-lg border border-forest-100 px-4 py-2.5 focus:border-forest-500" />
@@ -192,7 +192,7 @@ export default function Profile() {
             </button>
           </form>
           <div className="space-y-2">
-            {dependents.length === 0 && <p className="text-forest-700 text-sm">Aucun proche ajoute pour le moment.</p>}
+            {dependents.length === 0 && <p className="text-forest-700 text-sm">Aucun proche ajouté pour le moment.</p>}
             {dependents.map((d) => (
               <div key={d.id} className="rounded-xl border border-forest-100 bg-white p-4 flex justify-between items-center">
                 <div>
@@ -226,7 +226,7 @@ export default function Profile() {
             <input required type="password" value={passwordForm.new_password}
               onChange={(e) => setPasswordForm({ ...passwordForm, new_password: e.target.value })}
               className="w-full rounded-lg border border-forest-100 px-4 py-2.5 focus:border-forest-500" />
-            <p className="text-xs text-forest-700 mt-1">Min. 8 caracteres, une majuscule, un chiffre.</p>
+            <p className="text-xs text-forest-700 mt-1">Min. 8 caractères, une majuscule, un chiffre.</p>
           </div>
           <div>
             <label className="block text-sm font-medium text-forest-900 mb-1">Confirmer le nouveau mot de passe</label>

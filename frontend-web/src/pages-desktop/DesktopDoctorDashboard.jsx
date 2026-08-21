@@ -38,7 +38,7 @@ export default function DesktopDoctorDashboard() {
       const { data } = await api.get('/establishments/me')
       setEstablishment(data)
     } catch (err) {
-      setError(getErrorMessage(err, "Impossible de charger les informations de l'etablissement."))
+      setError(getErrorMessage(err, "Impossible de charger les informations de l'établissement."))
     }
   }
 
@@ -158,7 +158,7 @@ export default function DesktopDoctorDashboard() {
       <h1 className="font-display text-3xl font-semibold text-forest-900 mb-2">
         {establishment ? establishment.name : 'Chargement...'}
       </h1>
-      <p className="text-forest-700 mb-8">Ton espace medecin - tes rendez-vous et tes patients uniquement.</p>
+      <p className="text-forest-700 mb-8">Ton espace médecin - tes rendez-vous et tes patients uniquement.</p>
 
       <div className="flex gap-2 mb-8 border-b border-forest-100 flex-wrap">
         {tabs.map((t) => (
@@ -265,7 +265,7 @@ export default function DesktopDoctorDashboard() {
                     />
                   </div>
                   <textarea
-                    placeholder="Contenu (traitement prescrit, resultat, observations...)"
+                    placeholder="Contenu (traitement prescrit, résultat, observations...)"
                     value={docForm.content}
                     onChange={(e) => setDocForm({ ...docForm, content: e.target.value })}
                     rows={3}

@@ -47,7 +47,7 @@ export default function ReservationReviewForm({ reservation, onDone }) {
   return (
     <form onSubmit={handleSubmit} className="mt-3 pt-3 border-t border-forest-100">
       <p className="text-sm font-medium text-forest-900 mb-2">
-        Verifie la disponibilite et confirme quantite/prix de chaque article avant de transmettre au patient
+        Vérifie la disponibilité et confirme quantite/prix de chaque article avant de transmettre au patient
       </p>
       <div className="space-y-2 mb-2">
         {reservation.items.map((item) => {
@@ -59,13 +59,13 @@ export default function ReservationReviewForm({ reservation, onDone }) {
               </p>
               <div className="grid sm:grid-cols-2 gap-2">
                 <div>
-                  <label className="block text-xs text-forest-700 mb-1">Quantite confirmee</label>
+                  <label className="block text-xs text-forest-700 mb-1">Quantite confirmée</label>
                   <input type="number" min="0" required value={line.confirmed_quantity}
                     onChange={(e) => updateLine(item.id, 'confirmed_quantity', e.target.value)}
                     className="w-full rounded-lg border border-forest-100 px-3 py-1.5 text-sm bg-white" />
                 </div>
                 <div>
-                  <label className="block text-xs text-forest-700 mb-1">Prix unitaire confirme (FCFA)</label>
+                  <label className="block text-xs text-forest-700 mb-1">Prix unitaire confirmé (FCFA)</label>
                   <input type="number" min="0" step="1" required value={line.confirmed_unit_price}
                     onChange={(e) => updateLine(item.id, 'confirmed_unit_price', e.target.value)}
                     className="w-full rounded-lg border border-forest-100 px-3 py-1.5 text-sm bg-white" />

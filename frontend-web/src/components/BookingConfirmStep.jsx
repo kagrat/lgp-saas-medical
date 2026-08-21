@@ -25,7 +25,7 @@ export default function BookingConfirmStep({ slot, onConfirmed, onCancel, stepTo
       })
       onConfirmed(data)
     } catch (err) {
-      setError(getErrorMessage(err, "Ce creneau vient peut-etre d'etre pris. Choisis-en un autre."))
+      setError(getErrorMessage(err, "Ce créneau vient peut-etre d'etre pris. Choisis-en un autre."))
     } finally {
       setConfirming(false)
     }

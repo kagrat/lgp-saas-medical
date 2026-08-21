@@ -29,15 +29,15 @@ export default function PatientMessages() {
     <div className="max-w-4xl mx-auto px-6 py-14">
       <h1 className="font-display text-3xl font-semibold text-forest-900 mb-2">Messages</h1>
       <p className="text-forest-700 mb-8">
-        Discute directement avec les etablissements ou tu as un rendez-vous, une commande ou une analyse en cours.
+        Discute directement avec les établissements ou tu as un rendez-vous, une commande ou une analyse en cours.
       </p>
 
       {error && <p className="text-clay-600 mb-4">{error}</p>}
 
       {conversations.length === 0 ? (
         <p className="text-forest-700">
-          Tu n'as pas encore d'etablissement avec qui discuter. Prends d'abord rendez-vous, commande un
-          medicament ou demande une analyse - une conversation s'ouvrira automatiquement avec cet etablissement.
+          Tu n'as pas encore d'établissement avec qui discuter. Prends d'abord rendez-vous, commande un
+          médicament ou demande une analyse - une conversation s'ouvrira automatiquement avec cet établissement.
         </p>
       ) : (
         <div className="grid sm:grid-cols-3 gap-4">

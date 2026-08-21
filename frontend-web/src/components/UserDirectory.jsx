@@ -68,7 +68,7 @@ export default function UserDirectory() {
             <tr className="border-b border-forest-100 text-left text-forest-700">
               <th className="px-4 py-3 font-medium">Nom</th>
               <th className="px-4 py-3 font-medium">Role</th>
-              <th className="px-4 py-3 font-medium">Etablissement</th>
+              <th className="px-4 py-3 font-medium">Établissement</th>
               <th className="px-4 py-3 font-medium">Statut</th>
               <th className="px-4 py-3 font-medium"></th>
             </tr>
@@ -100,7 +100,7 @@ export default function UserDirectory() {
             ))}
           </tbody>
         </table>
-        {users.length === 0 && <p className="text-forest-700 p-4">Aucun utilisateur trouve.</p>}
+        {users.length === 0 && <p className="text-forest-700 p-4">Aucun utilisateur trouvé.</p>}
       </div>
     </div>
   )

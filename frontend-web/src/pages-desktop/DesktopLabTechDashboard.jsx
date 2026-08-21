@@ -32,7 +32,7 @@ export default function DesktopLabTechDashboard() {
       const { data } = await api.get('/establishments/me')
       setEstablishment(data)
     } catch (err) {
-      setError(getErrorMessage(err, "Impossible de charger les informations de l'etablissement."))
+      setError(getErrorMessage(err, "Impossible de charger les informations de l'établissement."))
     }
   }
 
@@ -118,7 +118,7 @@ export default function DesktopLabTechDashboard() {
           <RegisterTestByStaff onRegistered={loadLabTests} />
           <FilterTabs options={labFilterOptions} active={labFilter} onChange={setLabFilter} />
           <div className="space-y-3">
-            {filteredLabTests.length === 0 && <p className="text-forest-700">Aucune analyse dans cette categorie.</p>}
+            {filteredLabTests.length === 0 && <p className="text-forest-700">Aucune analyse dans cette catégorie.</p>}
             {filteredLabTests.map((t) => (
               <div key={t.id} className="rounded-xl border border-forest-100 bg-white p-4">
                 <div className="mb-3">
@@ -150,7 +150,7 @@ export default function DesktopLabTechDashboard() {
                   />
                 </div>
                 <textarea
-                  placeholder="Resultats (a remplir quand l'analyse est validee)"
+                  placeholder="Résultats (a remplir quand l'analyse est validee)"
                   value={labUpdateForm[t.id]?.results_text || ''}
                   onChange={(e) => updateLabForm(t.id, 'results_text', e.target.value)}
                   rows={2}

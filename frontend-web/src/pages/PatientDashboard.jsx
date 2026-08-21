@@ -106,7 +106,7 @@ export default function PatientDashboard() {
       await api.post(`/appointments/${id}/cancel`)
       await loadAppointments()
     } catch (err) {
-      setError("L'annulation a echoue.")
+      setError("L'annulation a échoué.")
     } finally {
       setCancellingId(null)
     }
@@ -145,7 +145,7 @@ export default function PatientDashboard() {
       await api.post(`/pharmacy/reservations/${orderId}/mark-received`)
       await loadOrders()
     } catch (err) {
-      setError(getErrorMessage(err, "Impossible de confirmer la reception de cette commande."))
+      setError(getErrorMessage(err, "Impossible de confirmer la réception de cette commande."))
     } finally {
       setReceivingOrderId(null)
     }
@@ -347,7 +347,7 @@ export default function PatientDashboard() {
                 {t.results_text && (
                   <div className="mt-2 pt-2 border-t border-forest-100">
                     <div className="flex items-center justify-between mb-1">
-                      <p className="text-sm text-forest-900 font-medium">Resultats:</p>
+                      <p className="text-sm text-forest-900 font-medium">Résultats:</p>
                       <button onClick={() => downloadLabResultPdf(t)} className="text-xs text-amber-600 hover:underline">
                         Telecharger PDF
                       </button>
@@ -366,9 +366,9 @@ export default function PatientDashboard() {
 
       {healthRecords.length > 0 && (
         <section className="mb-10">
-          <h2 className="font-display text-xl font-semibold text-forest-900 mb-4">Mon dossier de sante</h2>
+          <h2 className="font-display text-xl font-semibold text-forest-900 mb-4">Mon dossier de santé</h2>
           <p className="text-sm text-forest-700 mb-4">
-            Ordonnances, resultats et notes de consultation, tous etablissements confondus.
+            Ordonnances, résultats et notes de consultation, tous établissements confondus.
           </p>
           <div className="space-y-3">
             {healthRecords.map((doc) => (
@@ -394,9 +394,9 @@ export default function PatientDashboard() {
 
       {reviewable.length > 0 && (
         <section className="mb-10">
-          <h2 className="font-display text-xl font-semibold text-forest-900 mb-4">Note tes medecins</h2>
+          <h2 className="font-display text-xl font-semibold text-forest-900 mb-4">Note tes médecins</h2>
           <p className="text-sm text-forest-700 mb-4">
-            Tu peux laisser un avis pour chaque medecin avec qui tu as eu un rendez-vous termine.
+            Tu peux laisser un avis pour chaque médecin avec qui tu as eu un rendez-vous termine.
           </p>
           {reviewMessage && <p className="text-forest-900 bg-forest-50 border border-forest-300 rounded-xl p-3 mb-4 text-sm">{reviewMessage}</p>}
           <div className="space-y-4">

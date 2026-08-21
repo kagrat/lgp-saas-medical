@@ -47,7 +47,7 @@ export default function Consultation() {
       setEstablishments(data)
       setStep(2)
     } catch (err) {
-      setError(getErrorMessage(err, "La recherche a echoue. Verifie les champs et reessaie."))
+      setError(getErrorMessage(err, "La recherche a échoué. Vérifie les champs et reessaie."))
     } finally {
       setLoading(false)
     }
@@ -64,7 +64,7 @@ export default function Consultation() {
       setDoctors(data)
       setStep(3)
     } catch (err) {
-      setError(getErrorMessage(err, "Impossible de charger les medecins de cet etablissement."))
+      setError(getErrorMessage(err, "Impossible de charger les médecins de cet établissement."))
     } finally {
       setLoading(false)
     }
@@ -90,7 +90,7 @@ export default function Consultation() {
       })
       setSlots(data)
     } catch (err) {
-      setError(getErrorMessage(err, "La verification des disponibilites a echoue."))
+      setError(getErrorMessage(err, "La vérification des disponibilités a échoué."))
     } finally {
       setLoading(false)
     }
@@ -111,28 +111,28 @@ export default function Consultation() {
   }
 
   const stepLabels = {
-    1: 'Specialite et ville',
-    2: "Choisis un etablissement",
-    3: 'Choisis un medecin',
-    4: 'Verifie les disponibilites',
+    1: 'Spécialité et ville',
+    2: "Choisis un établissement",
+    3: 'Choisis un médecin',
+    4: 'Vérifie les disponibilités',
   }
 
   return (
     <div className="max-w-4xl mx-auto px-6 py-14">
       <p className="text-amber-600 font-medium tracking-wide uppercase text-xs mb-3">Consultation</p>
       <h1 className="font-display text-4xl font-semibold text-forest-900 mb-3">
-        Choisis ton etablissement, puis ton medecin.
+        Choisis ton établissement, puis ton médecin.
       </h1>
       <p className="text-forest-700 max-w-2xl mb-10">
-        Specialite d'abord, ensuite l'etablissement le plus proche de chez toi, puis le medecin
-        de ton choix au sein de cet etablissement - avec verification de ses disponibilites reelles.
+        Spécialité d'abord, ensuite l'établissement le plus proche de chez toi, puis le médecin
+        de ton choix au sein de cet établissement - avec vérification de ses disponibilités reelles.
       </p>
 
       {step < 5 && <StepIndicator current={step} total={TOTAL_STEPS} label={stepLabels[step]} />}
 
       {confirmation ? (
         <div className="rounded-2xl border border-forest-300 bg-forest-50 p-6">
-          <p className="font-display text-xl text-forest-900 font-semibold mb-1">Rendez-vous confirme</p>
+          <p className="font-display text-xl text-forest-900 font-semibold mb-1">Rendez-vous confirmé</p>
           <p className="text-forest-700">
             Le {new Date(confirmation.scheduled_at).toLocaleString('fr-FR')} - une confirmation te sera envoyee par email/SMS.
           </p>
@@ -148,17 +148,17 @@ export default function Consultation() {
       ) : step === 1 ? (
         <form onSubmit={searchEstablishments} className="grid sm:grid-cols-2 gap-4 bg-white rounded-2xl p-6 border border-forest-100 shadow-sm">
           <div>
-            <label className="block text-sm font-medium text-forest-900 mb-1">Specialite</label>
+            <label className="block text-sm font-medium text-forest-900 mb-1">Spécialité</label>
             <select required value={form.specialty} onChange={(e) => setForm((f) => ({ ...f, specialty: e.target.value }))}
               className="w-full rounded-lg border border-forest-100 px-4 py-2.5 focus:border-forest-500 bg-white">
-              <option value="" disabled>Choisis une specialite</option>
+              <option value="" disabled>Choisis une spécialité</option>
               {SPECIALTIES.map((s) => (
                 <option key={s} value={s}>{s}</option>
               ))}
             </select>
           </div>
           <div>
-            <label className="block text-sm font-medium text-forest-900 mb-1">Ta ville (pour trier par proximite)</label>
+            <label className="block text-sm font-medium text-forest-900 mb-1">Ta ville (pour trier par proximité)</label>
             <input value={form.city} onChange={(e) => setForm((f) => ({ ...f, city: e.target.value }))}
               placeholder="Cotonou, Parakou, Porto-Novo..."
               className="w-full rounded-lg border border-forest-100 px-4 py-2.5 focus:border-forest-500" />
@@ -173,7 +173,7 @@ export default function Consultation() {
       ) : step === 2 ? (
         <div>
           {establishments.length === 0 && (
-            <p className="text-forest-700">Aucun etablissement adherent avec cette specialite pour le moment.</p>
+            <p className="text-forest-700">Aucun établissement adhérent avec cette spécialité pour le moment.</p>
           )}
           <div className="grid sm:grid-cols-2 gap-4">
             {establishments.map((est) => (
@@ -202,7 +202,7 @@ export default function Consultation() {
         <div>
           <p className="text-forest-900 font-medium mb-4">{selectedEstablishment.name}</p>
           {doctors.length === 0 && (
-            <p className="text-forest-700">Aucun medecin actif dans cette specialite pour cet etablissement actuellement.</p>
+            <p className="text-forest-700">Aucun médecin actif dans cette spécialité pour cet établissement actuellement.</p>
           )}
           <div className="grid sm:grid-cols-2 gap-4">
             {doctors.map((doc) => (
@@ -218,7 +218,7 @@ export default function Consultation() {
             ))}
           </div>
           <button onClick={() => backTo(2)} className="mt-6 text-sm text-forest-700 hover:text-forest-900 hover:underline">
-            ← Changer d'etablissement
+            ← Changer d'établissement
           </button>
         </div>
       ) : step === 4 ? (
@@ -230,7 +230,7 @@ export default function Consultation() {
 
           <form onSubmit={checkAvailability} className="flex flex-wrap items-end gap-4 bg-white rounded-2xl p-6 border border-forest-100 shadow-sm mb-6">
             <div>
-              <label className="block text-sm font-medium text-forest-900 mb-1">Date souhaitee</label>
+              <label className="block text-sm font-medium text-forest-900 mb-1">Date souhaitée</label>
               <input type="date" required value={preferredDate} min={todayISO()}
                 onChange={(e) => setPreferredDate(e.target.value)}
                 className="rounded-lg border border-forest-100 px-4 py-2.5 focus:border-forest-500" />
@@ -243,7 +243,7 @@ export default function Consultation() {
 
           {slots && (
             slots.suggestions.length === 0 ? (
-              <p className="text-forest-700">Aucun creneau disponible pour ce medecin a cette date. Essaie une autre date.</p>
+              <p className="text-forest-700">Aucun créneau disponible pour ce médecin a cette date. Essaie une autre date.</p>
             ) : (
               <div className="grid sm:grid-cols-2 gap-4">
                 {slots.suggestions.map((slot, idx) => (
@@ -255,7 +255,7 @@ export default function Consultation() {
                       onClick={() => chooseSlot(slot)}
                       className="mt-2 rounded-full bg-amber-500 text-forest-900 py-2 font-semibold hover:bg-amber-400 transition"
                     >
-                      Choisir ce creneau
+                      Choisir ce créneau
                     </button>
                   </div>
                 ))}
@@ -264,13 +264,13 @@ export default function Consultation() {
           )}
 
           <button onClick={() => backTo(3)} className="mt-6 text-sm text-forest-700 hover:text-forest-900 hover:underline">
-            ← Changer de medecin
+            ← Changer de médecin
           </button>
 
           {role !== 'patient' && (
             <p className="text-sm text-forest-700 mt-6">
               <Link to="/connexion" className="text-amber-600 font-medium hover:underline">Connecte-toi</Link> ou{' '}
-              <Link to="/inscription" className="text-amber-600 font-medium hover:underline">cree un compte patient</Link> pour confirmer un rendez-vous.
+              <Link to="/inscription" className="text-amber-600 font-medium hover:underline">créer un compte patient</Link> pour confirmer un rendez-vous.
             </p>
           )}
         </div>

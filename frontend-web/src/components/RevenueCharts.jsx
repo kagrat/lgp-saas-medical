@@ -6,7 +6,7 @@ const AMBER = '#D98E04'
 export function RevenueTrendChart({ data }) {
   return (
     <div className="rounded-xl border border-forest-100 bg-white p-5">
-      <p className="font-display text-lg text-forest-900 font-semibold mb-4">Revenu estime par mois</p>
+      <p className="font-display text-lg text-forest-900 font-semibold mb-4">Revenu estimé par mois</p>
       <ResponsiveContainer width="100%" height={280}>
         <LineChart data={data}>
           <CartesianGrid strokeDasharray="3 3" stroke="#EEF5F1" />
@@ -26,7 +26,7 @@ export function RevenueTrendChart({ data }) {
 export function AppointmentsTrendChart({ data }) {
   return (
     <div className="rounded-xl border border-forest-100 bg-white p-5">
-      <p className="font-display text-lg text-forest-900 font-semibold mb-4">Rendez-vous termines par mois</p>
+      <p className="font-display text-lg text-forest-900 font-semibold mb-4">Rendez-vous terminés par mois</p>
       <ResponsiveContainer width="100%" height={280}>
         <BarChart data={data}>
           <CartesianGrid strokeDasharray="3 3" stroke="#EEF5F1" />
@@ -43,7 +43,7 @@ export function AppointmentsTrendChart({ data }) {
 export function TopEstablishmentsChart({ data }) {
   return (
     <div className="rounded-xl border border-forest-100 bg-white p-5">
-      <p className="font-display text-lg text-forest-900 font-semibold mb-4">Etablissements les plus actifs</p>
+      <p className="font-display text-lg text-forest-900 font-semibold mb-4">Établissements les plus actifs</p>
       <ResponsiveContainer width="100%" height={Math.max(280, data.length * 45)}>
         <BarChart data={data} layout="vertical" margin={{ left: 40 }}>
           <CartesianGrid strokeDasharray="3 3" stroke="#EEF5F1" />
