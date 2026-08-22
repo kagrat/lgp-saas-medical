@@ -132,7 +132,7 @@ export default function DesktopPharmacistDashboard() {
       <div className="flex gap-2 mb-8 border-b border-forest-100 flex-wrap">
         {tabs.map((t) => (
           <button
-            key={t.id} onClick={() => setTab(t.id)}
+            key={t.id} onClick={() => { setTab(t.id); setError('') }}
             className={`px-4 py-2 font-medium border-b-2 -mb-px transition ${tab === t.id ? 'border-amber-500 text-forest-900' : 'border-transparent text-forest-700 hover:text-forest-900'}`}
           >
             {t.label}
