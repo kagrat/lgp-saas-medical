@@ -90,34 +90,44 @@ export default function EstablishmentAdmin() {
   async function loadAll() {
     try {
       const isLab = establishment.type === 'laboratoire'
+      const isPharmacy = establishment.type === 'pharmacie'
       const calls = [api.get('/dashboard/establishment')]
 
-      if (!isLab) {
-        calls.push(api.get('/doctors/establishment'), api.get('/appointments/establishment'), api.get('/pharmacy/stock'), api.get('/pharmacy/reservations/establishment'))
-      } else {
+      // CORRIGE: avant, tout etablissement non-laboratoire appelait aussi
+      // /pharmacy/* - casse depuis que ces routes sont reservees au type
+      // pharmacie cote serveur (403 "action non disponible pour ce type
+      // d'etablissement" pour un hopital/clinique). Le chargement des
+      // donnees doit suivre exactement la meme repartition par type que
+      // les onglets ci-dessous (isLab / isPharmacy / hopital-clinique).
+      if (isLab) {
         calls.push(api.get('/lab/tests/establishment'))
+      } else if (isPharmacy) {
+        calls.push(api.get('/pharmacy/stock'), api.get('/pharmacy/reservations/establishment'))
+      } else {
+        calls.push(api.get('/doctors/establishment'), api.get('/appointments/establishment'))
       }
 
       const results = await Promise.all(calls)
       setStats(results[0].data)
 
-      if (!isLab) {
-        setDoctors(results[1].data)
-        setAppointments(results[2].data)
-        setStock(results[3].data)
-        setOrders(results[4].data)
-        const initialOrderForms = {}
-        results[4].data.forEach((o) => {
-          initialOrderForms[o.id] = { status: o.status, note: o.pharmacist_note || '', estimated_ready_at: '' }
-        })
-        setOrderUpdateForm(initialOrderForms)
-      } else {
+      if (isLab) {
         setLabTests(results[1].data)
         const initialLabForms = {}
         results[1].data.forEach((t) => {
           initialLabForms[t.id] = { status: t.status, results_text: t.results_text || '', lab_technician_note: t.lab_technician_note || '' }
         })
         setLabUpdateForm(initialLabForms)
+      } else if (isPharmacy) {
+        setStock(results[1].data)
+        setOrders(results[2].data)
+        const initialOrderForms = {}
+        results[2].data.forEach((o) => {
+          initialOrderForms[o.id] = { status: o.status, note: o.pharmacist_note || '', estimated_ready_at: '' }
+        })
+        setOrderUpdateForm(initialOrderForms)
+      } else {
+        setDoctors(results[1].data)
+        setAppointments(results[2].data)
       }
     } catch (err) {
       setError(getErrorMessage(err, "Impossible de charger le tableau de bord. Vérifie que tu es bien connecte en tant qu'admin établissement."))
