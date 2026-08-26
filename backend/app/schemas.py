@@ -472,6 +472,81 @@ class AdmissionSummaryOut(BaseModel):
     expected_discharge_date: Optional[datetime] = None
 
 
+class InvoiceLineItemCreate(BaseModel):
+    description: str = Field(min_length=1, max_length=300)
+    quantity: int = Field(default=1, ge=1)
+    unit_price: float = Field(ge=0)
+
+
+class InvoiceLineItemOut(BaseModel):
+    id: str
+    description: str
+    quantity: int
+    unit_price: float
+    line_total: float
+
+
+class InvoiceCreate(BaseModel):
+    patient_id: str
+    line_items: list[InvoiceLineItemCreate] = Field(min_length=1)
+    due_date: Optional[datetime] = None
+    notes: Optional[str] = Field(default=None, max_length=1000)
+    appointment_id: Optional[str] = None
+    admission_id: Optional[str] = None
+
+
+class PaymentCreate(BaseModel):
+    amount: float = Field(gt=0)
+    payment_method: str = Field(min_length=2, max_length=30)  # "cash", "mobile_money", "card"
+    reference: Optional[str] = Field(default=None, max_length=100)
+
+
+class PaymentOut(BaseModel):
+    id: str
+    amount: float
+    payment_method: str
+    reference: Optional[str] = None
+    recorded_by_name: str
+    paid_at: datetime
+
+
+class InvoiceOut(BaseModel):
+    id: str
+    invoice_number: str
+    patient_id: str
+    patient_name: str
+    status: str
+    total_amount: float
+    amount_paid: float
+    balance_due: float
+    notes: Optional[str] = None
+    issued_at: datetime
+    due_date: Optional[datetime] = None
+    line_items: list[InvoiceLineItemOut] = []
+    payments: list[PaymentOut] = []
+
+
+class InvoiceSummaryOut(BaseModel):
+    id: str
+    invoice_number: str
+    patient_name: str
+    status: str
+    total_amount: float
+    amount_paid: float
+    balance_due: float
+    issued_at: datetime
+
+
+class BillingSummaryOut(BaseModel):
+    """NOUVEAU: rapport financier reel (encaisse vs facture), remplace le
+    simple revenu ESTIME du tableau de bord existant."""
+    total_invoiced: float
+    total_collected: float
+    total_outstanding: float
+    invoice_count: int
+    unpaid_invoice_count: int
+
+
 class DoctorPatientOut(BaseModel):
     """NOUVEAU: une ligne de la liste 'Mes patients' d'un medecin - distinct
     du repertoire etablissement (PatientDirectoryOut), filtre a CE medecin."""

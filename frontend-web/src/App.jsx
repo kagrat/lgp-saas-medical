@@ -8,6 +8,7 @@ import Care from './pages/Care'
 import PatientSearch from './pages/PatientSearch'
 import Consultation from './pages/Consultation'
 import PatientDashboard from './pages/PatientDashboard'
+import MyInvoices from './pages/MyInvoices'
 import Pharmacy from './pages/Pharmacy'
 import Laboratory from './pages/Laboratory'
 import PatientMessages from './pages/PatientMessages'
@@ -34,6 +35,10 @@ export default function App() {
         <Route
           path="/espace-patient"
           element={<ProtectedRoute allowedRoles={['patient']}><PatientDashboard /></ProtectedRoute>}
+        />
+        <Route
+          path="/mes-factures"
+          element={<ProtectedRoute allowedRoles={['patient']}><MyInvoices /></ProtectedRoute>}
         />
         <Route
           path="/messages"

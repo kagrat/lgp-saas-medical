@@ -572,6 +572,74 @@ class OpeningHours(Base):
 
     establishment = relationship("Establishment")
 
+class Invoice(Base):
+    """
+    NOUVEAU (facturation reelle, chantier prioritaire du cahier des
+    charges) - remplace le simple 'revenu estime' (calcul) par de vraies
+    factures numerotees, avec suivi des encaissements. Statut en texte
+    simple (meme principe que Room/Admission: pas d'Enum Postgres, pour
+    eviter tout risque de ALTER TYPE plus tard). Valeurs actuelles:
+    "issued", "partially_paid", "paid", "cancelled".
+    """
+    __tablename__ = "invoices"
+
+    id = Column(UUID(as_uuid=False), primary_key=True, default=gen_uuid)
+    establishment_id = Column(UUID(as_uuid=False), ForeignKey("establishments.id"), nullable=False)
+    patient_id = Column(UUID(as_uuid=False), ForeignKey("patients.id"), nullable=False)
+    issued_by_user_id = Column(UUID(as_uuid=False), ForeignKey("users.id"), nullable=False)
+    invoice_number = Column(String(50), nullable=False)  # ex: "FAC-2026-0001", unique par etablissement
+    status = Column(String(20), nullable=False, default="issued")
+    total_amount = Column(Float, nullable=False, default=0)
+    notes = Column(Text, nullable=True)
+    issued_at = Column(DateTime, default=datetime.utcnow)
+    due_date = Column(DateTime, nullable=True)
+    # Reference libre vers l'origine (rendez-vous, hospitalisation...) -
+    # jamais une contrainte stricte, car une facture peut regrouper
+    # plusieurs origines (ex: consultation + pharmacie sur la meme visite).
+    appointment_id = Column(UUID(as_uuid=False), ForeignKey("appointments.id"), nullable=True)
+    admission_id = Column(UUID(as_uuid=False), ForeignKey("admissions.id"), nullable=True)
+
+    establishment = relationship("Establishment")
+    patient = relationship("Patient")
+    issued_by = relationship("User")
+    appointment = relationship("Appointment")
+    admission = relationship("Admission")
+    line_items = relationship("InvoiceLineItem", back_populates="invoice", cascade="all, delete-orphan")
+    payments = relationship("Payment", back_populates="invoice", order_by="Payment.paid_at.desc()")
+
+
+class InvoiceLineItem(Base):
+    """NOUVEAU: une ligne de facture (ex: 'Consultation Dr X', 'Chambre 12
+    - 3 nuits', 'Paracetamol x10')."""
+    __tablename__ = "invoice_line_items"
+
+    id = Column(UUID(as_uuid=False), primary_key=True, default=gen_uuid)
+    invoice_id = Column(UUID(as_uuid=False), ForeignKey("invoices.id"), nullable=False)
+    description = Column(String(300), nullable=False)
+    quantity = Column(Integer, nullable=False, default=1)
+    unit_price = Column(Float, nullable=False, default=0)
+
+    invoice = relationship("Invoice", back_populates="line_items")
+
+
+class Payment(Base):
+    """NOUVEAU: un encaissement reel sur une facture. Plusieurs paiements
+    possibles par facture (paiement partiel, puis solde). payment_method en
+    texte simple: "cash", "mobile_money", "card"."""
+    __tablename__ = "payments"
+
+    id = Column(UUID(as_uuid=False), primary_key=True, default=gen_uuid)
+    invoice_id = Column(UUID(as_uuid=False), ForeignKey("invoices.id"), nullable=False)
+    amount = Column(Float, nullable=False)
+    payment_method = Column(String(30), nullable=False)
+    reference = Column(String(100), nullable=True)  # ex: reference de transaction Mobile Money
+    recorded_by_user_id = Column(UUID(as_uuid=False), ForeignKey("users.id"), nullable=False)
+    paid_at = Column(DateTime, default=datetime.utcnow)
+
+    invoice = relationship("Invoice", back_populates="payments")
+    recorded_by = relationship("User")
+
+
 class Service(Base):
     """Catalogue des services/actes de l'etablissement (distinct du prix de consultation par medecin)."""
     __tablename__ = "services"

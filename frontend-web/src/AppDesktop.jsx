@@ -9,6 +9,7 @@ import DesktopSecretaryDashboard from './pages-desktop/DesktopSecretaryDashboard
 import DesktopSupportChat from './pages-desktop/DesktopSupportChat'
 import DesktopHRDashboard from './pages-desktop/DesktopHRDashboard'
 import DesktopNurseDashboard from './pages-desktop/DesktopNurseDashboard'
+import DesktopAccountantDashboard from './pages-desktop/DesktopAccountantDashboard'
 import DesktopComingSoonDashboard from './pages-desktop/DesktopComingSoonDashboard'
 import EstablishmentAdmin from './pages/EstablishmentAdmin'
 import SuperAdminDashboard from './pages/SuperAdminDashboard'
@@ -63,7 +64,7 @@ export default function AppDesktop() {
         />
         <Route
           path="/mon-espace-comptabilite"
-          element={<ProtectedRoute allowedRoles={['accountant']}><DesktopComingSoonDashboard /></ProtectedRoute>}
+          element={<ProtectedRoute allowedRoles={['accountant']}><DesktopAccountantDashboard /></ProtectedRoute>}
         />
         <Route
           path="/super-admin"

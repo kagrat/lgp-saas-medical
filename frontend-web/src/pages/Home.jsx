@@ -1,5 +1,5 @@
 import { Link } from 'react-router-dom'
-import { Stethoscope, Pill, FlaskConical, Calendar, MessageCircle, UserRound } from 'lucide-react'
+import { Stethoscope, Pill, FlaskConical, Calendar, MessageCircle, UserRound, Receipt } from 'lucide-react'
 import { getRole } from '../api/client'
 
 const QUICK_ACTIONS = [
@@ -7,6 +7,7 @@ const QUICK_ACTIONS = [
   { to: '/pharmacie', label: 'Pharmacie', icon: Pill },
   { to: '/laboratoire', label: 'Laboratoire', icon: FlaskConical },
   { to: '/espace-patient', label: 'Mes rendez-vous', icon: Calendar },
+  { to: '/mes-factures', label: 'Mes factures', icon: Receipt },
   { to: '/messages', label: 'Messages', icon: MessageCircle },
   { to: '/profil', label: 'Mon profil', icon: UserRound },
 ]
