@@ -30,11 +30,17 @@ router = APIRouter(prefix="/health-records", tags=["dossier-sante"])
 
 
 def _to_document_out(doc: MedicalDocument) -> MedicalDocumentOut:
+    author_name = "Inconnu"
+    if doc.doctor:
+        author_name = doc.doctor.user.full_name
+    elif doc.author:
+        author_name = doc.author.full_name
     return MedicalDocumentOut(
         id=doc.id,
         appointment_id=doc.appointment_id,
+        admission_id=doc.admission_id,
         patient_id=doc.patient_id,
-        doctor_name=doc.doctor.user.full_name if doc.doctor else "Inconnu",
+        doctor_name=author_name,
         establishment_name=doc.establishment.name if doc.establishment else "Inconnu",
         document_type=doc.document_type,
         title=doc.title,

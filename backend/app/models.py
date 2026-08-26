@@ -31,6 +31,11 @@ class UserRole(str, enum.Enum):
     PHARMACIST = "pharmacist"
     PATIENT = "patient"                   # niveau 3
     LAB_TECHNICIAN = "lab_technician"
+    # NOUVEAU (gestion interne complete, demande M. Faustin):
+    NURSE = "nurse"                       # infirmier(e) - regroupe aussi aide-soignant(e)
+    RECEPTIONIST = "receptionist"         # agent d'accueil - distinct du secretariat medical
+    ACCOUNTANT = "accountant"             # comptable / facturation
+    HR_MANAGER = "hr_manager"             # responsable RH
 
 
 class EstablishmentType(str, enum.Enum):
@@ -90,6 +95,105 @@ class Establishment(Base):
     stock_items = relationship("PharmacyStock", back_populates="establishment")
 
 
+class Department(Base):
+    """
+    NOUVEAU (gestion interne complete, demande M. Faustin) - unite
+    organisationnelle d'un etablissement (ex: Maternite, Cardiologie,
+    Urgences). Distinct du modele Service (qui est en realite un catalogue
+    d'actes tarifes, pas une unite RH). Un Department peut avoir un
+    responsable (chef de service) et regroupe le personnel qui y travaille
+    (via StaffProfile.department_id) ainsi que les chambres qui en dependent
+    (via Room.department_id, ajoute plus bas).
+    """
+    __tablename__ = "departments"
+
+    id = Column(UUID(as_uuid=False), primary_key=True, default=gen_uuid)
+    establishment_id = Column(UUID(as_uuid=False), ForeignKey("establishments.id"), nullable=False)
+    name = Column(String(150), nullable=False)
+    head_user_id = Column(UUID(as_uuid=False), ForeignKey("users.id"), nullable=True)
+    created_at = Column(DateTime, default=datetime.utcnow)
+
+    establishment = relationship("Establishment")
+    head_user = relationship("User", foreign_keys=[head_user_id])
+
+
+class Admission(Base):
+    """
+    NOUVEAU (hospitalisation, demande confirmee par M. Faustin) - une
+    hospitalisation reelle d'un patient, distincte du rendez-vous ponctuel
+    (Appointment). Statut en texte simple (pas d'Enum Postgres), suivant le
+    meme choix technique deliberé documente dans services.py pour Room -
+    evite tout risque de ALTER TYPE plus tard si de nouveaux statuts
+    apparaissent. Valeurs actuelles: "active", "discharged".
+    """
+    __tablename__ = "admissions"
+
+    id = Column(UUID(as_uuid=False), primary_key=True, default=gen_uuid)
+    establishment_id = Column(UUID(as_uuid=False), ForeignKey("establishments.id"), nullable=False)
+    patient_id = Column(UUID(as_uuid=False), ForeignKey("patients.id"), nullable=False)
+    admitting_doctor_id = Column(UUID(as_uuid=False), ForeignKey("doctors.id"), nullable=False)
+    department_id = Column(UUID(as_uuid=False), ForeignKey("departments.id"), nullable=True)
+    room_id = Column(UUID(as_uuid=False), ForeignKey("rooms.id"), nullable=True)
+    status = Column(String(20), nullable=False, default="active")
+    diagnosis = Column(Text, nullable=True)
+    admission_date = Column(DateTime, nullable=False, default=datetime.utcnow)
+    expected_discharge_date = Column(DateTime, nullable=True)
+    actual_discharge_date = Column(DateTime, nullable=True)
+    discharge_summary = Column(Text, nullable=True)
+    created_at = Column(DateTime, default=datetime.utcnow)
+
+    establishment = relationship("Establishment")
+    patient = relationship("Patient")
+    admitting_doctor = relationship("Doctor")
+    department = relationship("Department")
+    room = relationship("Room")
+    vital_signs = relationship("VitalSigns", back_populates="admission", order_by="VitalSigns.recorded_at.desc()")
+    transfers = relationship("AdmissionTransfer", back_populates="admission", order_by="AdmissionTransfer.created_at.desc()")
+
+
+class VitalSigns(Base):
+    """NOUVEAU: constantes releves par l'infirmier(e) pendant un sejour.
+    Champs simples (pas de sur-ingenierie), suffisants pour un suivi
+    quotidien de base."""
+    __tablename__ = "vital_signs"
+
+    id = Column(UUID(as_uuid=False), primary_key=True, default=gen_uuid)
+    admission_id = Column(UUID(as_uuid=False), ForeignKey("admissions.id"), nullable=False)
+    recorded_by_user_id = Column(UUID(as_uuid=False), ForeignKey("users.id"), nullable=False)
+    recorded_at = Column(DateTime, default=datetime.utcnow)
+    temperature_celsius = Column(Float, nullable=True)
+    blood_pressure = Column(String(20), nullable=True)  # format libre "120/80"
+    pulse_bpm = Column(Integer, nullable=True)
+    respiratory_rate = Column(Integer, nullable=True)
+    notes = Column(Text, nullable=True)
+
+    admission = relationship("Admission", back_populates="vital_signs")
+    recorded_by = relationship("User")
+
+
+class AdmissionTransfer(Base):
+    """NOUVEAU: trace chaque changement de service/chambre pendant une
+    hospitalisation (ex: urgences -> chirurgie -> suivi post-operatoire)."""
+    __tablename__ = "admission_transfers"
+
+    id = Column(UUID(as_uuid=False), primary_key=True, default=gen_uuid)
+    admission_id = Column(UUID(as_uuid=False), ForeignKey("admissions.id"), nullable=False)
+    from_department_id = Column(UUID(as_uuid=False), ForeignKey("departments.id"), nullable=True)
+    to_department_id = Column(UUID(as_uuid=False), ForeignKey("departments.id"), nullable=True)
+    from_room_id = Column(UUID(as_uuid=False), ForeignKey("rooms.id"), nullable=True)
+    to_room_id = Column(UUID(as_uuid=False), ForeignKey("rooms.id"), nullable=True)
+    transferred_by_user_id = Column(UUID(as_uuid=False), ForeignKey("users.id"), nullable=False)
+    note = Column(Text, nullable=True)
+    created_at = Column(DateTime, default=datetime.utcnow)
+
+    admission = relationship("Admission", back_populates="transfers")
+    from_department = relationship("Department", foreign_keys=[from_department_id])
+    to_department = relationship("Department", foreign_keys=[to_department_id])
+    from_room = relationship("Room", foreign_keys=[from_room_id])
+    to_room = relationship("Room", foreign_keys=[to_room_id])
+    transferred_by = relationship("User", foreign_keys=[transferred_by_user_id])
+
+
 class User(Base):
     """
     Compte utilisateur - couvre les 3 niveaux (super admin, admin
@@ -113,6 +217,29 @@ class User(Base):
 
     establishment = relationship("Establishment", back_populates="users")
     doctor_profile = relationship("Doctor", back_populates="user", uselist=False)
+    staff_profile = relationship("StaffProfile", back_populates="user", uselist=False)
+
+
+class StaffProfile(Base):
+    """
+    NOUVEAU (gestion interne complete, demande M. Faustin) - informations
+    RH d'un membre du personnel (poste, departement, embauche...). Separe
+    de User pour ne pas alourdir les comptes patient/medecin qui n'en ont
+    pas besoin. Un seul StaffProfile par User (relation 1-1).
+    """
+    __tablename__ = "staff_profiles"
+
+    id = Column(UUID(as_uuid=False), primary_key=True, default=gen_uuid)
+    user_id = Column(UUID(as_uuid=False), ForeignKey("users.id"), nullable=False, unique=True)
+    department_id = Column(UUID(as_uuid=False), ForeignKey("departments.id"), nullable=True)
+    position_title = Column(String(150), nullable=True)     # ex: "Infirmiere en chef", "Aide-soignant"
+    hire_date = Column(Date, nullable=True)
+    contract_type = Column(String(50), nullable=True)       # CDI, CDD, stage...
+    license_number = Column(String(100), nullable=True)     # numero d'ordre/diplome si applicable
+    created_at = Column(DateTime, default=datetime.utcnow)
+
+    user = relationship("User", back_populates="staff_profile")
+    department = relationship("Department")
 
 
 class Doctor(Base):
@@ -305,20 +432,35 @@ class DocumentType(str, enum.Enum):
     CONSULTATION_NOTE = "consultation_note"
     CERTIFICATE = "certificate"
     OTHER = "other"
+    # NOUVEAU (hospitalisation, demande confirmee par M. Faustin):
+    DAILY_PROGRESS_NOTE = "daily_progress_note"   # tournee medicale quotidienne
+    NURSING_NOTE = "nursing_note"                  # note de soins infirmiers
 
 
 class MedicalDocument(Base):
     """
-    Un element du dossier de sante - toujours rattache a un rendez-vous
-    reel (tracabilite complete: quel medecin, quel etablissement, quelle
-    consultation, a produit ce document).
+    Un element du dossier de sante - rattache soit a un rendez-vous reel
+    (consultation externe), soit a une hospitalisation (Admission) pour les
+    notes de tournee/soins produites pendant un sejour. Exactement un des
+    deux (appointment_id, admission_id) doit etre renseigne - valide cote
+    application (pas de contrainte CHECK en base pour rester compatible
+    SQLite/Postgres), jamais les deux ni aucun des deux. Tracabilite
+    complete conservee dans tous les cas: quel medecin/infirmier, quel
+    etablissement, quel rendez-vous OU quelle hospitalisation, a produit ce
+    document.
+
+    ATTENTION MIGRATION: appointment_id devient nullable ici (il etait
+    obligatoire avant) - necessite un ALTER COLUMN en production, voir
+    script de migration fourni separement.
     """
     __tablename__ = "medical_documents"
 
     id = Column(UUID(as_uuid=False), primary_key=True, default=gen_uuid)
-    appointment_id = Column(UUID(as_uuid=False), ForeignKey("appointments.id"), nullable=False)
+    appointment_id = Column(UUID(as_uuid=False), ForeignKey("appointments.id"), nullable=True)
+    admission_id = Column(UUID(as_uuid=False), ForeignKey("admissions.id"), nullable=True)
     patient_id = Column(UUID(as_uuid=False), ForeignKey("patients.id"), nullable=False)
-    doctor_id = Column(UUID(as_uuid=False), ForeignKey("doctors.id"), nullable=False)
+    doctor_id = Column(UUID(as_uuid=False), ForeignKey("doctors.id"), nullable=True)
+    author_user_id = Column(UUID(as_uuid=False), ForeignKey("users.id"), nullable=True)  # NOUVEAU: auteur reel (peut etre un infirmier, pas seulement un medecin)
     establishment_id = Column(UUID(as_uuid=False), ForeignKey("establishments.id"), nullable=False)
     document_type = Column(Enum(DocumentType), nullable=False)
     title = Column(String(200), nullable=False)
@@ -326,8 +468,10 @@ class MedicalDocument(Base):
     created_at = Column(DateTime, default=datetime.utcnow)
 
     appointment = relationship("Appointment")
+    admission = relationship("Admission")
     patient = relationship("Patient")
     doctor = relationship("Doctor")
+    author = relationship("User")
     establishment = relationship("Establishment")
 
 
@@ -448,11 +592,13 @@ class Room(Base):
 
     id = Column(UUID(as_uuid=False), primary_key=True, default=gen_uuid)
     establishment_id = Column(UUID(as_uuid=False), ForeignKey("establishments.id"), nullable=False)
+    department_id = Column(UUID(as_uuid=False), ForeignKey("departments.id"), nullable=True)  # NOUVEAU (hospitalisation)
     name = Column(String(200), nullable=False)
     room_type = Column(String(100), nullable=True)
     capacity = Column(Integer, nullable=True)
 
     establishment = relationship("Establishment")
+    department = relationship("Department")
 
 
 class PlatformSetting(Base):

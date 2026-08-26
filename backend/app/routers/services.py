@@ -12,7 +12,7 @@ from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
 
 from app.database import get_db
-from app.models import Service, Room, User, UserRole
+from app.models import Service, Room, User, UserRole, Admission, Department
 from app.schemas import ServiceCreate, ServiceOut, RoomCreate, RoomOut
 from app.deps import require_roles
 
@@ -55,23 +55,42 @@ def delete_service(service_id: str, db: Session = Depends(get_db),
     db.commit()
 
 
+def _to_room_out(db: Session, room: Room) -> RoomOut:
+    # NOUVEAU (hospitalisation): occupation calculee a la volee, jamais
+    # stockee, pour eviter toute desynchronisation avec la realite.
+    active_admission = db.query(Admission).filter(Admission.room_id == room.id, Admission.status == "active").first()
+    return RoomOut(
+        id=room.id, name=room.name, room_type=room.room_type, capacity=room.capacity,
+        department_id=room.department_id, department_name=room.department.name if room.department else None,
+        is_occupied=active_admission is not None,
+        current_patient_name=active_admission.patient.user.full_name if active_admission else None,
+    )
+
+
 @router.post("/rooms", response_model=RoomOut, status_code=status.HTTP_201_CREATED)
 def create_room(payload: RoomCreate, db: Session = Depends(get_db),
                  current_user: User = Depends(require_roles(UserRole.ESTABLISHMENT_ADMIN))):
+    if payload.department_id:
+        dept = db.query(Department).filter(Department.id == payload.department_id, Department.establishment_id == current_user.establishment_id).first()
+        if not dept:
+            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Departement introuvable")
+
     room = Room(
         id=str(uuid.uuid4()), establishment_id=current_user.establishment_id,
         name=payload.name, room_type=payload.room_type, capacity=payload.capacity,
+        department_id=payload.department_id,
     )
     db.add(room)
     db.commit()
     db.refresh(room)
-    return room
+    return _to_room_out(db, room)
 
 
 @router.get("/rooms/mine", response_model=list[RoomOut])
 def list_my_rooms(db: Session = Depends(get_db),
-                   current_user: User = Depends(require_roles(UserRole.ESTABLISHMENT_ADMIN))):
-    return db.query(Room).filter(Room.establishment_id == current_user.establishment_id).order_by(Room.name).all()
+                   current_user: User = Depends(require_roles(UserRole.ESTABLISHMENT_ADMIN, UserRole.DOCTOR, UserRole.NURSE, UserRole.HR_MANAGER))):
+    rooms = db.query(Room).filter(Room.establishment_id == current_user.establishment_id).order_by(Room.name).all()
+    return [_to_room_out(db, r) for r in rooms]
 
 
 @router.delete("/rooms/{room_id}", status_code=status.HTTP_204_NO_CONTENT)

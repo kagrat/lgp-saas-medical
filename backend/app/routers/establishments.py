@@ -14,10 +14,11 @@ from sqlalchemy import func
 from sqlalchemy.orm import Session
 
 from app.database import get_db
-from app.models import Establishment, Doctor, User, UserRole, AuditLog
+from app.models import Establishment, Doctor, User, UserRole, AuditLog, Department, StaffProfile
 from app.schemas import (
     EstablishmentCreate, EstablishmentOut, EstablishmentSearchResult,
-    EstablishmentStatusUpdate, EstablishmentUpdate, StaffCreate, StaffOut,
+    EstablishmentStatusUpdate, EstablishmentUpdate, StaffCreate, StaffOut, StaffProfileUpdate,
+    DepartmentCreate, DepartmentUpdate, DepartmentOut,
 )
 from app.deps import require_roles, get_current_user
 from app.security import hash_password
@@ -25,7 +26,13 @@ from app.services.geo import resolve_city_coordinates, haversine_km
 
 router = APIRouter(prefix="/establishments", tags=["etablissements"])
 
-ALLOWED_STAFF_ROLES = {UserRole.SECRETARY, UserRole.PHARMACIST, UserRole.LAB_TECHNICIAN}
+# NOUVEAU: roles supplementaires geres par l'admin d'etablissement (gestion
+# interne complete, demande M. Faustin) - infirmier, receptionniste,
+# comptable, responsable RH s'ajoutent au trio existant.
+ALLOWED_STAFF_ROLES = {
+    UserRole.SECRETARY, UserRole.PHARMACIST, UserRole.LAB_TECHNICIAN,
+    UserRole.NURSE, UserRole.RECEPTIONIST, UserRole.ACCOUNTANT, UserRole.HR_MANAGER,
+}
 
 
 @router.post("", response_model=EstablishmentOut, status_code=status.HTTP_201_CREATED,
@@ -178,18 +185,43 @@ def update_establishment_status(establishment_id: str, payload: EstablishmentSta
 
 # ---------- GESTION DU PERSONNEL (nouveau) ----------
 
+def _to_staff_out(db: Session, staff_user: User) -> StaffOut:
+    profile = db.query(StaffProfile).filter(StaffProfile.user_id == staff_user.id).first()
+    department_name = None
+    if profile and profile.department_id:
+        dept = db.query(Department).filter(Department.id == profile.department_id).first()
+        department_name = dept.name if dept else None
+    return StaffOut(
+        id=staff_user.id, email=staff_user.email, full_name=staff_user.full_name,
+        phone=staff_user.phone, role=staff_user.role, is_active=staff_user.is_active,
+        department_id=profile.department_id if profile else None,
+        department_name=department_name,
+        position_title=profile.position_title if profile else None,
+        hire_date=profile.hire_date if profile else None,
+        contract_type=profile.contract_type if profile else None,
+        license_number=profile.license_number if profile else None,
+    )
+
+
 @router.post("/staff", response_model=StaffOut, status_code=status.HTTP_201_CREATED)
 def create_staff_member(payload: StaffCreate, db: Session = Depends(get_db),
-                         current_user: User = Depends(require_roles(UserRole.ESTABLISHMENT_ADMIN))):
+                         current_user: User = Depends(require_roles(UserRole.ESTABLISHMENT_ADMIN, UserRole.HR_MANAGER))):
     if payload.role not in ALLOWED_STAFF_ROLES:
         raise HTTPException(
             status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
-            detail="Role invalide - utilise secretary, pharmacist ou lab_technician",
+            detail="Role invalide - utilise secretary, pharmacist, lab_technician, nurse, receptionist, accountant ou hr_manager",
         )
 
     existing = db.query(User).filter(User.email == payload.email.lower()).first()
     if existing:
         raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail="Cet email est deja utilise")
+
+    if payload.department_id:
+        dept = db.query(Department).filter(
+            Department.id == payload.department_id, Department.establishment_id == current_user.establishment_id
+        ).first()
+        if not dept:
+            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Departement introuvable")
 
     staff_user = User(
         id=str(uuid.uuid4()),
@@ -201,29 +233,40 @@ def create_staff_member(payload: StaffCreate, db: Session = Depends(get_db),
         role=payload.role,
     )
     db.add(staff_user)
+    db.flush()
+
+    # NOUVEAU: dossier employe (poste, departement, embauche...) - cree
+    # meme si tous les champs sont vides, pour avoir systematiquement une
+    # ligne StaffProfile a completer plus tard depuis l'onglet Equipe.
+    profile = StaffProfile(
+        id=str(uuid.uuid4()), user_id=staff_user.id, department_id=payload.department_id,
+        position_title=payload.position_title, hire_date=payload.hire_date,
+        contract_type=payload.contract_type, license_number=payload.license_number,
+    )
+    db.add(profile)
+
     db.add(AuditLog(user_id=current_user.id, establishment_id=current_user.establishment_id,
                      action="create_staff", details=f"Compte {payload.role.value} cree: {payload.full_name}"))
     db.commit()
     db.refresh(staff_user)
-    return StaffOut(id=staff_user.id, email=staff_user.email, full_name=staff_user.full_name,
-                     phone=staff_user.phone, role=staff_user.role, is_active=staff_user.is_active)
+    return _to_staff_out(db, staff_user)
 
 
 @router.get("/staff", response_model=list[StaffOut])
 def list_staff(db: Session = Depends(get_db),
-               current_user: User = Depends(require_roles(UserRole.ESTABLISHMENT_ADMIN))):
+               current_user: User = Depends(require_roles(UserRole.ESTABLISHMENT_ADMIN, UserRole.HR_MANAGER))):
     staff = (
         db.query(User)
         .filter(User.establishment_id == current_user.establishment_id, User.role.in_(list(ALLOWED_STAFF_ROLES)))
         .order_by(User.full_name)
         .all()
     )
-    return [StaffOut(id=s.id, email=s.email, full_name=s.full_name, phone=s.phone, role=s.role, is_active=s.is_active) for s in staff]
+    return [_to_staff_out(db, s) for s in staff]
 
 
 @router.patch("/staff/{staff_id}/deactivate", response_model=StaffOut)
 def deactivate_staff(staff_id: str, db: Session = Depends(get_db),
-                      current_user: User = Depends(require_roles(UserRole.ESTABLISHMENT_ADMIN))):
+                      current_user: User = Depends(require_roles(UserRole.ESTABLISHMENT_ADMIN, UserRole.HR_MANAGER))):
     staff_user = db.query(User).filter(
         User.id == staff_id, User.establishment_id == current_user.establishment_id, User.role.in_(list(ALLOWED_STAFF_ROLES))
     ).first()
@@ -235,5 +278,103 @@ def deactivate_staff(staff_id: str, db: Session = Depends(get_db),
                      action="toggle_staff_active", details=f"{staff_user.full_name}: is_active={staff_user.is_active}"))
     db.commit()
     db.refresh(staff_user)
-    return StaffOut(id=staff_user.id, email=staff_user.email, full_name=staff_user.full_name,
-                     phone=staff_user.phone, role=staff_user.role, is_active=staff_user.is_active)
+    return _to_staff_out(db, staff_user)
+
+
+@router.patch("/staff/{staff_id}/profile", response_model=StaffOut)
+def update_staff_profile(staff_id: str, payload: StaffProfileUpdate, db: Session = Depends(get_db),
+                          current_user: User = Depends(require_roles(UserRole.ESTABLISHMENT_ADMIN, UserRole.HR_MANAGER))):
+    """NOUVEAU: mise a jour du dossier employe (poste, departement,
+    embauche, contrat, licence) apres la creation du compte."""
+    staff_user = db.query(User).filter(
+        User.id == staff_id, User.establishment_id == current_user.establishment_id, User.role.in_(list(ALLOWED_STAFF_ROLES))
+    ).first()
+    if not staff_user:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Membre du personnel introuvable")
+
+    if payload.department_id:
+        dept = db.query(Department).filter(
+            Department.id == payload.department_id, Department.establishment_id == current_user.establishment_id
+        ).first()
+        if not dept:
+            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Departement introuvable")
+
+    profile = db.query(StaffProfile).filter(StaffProfile.user_id == staff_user.id).first()
+    if not profile:
+        profile = StaffProfile(id=str(uuid.uuid4()), user_id=staff_user.id)
+        db.add(profile)
+
+    profile.department_id = payload.department_id
+    profile.position_title = payload.position_title
+    profile.hire_date = payload.hire_date
+    profile.contract_type = payload.contract_type
+    profile.license_number = payload.license_number
+
+    if payload.full_name:
+        staff_user.full_name = payload.full_name
+    if payload.phone:
+        staff_user.phone = payload.phone
+
+    db.commit()
+    db.refresh(staff_user)
+    return _to_staff_out(db, staff_user)
+
+
+# ---------- DEPARTEMENTS (nouveau, gestion interne complete) ----------
+
+@router.post("/departments", response_model=DepartmentOut, status_code=status.HTTP_201_CREATED)
+def create_department(payload: DepartmentCreate, db: Session = Depends(get_db),
+                       current_user: User = Depends(require_roles(UserRole.ESTABLISHMENT_ADMIN, UserRole.HR_MANAGER))):
+    department = Department(id=str(uuid.uuid4()), establishment_id=current_user.establishment_id, name=payload.name)
+    db.add(department)
+    db.add(AuditLog(user_id=current_user.id, establishment_id=current_user.establishment_id,
+                     action="create_department", details=f"Departement cree: {payload.name}"))
+    db.commit()
+    db.refresh(department)
+    return DepartmentOut(id=department.id, name=department.name, head_user_id=None, head_user_name=None, staff_count=0)
+
+
+@router.get("/departments", response_model=list[DepartmentOut])
+def list_departments(db: Session = Depends(get_db), current_user: User = Depends(get_current_user)):
+    if not current_user.establishment_id:
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Compte non rattache a un etablissement")
+    departments = db.query(Department).filter(Department.establishment_id == current_user.establishment_id).order_by(Department.name).all()
+
+    results = []
+    for dept in departments:
+        staff_count = db.query(StaffProfile).filter(StaffProfile.department_id == dept.id).count()
+        head_name = dept.head_user.full_name if dept.head_user_id and dept.head_user else None
+        results.append(DepartmentOut(
+            id=dept.id, name=dept.name, head_user_id=dept.head_user_id,
+            head_user_name=head_name, staff_count=staff_count,
+        ))
+    return results
+
+
+@router.patch("/departments/{department_id}", response_model=DepartmentOut)
+def update_department(department_id: str, payload: DepartmentUpdate, db: Session = Depends(get_db),
+                       current_user: User = Depends(require_roles(UserRole.ESTABLISHMENT_ADMIN, UserRole.HR_MANAGER))):
+    dept = db.query(Department).filter(
+        Department.id == department_id, Department.establishment_id == current_user.establishment_id
+    ).first()
+    if not dept:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Departement introuvable")
+
+    if payload.head_user_id is not None:
+        # NOUVEAU: "chef de service" - un membre du personnel (medecin ou
+        # autre) designe comme responsable du departement. Pas un role a
+        # part: un simple champ de supervision sur le departement, comme
+        # decide dans le cahier des charges (evite de multiplier les roles
+        # techniques pour une simple fonction de supervision).
+        head = db.query(User).filter(User.id == payload.head_user_id, User.establishment_id == current_user.establishment_id).first()
+        if not head:
+            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Utilisateur introuvable pour ce role de chef de service")
+        dept.head_user_id = payload.head_user_id
+    if payload.name:
+        dept.name = payload.name
+
+    db.commit()
+    db.refresh(dept)
+    staff_count = db.query(StaffProfile).filter(StaffProfile.department_id == dept.id).count()
+    head_name = dept.head_user.full_name if dept.head_user_id and dept.head_user else None
+    return DepartmentOut(id=dept.id, name=dept.name, head_user_id=dept.head_user_id, head_user_name=head_name, staff_count=staff_count)

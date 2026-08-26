@@ -4,6 +4,7 @@ import { AppointmentStatusBadge } from '../components/AppointmentStatusUI'
 import { DOCUMENT_TYPES, DOCUMENT_TYPE_LABELS } from '../components/DocumentType'
 import ChatWindow from '../components/ChatWindow'
 import MyPatients from '../components/MyPatients'
+import Hospitalizations from '../components/Hospitalizations'
 import LabReferralForm from '../components/LabReferralForm'
 
 export default function DesktopDoctorDashboard() {
@@ -152,6 +153,7 @@ export default function DesktopDoctorDashboard() {
   const tabs = [
     { id: 'appointments', label: 'Mes rendez-vous' },
     { id: 'patients', label: 'Patients' },
+    { id: 'hospitalizations', label: 'Hospitalisations' },
     { id: 'messages', label: 'Messages' },
   ]
 
@@ -303,6 +305,8 @@ export default function DesktopDoctorDashboard() {
       )}
 
       {tab === 'patients' && <MyPatients />}
+
+      {tab === 'hospitalizations' && <Hospitalizations />}
 
       {tab === 'messages' && (
         <div>

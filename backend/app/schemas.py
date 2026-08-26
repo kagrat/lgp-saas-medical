@@ -367,9 +367,17 @@ class MedicalDocumentCreate(BaseModel):
     content: str = Field(min_length=1)
 
 
+class ProgressNoteCreate(BaseModel):
+    """NOUVEAU (hospitalisation): note de tournee, rattachee a l'admission
+    via l'URL plutot qu'un appointment_id."""
+    title: str = Field(min_length=2, max_length=200)
+    content: str = Field(min_length=1)
+
+
 class MedicalDocumentOut(BaseModel):
     id: str
-    appointment_id: str
+    appointment_id: Optional[str] = None
+    admission_id: Optional[str] = None
     patient_id: str
     doctor_name: str
     establishment_name: str
@@ -379,6 +387,89 @@ class MedicalDocumentOut(BaseModel):
     created_at: datetime
 
     model_config = {"from_attributes": True}
+
+
+class VitalSignsCreate(BaseModel):
+    temperature_celsius: Optional[float] = Field(default=None, ge=30, le=45)
+    blood_pressure: Optional[str] = Field(default=None, max_length=20)
+    pulse_bpm: Optional[int] = Field(default=None, ge=0, le=300)
+    respiratory_rate: Optional[int] = Field(default=None, ge=0, le=100)
+    notes: Optional[str] = Field(default=None, max_length=1000)
+
+
+class VitalSignsOut(BaseModel):
+    id: str
+    recorded_by_name: str
+    recorded_at: datetime
+    temperature_celsius: Optional[float] = None
+    blood_pressure: Optional[str] = None
+    pulse_bpm: Optional[int] = None
+    respiratory_rate: Optional[int] = None
+    notes: Optional[str] = None
+
+
+class AdmissionCreate(BaseModel):
+    patient_id: str
+    department_id: Optional[str] = None
+    room_id: Optional[str] = None
+    diagnosis: Optional[str] = Field(default=None, max_length=2000)
+    expected_discharge_date: Optional[datetime] = None
+
+
+class AdmissionTransferCreate(BaseModel):
+    to_department_id: Optional[str] = None
+    to_room_id: Optional[str] = None
+    note: Optional[str] = Field(default=None, max_length=500)
+
+
+class AdmissionDischarge(BaseModel):
+    discharge_summary: str = Field(min_length=1, max_length=5000)
+
+
+class AdmissionTransferOut(BaseModel):
+    id: str
+    from_department_name: Optional[str] = None
+    to_department_name: Optional[str] = None
+    from_room_name: Optional[str] = None
+    to_room_name: Optional[str] = None
+    transferred_by_name: str
+    note: Optional[str] = None
+    created_at: datetime
+
+
+class AdmissionOut(BaseModel):
+    id: str
+    patient_id: str
+    patient_name: str
+    dossier_number: str
+    admitting_doctor_name: str
+    department_id: Optional[str] = None
+    department_name: Optional[str] = None
+    room_id: Optional[str] = None
+    room_name: Optional[str] = None
+    status: str
+    diagnosis: Optional[str] = None
+    admission_date: datetime
+    expected_discharge_date: Optional[datetime] = None
+    actual_discharge_date: Optional[datetime] = None
+    discharge_summary: Optional[str] = None
+    vital_signs: list[VitalSignsOut] = []
+    transfers: list[AdmissionTransferOut] = []
+    documents: list[MedicalDocumentOut] = []
+
+
+class AdmissionSummaryOut(BaseModel):
+    """Version allegee pour les listes (sans le detail complet)."""
+    id: str
+    patient_id: str
+    patient_name: str
+    dossier_number: str
+    admitting_doctor_name: str
+    department_name: Optional[str] = None
+    room_name: Optional[str] = None
+    status: str
+    admission_date: datetime
+    expected_discharge_date: Optional[datetime] = None
 
 
 class DoctorPatientOut(BaseModel):
@@ -546,6 +637,12 @@ class StaffCreate(BaseModel):
     full_name: str = Field(min_length=2, max_length=200)
     phone: Optional[str] = None
     role: UserRole
+    # NOUVEAU (dossier employe, gestion interne complete):
+    department_id: Optional[str] = None
+    position_title: Optional[str] = Field(default=None, max_length=150)
+    hire_date: Optional[date] = None
+    contract_type: Optional[str] = Field(default=None, max_length=50)
+    license_number: Optional[str] = Field(default=None, max_length=100)
 
 
 class StaffOut(BaseModel):
@@ -555,6 +652,44 @@ class StaffOut(BaseModel):
     phone: Optional[str] = None
     role: UserRole
     is_active: bool
+    department_id: Optional[str] = None
+    department_name: Optional[str] = None
+    position_title: Optional[str] = None
+    hire_date: Optional[date] = None
+    contract_type: Optional[str] = None
+    license_number: Optional[str] = None
+
+
+class StaffProfileUpdate(BaseModel):
+    """NOUVEAU: mise a jour du dossier employe uniquement (pas de
+    email/password/role, contrairement a StaffCreate qui sert a la
+    creation du compte)."""
+    full_name: Optional[str] = Field(default=None, min_length=2, max_length=200)
+    phone: Optional[str] = None
+    department_id: Optional[str] = None
+    position_title: Optional[str] = Field(default=None, max_length=150)
+    hire_date: Optional[date] = None
+    contract_type: Optional[str] = Field(default=None, max_length=50)
+    license_number: Optional[str] = Field(default=None, max_length=100)
+
+
+class DepartmentCreate(BaseModel):
+    name: str = Field(min_length=2, max_length=150)
+
+
+class DepartmentUpdate(BaseModel):
+    name: Optional[str] = Field(default=None, min_length=2, max_length=150)
+    head_user_id: Optional[str] = None
+
+
+class DepartmentOut(BaseModel):
+    id: str
+    name: str
+    head_user_id: Optional[str] = None
+    head_user_name: Optional[str] = None
+    staff_count: int
+
+    model_config = {"from_attributes": True}
 
 
 class AuditLogOut(BaseModel):
@@ -702,6 +837,7 @@ class RoomCreate(BaseModel):
     name: str = Field(min_length=2, max_length=200)
     room_type: Optional[str] = None
     capacity: Optional[int] = Field(default=None, ge=1)
+    department_id: Optional[str] = None
 
 
 class RoomOut(BaseModel):
@@ -709,6 +845,13 @@ class RoomOut(BaseModel):
     name: str
     room_type: Optional[str] = None
     capacity: Optional[int] = None
+    department_id: Optional[str] = None
+    department_name: Optional[str] = None
+    # NOUVEAU (hospitalisation): occupation calculee en temps reel a partir
+    # des admissions actives - jamais stockee, pour eviter tout risque de
+    # desynchronisation entre ce champ et la realite.
+    is_occupied: bool = False
+    current_patient_name: Optional[str] = None
 
     model_config = {"from_attributes": True}
 

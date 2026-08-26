@@ -4,9 +4,10 @@ import api, { getErrorMessage } from '../api/client'
 export default function ServicesRoomsManager() {
   const [services, setServices] = useState([])
   const [rooms, setRooms] = useState([])
+  const [departments, setDepartments] = useState([])
   const [error, setError] = useState('')
   const [serviceForm, setServiceForm] = useState({ name: '', price: '', duration_minutes: '', description: '' })
-  const [roomForm, setRoomForm] = useState({ name: '', room_type: '', capacity: '' })
+  const [roomForm, setRoomForm] = useState({ name: '', room_type: '', capacity: '', department_id: '' })
   const [savingService, setSavingService] = useState(false)
   const [savingRoom, setSavingRoom] = useState(false)
 
@@ -16,12 +17,14 @@ export default function ServicesRoomsManager() {
 
   async function load() {
     try {
-      const [servicesRes, roomsRes] = await Promise.all([
+      const [servicesRes, roomsRes, departmentsRes] = await Promise.all([
         api.get('/services/mine'),
         api.get('/services/rooms/mine'),
+        api.get('/establishments/departments'),
       ])
       setServices(servicesRes.data)
       setRooms(roomsRes.data)
+      setDepartments(departmentsRes.data)
     } catch (err) {
       setError(getErrorMessage(err, 'Impossible de charger les services et salles.'))
     }
@@ -65,8 +68,9 @@ export default function ServicesRoomsManager() {
         name: roomForm.name,
         room_type: roomForm.room_type || null,
         capacity: roomForm.capacity ? Number(roomForm.capacity) : null,
+        department_id: roomForm.department_id || null,
       })
-      setRoomForm({ name: '', room_type: '', capacity: '' })
+      setRoomForm({ name: '', room_type: '', capacity: '', department_id: '' })
       await load()
     } catch (err) {
       setError(getErrorMessage(err, "Impossible d'ajouter cette salle."))
@@ -125,10 +129,15 @@ export default function ServicesRoomsManager() {
       </div>
 
       <h3 className="font-display text-lg text-forest-900 font-semibold mb-3">Salles & ressources</h3>
-      <form onSubmit={handleAddRoom} className="grid sm:grid-cols-3 gap-3 bg-white border border-forest-100 rounded-xl p-5 mb-4">
-        <input required placeholder="Nom (ex: Salle 1)" value={roomForm.name}
+      <form onSubmit={handleAddRoom} className="grid sm:grid-cols-2 gap-3 bg-white border border-forest-100 rounded-xl p-5 mb-4">
+        <input required placeholder="Nom (ex: Chambre 101)" value={roomForm.name}
           onChange={(e) => setRoomForm({ ...roomForm, name: e.target.value })}
           className="rounded-lg border border-forest-100 px-3 py-2" />
+        <select value={roomForm.department_id} onChange={(e) => setRoomForm({ ...roomForm, department_id: e.target.value })}
+          className="rounded-lg border border-forest-100 px-3 py-2 bg-white">
+          <option value="">Departement (optionnel)</option>
+          {departments.map((d) => <option key={d.id} value={d.id}>{d.name}</option>)}
+        </select>
         <input placeholder="Type (optionnel)" value={roomForm.room_type}
           onChange={(e) => setRoomForm({ ...roomForm, room_type: e.target.value })}
           className="rounded-lg border border-forest-100 px-3 py-2" />
@@ -136,7 +145,7 @@ export default function ServicesRoomsManager() {
           onChange={(e) => setRoomForm({ ...roomForm, capacity: e.target.value })}
           className="rounded-lg border border-forest-100 px-3 py-2" />
         <button type="submit" disabled={savingRoom}
-          className="sm:col-span-3 rounded-full bg-forest-700 text-white py-2.5 font-medium hover:bg-forest-900 transition disabled:opacity-50">
+          className="sm:col-span-2 rounded-full bg-forest-700 text-white py-2.5 font-medium hover:bg-forest-900 transition disabled:opacity-50">
           {savingRoom ? 'Ajout...' : 'Ajouter cette salle'}
         </button>
       </form>
@@ -145,9 +154,14 @@ export default function ServicesRoomsManager() {
         {rooms.map((r) => (
           <div key={r.id} className="rounded-xl border border-forest-100 bg-white p-4 flex justify-between items-center">
             <div>
-              <p className="text-forest-900 font-medium">{r.name}</p>
+              <p className="text-forest-900 font-medium">
+                {r.name}
+                {r.is_occupied && <span className="ml-2 text-xs px-2 py-0.5 rounded-full bg-clay-500/10 text-clay-600 font-medium">Occupee</span>}
+                {!r.is_occupied && <span className="ml-2 text-xs px-2 py-0.5 rounded-full bg-forest-500/10 text-forest-700 font-medium">Libre</span>}
+              </p>
               <p className="text-sm text-forest-700">
-                {r.room_type || ''}{r.capacity ? ` - Capacite: ${r.capacity}` : ''}
+                {r.department_name ? `${r.department_name} - ` : ''}{r.room_type || ''}{r.capacity ? ` - Capacite: ${r.capacity}` : ''}
+                {r.is_occupied && r.current_patient_name && ` - Patient: ${r.current_patient_name}`}
               </p>
             </div>
             <button onClick={() => handleDeleteRoom(r.id)} className="text-sm text-clay-600 hover:underline">

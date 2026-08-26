@@ -9,6 +9,11 @@ const ROLE_ROUTES = {
   pharmacist: '/mon-espace-pharmacie',
   lab_technician: '/mon-espace-laboratoire',
   secretary: '/mon-espace-secretariat',
+  // NOUVEAU (gestion interne complete, demande M. Faustin):
+  hr_manager: '/mon-espace-rh',
+  nurse: '/mon-espace-infirmier',
+  receptionist: '/mon-espace-accueil',
+  accountant: '/mon-espace-comptabilite',
 }
 
 export default function DesktopLogin() {

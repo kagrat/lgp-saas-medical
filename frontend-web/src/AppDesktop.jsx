@@ -7,6 +7,9 @@ import DesktopPharmacistDashboard from './pages-desktop/DesktopPharmacistDashboa
 import DesktopLabTechDashboard from './pages-desktop/DesktopLabTechDashboard'
 import DesktopSecretaryDashboard from './pages-desktop/DesktopSecretaryDashboard'
 import DesktopSupportChat from './pages-desktop/DesktopSupportChat'
+import DesktopHRDashboard from './pages-desktop/DesktopHRDashboard'
+import DesktopNurseDashboard from './pages-desktop/DesktopNurseDashboard'
+import DesktopComingSoonDashboard from './pages-desktop/DesktopComingSoonDashboard'
 import EstablishmentAdmin from './pages/EstablishmentAdmin'
 import SuperAdminDashboard from './pages/SuperAdminDashboard'
 import Profile from './pages/Profile'
@@ -44,6 +47,23 @@ export default function AppDesktop() {
         <Route
           path="/mon-espace-secretariat"
           element={<ProtectedRoute allowedRoles={['secretary']}><DesktopSecretaryDashboard /></ProtectedRoute>}
+        />
+        {/* NOUVEAU (gestion interne complete, demande M. Faustin) */}
+        <Route
+          path="/mon-espace-rh"
+          element={<ProtectedRoute allowedRoles={['hr_manager']}><DesktopHRDashboard /></ProtectedRoute>}
+        />
+        <Route
+          path="/mon-espace-infirmier"
+          element={<ProtectedRoute allowedRoles={['nurse']}><DesktopNurseDashboard /></ProtectedRoute>}
+        />
+        <Route
+          path="/mon-espace-accueil"
+          element={<ProtectedRoute allowedRoles={['receptionist']}><DesktopComingSoonDashboard /></ProtectedRoute>}
+        />
+        <Route
+          path="/mon-espace-comptabilite"
+          element={<ProtectedRoute allowedRoles={['accountant']}><DesktopComingSoonDashboard /></ProtectedRoute>}
         />
         <Route
           path="/super-admin"

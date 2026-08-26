@@ -10,6 +10,11 @@ const ROLE_LINKS = {
   lab_technician: { to: '/mon-espace-laboratoire', label: 'Mon espace' },
   secretary: { to: '/mon-espace-secretariat', label: 'Mon espace' },
   super_admin: { to: '/super-admin', label: 'Super Admin' },
+  // NOUVEAU (gestion interne complete, demande M. Faustin):
+  hr_manager: { to: '/mon-espace-rh', label: 'Mon espace' },
+  nurse: { to: '/mon-espace-infirmier', label: 'Mon espace' },
+  receptionist: { to: '/mon-espace-accueil', label: 'Mon espace' },
+  accountant: { to: '/mon-espace-comptabilite', label: 'Mon espace' },
 }
 
 export default function DesktopNavbar() {
