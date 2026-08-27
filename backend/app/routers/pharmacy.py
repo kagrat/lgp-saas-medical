@@ -38,6 +38,7 @@ from app.schemas import (
 )
 from app.deps import require_roles, require_establishment_types
 from app.services.geo import resolve_city_coordinates, haversine_km
+from app.routers.notifications import create_stock_alert
 
 # Endpoints de gestion pharmacie (stock/commandes cote etablissement) reserves
 # aux etablissements de type pharmacie - un hopital ou une clinique peut avoir
@@ -414,6 +415,13 @@ def confirm_reservation(reservation_id: str, db: Session = Depends(get_db),
     for item in reservation.items:
         stock_items[item.id].quantity -= item.confirmed_quantity
         item.quantity = item.confirmed_quantity
+        # NOUVEAU: ferme la lacune identifiee dans l'audit du cahier des
+        # charges - alert_threshold existait deja mais rien ne se
+        # declenchait dessus. Alerte uniquement au moment ou le stock
+        # FRANCHIT le seuil (evite le spam si deja bas avant cette commande).
+        stock = stock_items[item.id]
+        if stock.quantity <= stock.alert_threshold and (stock.quantity + item.confirmed_quantity) > stock.alert_threshold:
+            create_stock_alert(db, reservation.establishment_id, stock.medication_name, stock.quantity, stock.alert_threshold)
     reservation.status = ReservationStatus.CONFIRMED
 
     db.add(PharmacyReservationStatusHistory(

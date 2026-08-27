@@ -18,6 +18,7 @@ import LabCatalogManager from '../components/LabCatalogManager'
 import PharmacyStatsCards from '../components/PharmacyStatsCards'
 import LabReferralForm from '../components/LabReferralForm'
 import ReservationReviewForm from '../components/ReservationReviewForm'
+import NotificationBell from '../components/NotificationBell'
 
 export default function EstablishmentAdmin() {
   const [establishment, setEstablishment] = useState(null)
@@ -359,7 +360,10 @@ export default function EstablishmentAdmin() {
 
   return (
     <div className="max-w-5xl mx-auto px-6 py-14">
-      <h1 className="font-display text-3xl font-semibold text-forest-900 mb-2">{establishment.name}</h1>
+      <div className="flex justify-between items-start mb-2">
+        <h1 className="font-display text-3xl font-semibold text-forest-900">{establishment.name}</h1>
+        <NotificationBell />
+      </div>
       <p className="text-forest-700 mb-8">
         {isLab ? 'Gestion des demandes d\'analyses.' : 'Gestion des medecins, rendez-vous et pharmacie de ton etablissement.'}
       </p>

@@ -640,6 +640,51 @@ class Payment(Base):
     recorded_by = relationship("User")
 
 
+class Notification(Base):
+    """
+    NOUVEAU (gestion interne complete, demande M. Faustin) - centre de
+    notifications internes REEL. Corrige une lacune identifiee dans l'audit:
+    PharmacyStock.alert_threshold existait deja mais rien ne se declenchait
+    reellement dessus. Ferme aussi cette meme lacune pour InventoryItem
+    (stock general). Point d'extension pret pour brancher un vrai
+    fournisseur SMS plus tard (voir services/notifications.py) sans tout
+    reconstruire.
+    """
+    __tablename__ = "notifications"
+
+    id = Column(UUID(as_uuid=False), primary_key=True, default=gen_uuid)
+    establishment_id = Column(UUID(as_uuid=False), ForeignKey("establishments.id"), nullable=False)
+    user_id = Column(UUID(as_uuid=False), ForeignKey("users.id"), nullable=True)  # NULL = notification etablissement (visible par tous les admins)
+    notification_type = Column(String(30), nullable=False, default="info")  # "stock_alert", "info"...
+    title = Column(String(200), nullable=False)
+    message = Column(Text, nullable=False)
+    is_read = Column(Boolean, default=False)
+    created_at = Column(DateTime, default=datetime.utcnow)
+
+    establishment = relationship("Establishment")
+    user = relationship("User")
+
+
+class InventoryItem(Base):
+    """
+    NOUVEAU (gestion interne complete, demande M. Faustin) - stock general
+    non-pharmaceutique (materiel medical, consommables...), distinct de
+    PharmacyStock qui reste reserve aux medicaments vendus en pharmacie.
+    """
+    __tablename__ = "inventory_items"
+
+    id = Column(UUID(as_uuid=False), primary_key=True, default=gen_uuid)
+    establishment_id = Column(UUID(as_uuid=False), ForeignKey("establishments.id"), nullable=False)
+    name = Column(String(200), nullable=False)
+    category = Column(String(100), nullable=True)  # ex: "Consommables", "Materiel medical"
+    quantity = Column(Integer, nullable=False, default=0)
+    unit = Column(String(30), nullable=True)  # ex: "unites", "boites", "litres"
+    alert_threshold = Column(Integer, nullable=False, default=5)
+    created_at = Column(DateTime, default=datetime.utcnow)
+
+    establishment = relationship("Establishment")
+
+
 class Service(Base):
     """Catalogue des services/actes de l'etablissement (distinct du prix de consultation par medecin)."""
     __tablename__ = "services"

@@ -547,6 +547,44 @@ class BillingSummaryOut(BaseModel):
     unpaid_invoice_count: int
 
 
+class NotificationOut(BaseModel):
+    id: str
+    notification_type: str
+    title: str
+    message: str
+    is_read: bool
+    created_at: datetime
+
+    model_config = {"from_attributes": True}
+
+
+class InventoryItemCreate(BaseModel):
+    name: str = Field(min_length=2, max_length=200)
+    category: Optional[str] = Field(default=None, max_length=100)
+    quantity: int = Field(default=0, ge=0)
+    unit: Optional[str] = Field(default=None, max_length=30)
+    alert_threshold: int = Field(default=5, ge=0)
+
+
+class InventoryItemUpdate(BaseModel):
+    quantity: Optional[int] = Field(default=None, ge=0)
+    category: Optional[str] = Field(default=None, max_length=100)
+    unit: Optional[str] = Field(default=None, max_length=30)
+    alert_threshold: Optional[int] = Field(default=None, ge=0)
+
+
+class InventoryItemOut(BaseModel):
+    id: str
+    name: str
+    category: Optional[str] = None
+    quantity: int
+    unit: Optional[str] = None
+    alert_threshold: int
+    is_low_stock: bool
+
+    model_config = {"from_attributes": True}
+
+
 class DoctorPatientOut(BaseModel):
     """NOUVEAU: une ligne de la liste 'Mes patients' d'un medecin - distinct
     du repertoire etablissement (PatientDirectoryOut), filtre a CE medecin."""
