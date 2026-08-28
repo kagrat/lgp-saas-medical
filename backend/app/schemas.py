@@ -585,6 +585,52 @@ class InventoryItemOut(BaseModel):
     model_config = {"from_attributes": True}
 
 
+class ShiftCreate(BaseModel):
+    user_id: str
+    department_id: Optional[str] = None
+    shift_date: date
+    start_time: time
+    end_time: time
+    notes: Optional[str] = Field(default=None, max_length=300)
+
+
+class ShiftOut(BaseModel):
+    id: str
+    user_id: str
+    user_name: str
+    department_id: Optional[str] = None
+    department_name: Optional[str] = None
+    shift_date: date
+    start_time: time
+    end_time: time
+    notes: Optional[str] = None
+
+
+class LeaveRequestCreate(BaseModel):
+    start_date: date
+    end_date: date
+    reason: Optional[str] = Field(default=None, max_length=500)
+
+
+class LeaveRequestReview(BaseModel):
+    approve: bool
+    review_note: Optional[str] = Field(default=None, max_length=300)
+
+
+class LeaveRequestOut(BaseModel):
+    id: str
+    user_id: str
+    user_name: str
+    start_date: date
+    end_date: date
+    reason: Optional[str] = None
+    status: str
+    reviewed_by_name: Optional[str] = None
+    reviewed_at: Optional[datetime] = None
+    review_note: Optional[str] = None
+    created_at: datetime
+
+
 class DoctorPatientOut(BaseModel):
     """NOUVEAU: une ligne de la liste 'Mes patients' d'un medecin - distinct
     du repertoire etablissement (PatientDirectoryOut), filtre a CE medecin."""

@@ -685,6 +685,54 @@ class InventoryItem(Base):
     establishment = relationship("Establishment")
 
 
+class Shift(Base):
+    """
+    NOUVEAU (gestion interne complete, demande M. Faustin) - planning de
+    garde/roulement pour TOUT le personnel (pas seulement les medecins,
+    qui ont deja DoctorAvailability pour leurs creneaux de consultation).
+    """
+    __tablename__ = "shifts"
+
+    id = Column(UUID(as_uuid=False), primary_key=True, default=gen_uuid)
+    establishment_id = Column(UUID(as_uuid=False), ForeignKey("establishments.id"), nullable=False)
+    user_id = Column(UUID(as_uuid=False), ForeignKey("users.id"), nullable=False)
+    department_id = Column(UUID(as_uuid=False), ForeignKey("departments.id"), nullable=True)
+    shift_date = Column(Date, nullable=False)
+    start_time = Column(Time, nullable=False)
+    end_time = Column(Time, nullable=False)
+    notes = Column(String(300), nullable=True)
+    created_by_user_id = Column(UUID(as_uuid=False), ForeignKey("users.id"), nullable=False)
+
+    establishment = relationship("Establishment")
+    user = relationship("User", foreign_keys=[user_id])
+    department = relationship("Department")
+    created_by = relationship("User", foreign_keys=[created_by_user_id])
+
+
+class LeaveRequest(Base):
+    """NOUVEAU: demande de conge d'un membre du personnel, validee par le
+    Responsable RH ou l'admin d'etablissement. Statut en texte simple
+    (meme principe que Room/Admission/Invoice): "pending", "approved",
+    "rejected"."""
+    __tablename__ = "leave_requests"
+
+    id = Column(UUID(as_uuid=False), primary_key=True, default=gen_uuid)
+    establishment_id = Column(UUID(as_uuid=False), ForeignKey("establishments.id"), nullable=False)
+    user_id = Column(UUID(as_uuid=False), ForeignKey("users.id"), nullable=False)
+    start_date = Column(Date, nullable=False)
+    end_date = Column(Date, nullable=False)
+    reason = Column(String(500), nullable=True)
+    status = Column(String(20), nullable=False, default="pending")
+    reviewed_by_user_id = Column(UUID(as_uuid=False), ForeignKey("users.id"), nullable=True)
+    reviewed_at = Column(DateTime, nullable=True)
+    review_note = Column(String(300), nullable=True)
+    created_at = Column(DateTime, default=datetime.utcnow)
+
+    establishment = relationship("Establishment")
+    user = relationship("User", foreign_keys=[user_id])
+    reviewed_by = relationship("User", foreign_keys=[reviewed_by_user_id])
+
+
 class Service(Base):
     """Catalogue des services/actes de l'etablissement (distinct du prix de consultation par medecin)."""
     __tablename__ = "services"
