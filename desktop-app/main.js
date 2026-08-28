@@ -13,7 +13,7 @@
  * Voir la note detaillee dans le README - le vrai mode hors-ligne (base
  * locale + synchronisation) reste un chantier a part, non traite ici.
  */
-const { app, BrowserWindow, ipcMain } = require('electron')
+const { app, BrowserWindow, ipcMain, Menu } = require('electron')
 const path = require('path')
 const fs = require('fs')
 
@@ -53,6 +53,37 @@ function createWindow() {
       </div>'`
     )
   })
+
+  // CORRECTIF (bug reel rencontre en test): contrairement a un navigateur
+  // classique, une BrowserWindow Electron nue n'a AUCUN raccourci
+  // Ctrl+Shift+R cable par defaut - ce raccourci ne faisait donc
+  // strictement rien avant ce correctif, ce qui a cause de la confusion
+  // en test (contenu perimee du cache malgre un "rechargement force" qui
+  // n'en etait pas un). On cable ici un vrai rechargement qui ignore le
+  // cache, plus un raccourci clavier standard pour y acceder facilement.
+  const menu = Menu.buildFromTemplate([
+    {
+      label: 'Affichage',
+      submenu: [
+        {
+          label: 'Recharger (ignorer le cache)',
+          accelerator: 'CmdOrCtrl+Shift+R',
+          click: () => win.webContents.reloadIgnoringCache(),
+        },
+        {
+          label: 'Recharger',
+          accelerator: 'CmdOrCtrl+R',
+          click: () => win.webContents.reload(),
+        },
+        {
+          label: 'Outils de developpement',
+          accelerator: 'CmdOrCtrl+Shift+I',
+          click: () => win.webContents.toggleDevTools(),
+        },
+      ],
+    },
+  ])
+  Menu.setApplicationMenu(menu)
 }
 
 app.whenReady().then(() => {
