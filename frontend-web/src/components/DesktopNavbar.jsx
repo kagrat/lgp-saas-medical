@@ -1,5 +1,5 @@
 import { useNavigate } from 'react-router-dom'
-import { UserRound } from 'lucide-react'
+import { UserRound, RefreshCw } from 'lucide-react'
 import { getRole, clearSession } from '../api/client'
 import { Link } from 'react-router-dom'
 
@@ -40,6 +40,14 @@ export default function DesktopNavbar() {
         <nav className="flex items-center gap-5 text-sm font-medium text-forest-100">
           {link && <Link to={link.to} className="hover:text-white">{link.label}</Link>}
           <Link to="/support" className="hover:text-white">Support</Link>
+          <button
+            onClick={() => window.location.reload()}
+            className="hover:text-white"
+            aria-label="Actualiser"
+            title="Actualiser"
+          >
+            <RefreshCw className="w-4.5 h-4.5" strokeWidth={1.75} />
+          </button>
           <Link to="/profil" className="hover:text-white" aria-label="Mon profil">
             <UserRound className="w-5 h-5" strokeWidth={1.75} />
           </Link>

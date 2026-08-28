@@ -15,7 +15,7 @@ from app.schemas import (
     GlobalAppointmentOut, GlobalOrderOut, GlobalDoctorOut, GlobalEstablishmentSummaryOut,
     PendingOverviewOut, PatientDetailOut,
 )
-from app.deps import require_roles
+from app.deps import require_roles, require_establishment_types
 
 router = APIRouter(prefix="/platform", tags=["super-admin-tables"])
 
@@ -111,14 +111,22 @@ def pending_overview(db: Session = Depends(get_db),
     )
 
 
-@router.get("/patients/{patient_id}/detail", response_model=PatientDetailOut)
+@router.get("/patients/{patient_id}/detail", response_model=PatientDetailOut,
+            dependencies=[Depends(require_establishment_types(EstablishmentType.HOPITAL, EstablishmentType.CLINIQUE))])
 def patient_detail(patient_id: str, db: Session = Depends(get_db),
                     current_user: User = Depends(require_roles(
-                        UserRole.ESTABLISHMENT_ADMIN, UserRole.SECRETARY, UserRole.DOCTOR,
-                        UserRole.PHARMACIST, UserRole.LAB_TECHNICIAN))):
+                        UserRole.ESTABLISHMENT_ADMIN, UserRole.SECRETARY, UserRole.DOCTOR))):
     """
     NOUVEAU: fiche detaillee d'un patient, limitee a ce qui concerne SON
     etablissement (isolation multi-tenant, meme principe que partout ailleurs).
+
+    CORRIGE (gap decouvert en test): PHARMACIST et LAB_TECHNICIAN pouvaient
+    avant voir ici l'historique COMPLET (rendez-vous medicaux + analyses de
+    labo) d'un patient des lors qu'il avait ne serait-ce qu'une commande
+    pharmacie chez eux - bien plus que necessaire a leur metier. Retire ces
+    2 roles et ajoute la meme restriction de type d'etablissement
+    (hopital/clinique uniquement) deja appliquee a l'annuaire patient dans
+    patients.py.
     """
     patient = db.query(Patient).filter(Patient.id == patient_id).first()
     if not patient:
