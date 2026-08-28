@@ -22,6 +22,13 @@ router = APIRouter(prefix="/auth", tags=["authentification"])
 STAFF_ROLES = {
     UserRole.SUPER_ADMIN, UserRole.ESTABLISHMENT_ADMIN, UserRole.DOCTOR,
     UserRole.SECRETARY, UserRole.PHARMACIST, UserRole.LAB_TECHNICIAN,
+    # CORRECTIF (bug reel decouvert en test): ces 4 roles ajoutes en Phase A
+    # (gestion interne complete) n'avaient jamais ete ajoutes ICI - une
+    # liste separee de ALLOWED_STAFF_ROLES dans establishments.py. Consequence
+    # concrete: infirmier/agent d'accueil/comptable/RH n'ont jamais pu se
+    # connecter a l'application desktop depuis leur creation, rejetes a tort
+    # avec le message reserve aux comptes patient.
+    UserRole.NURSE, UserRole.RECEPTIONIST, UserRole.ACCOUNTANT, UserRole.HR_MANAGER,
 }
 
 
