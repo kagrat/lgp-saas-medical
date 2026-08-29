@@ -3,6 +3,7 @@ import Navbar from './components/Navbar'
 import ProtectedRoute from './components/ProtectedRoute'
 import Home from './pages/Home'
 import Login from './pages/Login'
+import ResetPassword from './pages/ResetPassword'
 import Register from './pages/Register'
 import Care from './pages/Care'
 import PatientSearch from './pages/PatientSearch'
@@ -25,6 +26,7 @@ export default function App() {
       <Routes>
         <Route path="/" element={<Home />} />
         <Route path="/connexion" element={<Login />} />
+        <Route path="/reinitialiser-mot-de-passe" element={<ResetPassword />} />
         <Route path="/inscription" element={<Register />} />
         <Route path="/soins" element={<Care />} />
         <Route path="/rechercher" element={<PatientSearch />} />

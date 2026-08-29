@@ -220,6 +220,27 @@ class User(Base):
     staff_profile = relationship("StaffProfile", back_populates="user", uselist=False)
 
 
+class PasswordResetToken(Base):
+    """
+    NOUVEAU (mot de passe oublie - lacune de securite identifiee lors d'un
+    audit complet: "changer son mot de passe" existait deja une fois
+    connecte, mais aucun moyen de le RECUPERER si oublie). Le token brut
+    n'est jamais stocke, seul son hash - meme principe qu'un mot de passe:
+    si la base fuite, les tokens de reinitialisation ne sont pas
+    directement exploitables.
+    """
+    __tablename__ = "password_reset_tokens"
+
+    id = Column(UUID(as_uuid=False), primary_key=True, default=gen_uuid)
+    user_id = Column(UUID(as_uuid=False), ForeignKey("users.id"), nullable=False)
+    token_hash = Column(String(64), nullable=False, index=True)  # sha256 hexdigest
+    expires_at = Column(DateTime, nullable=False)
+    used = Column(Boolean, default=False)
+    created_at = Column(DateTime, default=datetime.utcnow)
+
+    user = relationship("User")
+
+
 class StaffProfile(Base):
     """
     NOUVEAU (gestion interne complete, demande M. Faustin) - informations

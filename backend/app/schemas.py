@@ -799,7 +799,25 @@ class PasswordChangeRequest(BaseModel):
             raise ValueError("Le mot de passe doit contenir au moins un chiffre")
         if not any(c.isupper() for c in v):
             raise ValueError("Le mot de passe doit contenir au moins une majuscule")
-        return v 
+        return v
+
+
+class ForgotPasswordRequest(BaseModel):
+    email: EmailStr
+
+
+class ResetPasswordRequest(BaseModel):
+    token: str
+    new_password: str = Field(min_length=8)
+
+    @field_validator("new_password")
+    @classmethod
+    def password_strength(cls, v: str) -> str:
+        if not any(c.isdigit() for c in v):
+            raise ValueError("Le mot de passe doit contenir au moins un chiffre")
+        if not any(c.isupper() for c in v):
+            raise ValueError("Le mot de passe doit contenir au moins une majuscule")
+        return v
 
 class StaffCreate(BaseModel):
     email: EmailStr

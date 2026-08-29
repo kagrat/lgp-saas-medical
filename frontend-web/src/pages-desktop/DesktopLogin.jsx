@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import api, { saveSession, getErrorMessage, consumeSessionExpiredFlag } from '../api/client'
+import ForgotPasswordForm from '../components/ForgotPasswordForm'
 
 const ROLE_ROUTES = {
   super_admin: '/super-admin',
@@ -23,6 +24,7 @@ export default function DesktopLogin() {
   const [error, setError] = useState('')
   const [notice, setNotice] = useState('')
   const [loading, setLoading] = useState(false)
+  const [showForgotPassword, setShowForgotPassword] = useState(false)
 
   useEffect(() => {
     if (consumeSessionExpiredFlag()) {
@@ -92,6 +94,14 @@ export default function DesktopLogin() {
               {loading ? 'Connexion...' : 'Se connecter'}
             </button>
           </form>
+
+          {!showForgotPassword ? (
+            <button onClick={() => setShowForgotPassword(true)} className="text-sm text-forest-700 hover:underline mt-4">
+              Mot de passe oublie ?
+            </button>
+          ) : (
+            <ForgotPasswordForm onClose={() => setShowForgotPassword(false)} />
+          )}
         </div>
         <p className="text-center text-forest-300 text-xs mt-6">LGP HOLDINGS - Console de gestion</p>
       </div>

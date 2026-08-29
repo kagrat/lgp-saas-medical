@@ -55,7 +55,19 @@ export default function DesktopPharmacistDashboard() {
       setOrders(data)
       const initialOrderForms = {}
       data.forEach((o) => {
-        initialOrderForms[o.id] = { status: o.status, note: o.pharmacist_note || '', estimated_ready_at: '' }
+        // CORRIGE (bug reel trouve en verification approfondie): si
+        // o.status vaut 'confirmed', ce statut n'existe pas dans les
+        // options du menu (STAFF_UPDATABLE_STATUSES l'exclut a dessein).
+        // Avant ce correctif, le formulaire memorisait quand meme
+        // 'confirmed' comme valeur du select, invisible dans la liste
+        // d'options - un clic sur "Mettre a jour" sans toucher au menu
+        // aurait envoye 'confirmed' au serveur, qui le refuse (statut
+        // protege), avec un message confus pour le pharmacien qui n'a
+        // pourtant rien choisi d'incoherent. Par defaut sur 'preparing'
+        // (etape logique suivante) quand le statut actuel n'est pas une
+        // option valide du menu.
+        const defaultTargetStatus = STAFF_UPDATABLE_STATUSES.includes(o.status) ? o.status : 'preparing'
+        initialOrderForms[o.id] = { status: defaultTargetStatus, note: o.pharmacist_note || '', estimated_ready_at: '' }
       })
       setOrderUpdateForm(initialOrderForms)
     } catch (err) {

@@ -36,6 +36,10 @@ class Settings(BaseSettings):
 
     environment: str = "development"
     cors_origins: str = "http://localhost:5173"
+    # NOUVEAU (mot de passe oublie): URL de base du site web patient, pour
+    # construire le lien envoye par email. A definir en production
+    # (Railway) avec l'URL Vercel reelle - ex: https://lgp-saas-medical.vercel.app
+    frontend_url: str = "http://localhost:5173"
 
     @property
     def cors_origins_list(self) -> list[str]:

@@ -4,18 +4,26 @@ Module 1 - Authentification et roles + gestion du profil personnel.
 Separation stricte web/desktop appliquee cote serveur (X-Client-Type).
 Ajout: sexe et lieu de residence au profil (demande M. Faustin).
 """
+import hashlib
+import secrets
 import uuid
+from datetime import datetime, timedelta
 
 from fastapi import APIRouter, Depends, HTTPException, status, Header
 from sqlalchemy.orm import Session
 
 from app.database import get_db
-from app.models import User, Patient, UserRole, AuditLog
+from app.models import User, Patient, UserRole, AuditLog, PasswordResetToken
 from app.schemas import (
     LoginRequest, TokenResponse, PatientRegisterRequest, UserProfileUpdate, PasswordChangeRequest, UserProfileOut,
+    ForgotPasswordRequest, ResetPasswordRequest,
 )
 from app.security import verify_password, hash_password, create_access_token
 from app.deps import get_current_user
+from app.services.notifications import send_confirmation_email
+from app.config import get_settings
+
+settings = get_settings()
 
 router = APIRouter(prefix="/auth", tags=["authentification"])
 
@@ -160,3 +168,81 @@ def change_password(payload: PasswordChangeRequest, db: Session = Depends(get_db
                      action="change_password", details="Mot de passe modifie"))
     db.commit()
     return {"message": "Mot de passe mis a jour avec succes"}
+
+
+def _hash_token(raw_token: str) -> str:
+    return hashlib.sha256(raw_token.encode()).hexdigest()
+
+
+@router.post("/forgot-password")
+def forgot_password(payload: ForgotPasswordRequest, db: Session = Depends(get_db)):
+    """
+    NOUVEAU (lacune de securite identifiee lors d'un audit complet):
+    jusqu'ici, un mot de passe oublie n'avait AUCUN moyen d'etre recupere
+    sans intervention manuelle d'un admin. Repond TOUJOURS avec le meme
+    message generique, que l'email existe ou non - evite qu'un attaquant
+    puisse decouvrir quels emails sont enregistres sur la plateforme
+    (enumeration d'utilisateurs, faille classique).
+    """
+    generic_response = {"message": "Si un compte existe avec cet email, un lien de reinitialisation vient d'etre envoye."}
+
+    user = db.query(User).filter(User.email == payload.email.lower()).first()
+    if not user or not user.is_active:
+        return generic_response
+
+    raw_token = secrets.token_urlsafe(32)
+    reset_token = PasswordResetToken(
+        id=str(uuid.uuid4()), user_id=user.id, token_hash=_hash_token(raw_token),
+        expires_at=datetime.utcnow() + timedelta(hours=1),
+    )
+    db.add(reset_token)
+    db.commit()
+
+    reset_link = f"{settings.frontend_url}/reinitialiser-mot-de-passe?token={raw_token}"
+    body = (
+        f"Bonjour {user.full_name},\n\n"
+        f"Une demande de reinitialisation de mot de passe a ete faite pour ton compte LGP Sante.\n"
+        f"Clique sur ce lien pour choisir un nouveau mot de passe (valable 1 heure):\n{reset_link}\n\n"
+        f"Si tu n'es pas a l'origine de cette demande, ignore simplement cet email - "
+        f"ton mot de passe actuel reste inchange."
+    )
+    try:
+        send_confirmation_email(user.email, "Reinitialisation de ton mot de passe", body)
+    except Exception:
+        # Best-effort, comme pour les autres notifications: ne jamais
+        # reveler a l'appelant si l'envoi a echoue (fuiterait la meme
+        # information qu'on protege deja par le message generique).
+        pass
+
+    return generic_response
+
+
+@router.post("/reset-password")
+def reset_password(payload: ResetPasswordRequest, db: Session = Depends(get_db)):
+    token_hash = _hash_token(payload.token)
+    reset_token = (
+        db.query(PasswordResetToken)
+        .filter(PasswordResetToken.token_hash == token_hash, PasswordResetToken.used == False)
+        .first()
+    )
+    if not reset_token or reset_token.expires_at < datetime.utcnow():
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Ce lien de reinitialisation est invalide ou a expire")
+
+    user = db.query(User).filter(User.id == reset_token.user_id).first()
+    if not user:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Ce lien de reinitialisation est invalide ou a expire")
+
+    user.hashed_password = hash_password(payload.new_password)
+    reset_token.used = True
+
+    # NOUVEAU: invalide aussi tout AUTRE token de reinitialisation encore
+    # actif pour ce meme utilisateur - evite qu'un ancien lien envoye plus
+    # tot (et jamais utilise) reste exploitable apres coup.
+    db.query(PasswordResetToken).filter(
+        PasswordResetToken.user_id == user.id, PasswordResetToken.id != reset_token.id, PasswordResetToken.used == False
+    ).update({"used": True})
+
+    db.add(AuditLog(user_id=user.id, establishment_id=user.establishment_id,
+                     action="reset_password", details="Mot de passe reinitialise via lien email"))
+    db.commit()
+    return {"message": "Mot de passe reinitialise avec succes"}

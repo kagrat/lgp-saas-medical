@@ -125,7 +125,11 @@ export default function EstablishmentAdmin() {
         setOrders(results[2].data)
         const initialOrderForms = {}
         results[2].data.forEach((o) => {
-          initialOrderForms[o.id] = { status: o.status, note: o.pharmacist_note || '', estimated_ready_at: '' }
+          // Meme correctif que DesktopPharmacistDashboard.jsx: eviter que
+          // le select memorise un statut ('confirmed') absent de ses
+          // propres options.
+          const defaultTargetStatus = STAFF_UPDATABLE_STATUSES.includes(o.status) ? o.status : 'preparing'
+          initialOrderForms[o.id] = { status: defaultTargetStatus, note: o.pharmacist_note || '', estimated_ready_at: '' }
         })
         setOrderUpdateForm(initialOrderForms)
       } else {

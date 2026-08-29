@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react'
 import { useNavigate, Link } from 'react-router-dom'
 import api, { saveSession, getErrorMessage, consumeSessionExpiredFlag, getLastRoleBeforeExpiry } from '../api/client'
+import ForgotPasswordForm from '../components/ForgotPasswordForm'
 
 const ROLE_LABELS = {
   super_admin: 'administrateur',
@@ -15,6 +16,7 @@ export default function Login() {
   const [error, setError] = useState('')
   const [notice, setNotice] = useState('')
   const [loading, setLoading] = useState(false)
+  const [showForgotPassword, setShowForgotPassword] = useState(false)
 
   const lastExpiredRole = getLastRoleBeforeExpiry()
   const wasStaffSession = lastExpiredRole && lastExpiredRole !== 'patient'
@@ -82,6 +84,14 @@ export default function Login() {
               {loading ? 'Connexion...' : 'Se connecter'}
             </button>
           </form>
+
+          {!showForgotPassword ? (
+            <button onClick={() => setShowForgotPassword(true)} className="text-sm text-forest-700 hover:underline mt-4">
+              Mot de passe oublie ?
+            </button>
+          ) : (
+            <ForgotPasswordForm onClose={() => setShowForgotPassword(false)} />
+          )}
 
           {!wasStaffSession && (
             <p className="text-sm text-forest-700 mt-6">
