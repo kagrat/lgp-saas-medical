@@ -3,7 +3,7 @@ import api, { getErrorMessage } from '../api/client'
 
 const LEAVE_STATUS_LABELS = { pending: 'En attente', approved: 'Approuve', rejected: 'Refuse' }
 const LEAVE_STATUS_COLORS = {
-  pending: 'bg-amber-500/10 text-amber-600', approved: 'bg-forest-500/10 text-forest-700', rejected: 'bg-clay-500/10 text-clay-600',
+  pending: 'bg-amber-500/10 text-amber-600', approved: 'bg-success-500/10 text-success-700', rejected: 'bg-clay-500/10 text-clay-600',
 }
 
 /**
@@ -131,7 +131,7 @@ export default function SchedulingManager() {
         <input placeholder="Notes (optionnel)" value={shiftForm.notes} onChange={(e) => setShiftForm({ ...shiftForm, notes: e.target.value })}
           className="sm:col-span-2 rounded-lg border border-forest-100 px-3 py-2 text-sm" />
         <button type="submit" disabled={savingShift}
-          className="sm:col-span-2 rounded-full bg-forest-700 text-white py-2.5 text-sm font-medium hover:bg-forest-900 transition disabled:opacity-50">
+          className="sm:col-span-2 rounded-full bg-primary-700 text-white py-2.5 text-sm font-medium hover:bg-primary-900 transition disabled:opacity-50">
           {savingShift ? 'Ajout...' : 'Ajouter ce creneau'}
         </button>
       </form>
@@ -157,7 +157,7 @@ export default function SchedulingManager() {
         {['pending', 'approved', 'rejected', 'all'].map((f) => (
           <button
             key={f} onClick={() => setLeaveFilter(f)}
-            className={`text-xs px-3 py-1.5 rounded-full font-medium transition ${leaveFilter === f ? 'bg-forest-700 text-white' : 'bg-forest-50 text-forest-700 hover:bg-forest-100'}`}
+            className={`text-xs px-3 py-1.5 rounded-full font-medium transition ${leaveFilter === f ? 'bg-primary-700 text-white' : 'bg-forest-50 text-forest-700 hover:bg-forest-100'}`}
           >
             {f === 'all' ? 'Toutes' : LEAVE_STATUS_LABELS[f]}
           </button>
@@ -181,7 +181,7 @@ export default function SchedulingManager() {
             </div>
             {l.status === 'pending' && (
               <div className="flex gap-2 mt-3">
-                <button onClick={() => reviewLeave(l.id, true)} className="text-sm bg-forest-700 text-white px-4 py-1.5 rounded-full font-medium hover:bg-forest-900 transition">
+                <button onClick={() => reviewLeave(l.id, true)} className="text-sm bg-primary-700 text-white px-4 py-1.5 rounded-full font-medium hover:bg-primary-900 transition">
                   Approuver
                 </button>
                 <button onClick={() => reviewLeave(l.id, false)} className="text-sm border border-clay-500 text-clay-600 px-4 py-1.5 rounded-full font-medium hover:bg-clay-500 hover:text-white transition">

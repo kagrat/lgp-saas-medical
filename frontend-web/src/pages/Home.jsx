@@ -42,7 +42,7 @@ export default function Home() {
     <div className="max-w-6xl mx-auto px-6 py-16 lg:py-20">
       <div className="grid lg:grid-cols-2 gap-12 lg:gap-16 items-center">
         <div>
-          <p className="text-amber-600 font-medium tracking-wide uppercase text-xs mb-4">LGP HOLDINGS</p>
+          <p className="text-amber-600 font-medium tracking-wide uppercase text-xs mb-4">SpeedSanté+</p>
           <h1 className="font-display text-4xl lg:text-5xl font-semibold text-forest-900 leading-tight mb-6">
             La medecine, réservée comme un vol ou une chambre d'hotel.
           </h1>
@@ -52,7 +52,7 @@ export default function Home() {
             Si ton médecin n'est pas libre, on te propose toujours une alternative.
           </p>
           <div className="flex flex-wrap items-center gap-4">
-            <Link to="/consultation" className="rounded-full bg-forest-700 text-white px-8 py-3.5 font-medium hover:bg-forest-900 transition">
+            <Link to="/consultation" className="rounded-full bg-primary-700 text-white px-8 py-3.5 font-medium hover:bg-primary-900 transition">
               Commencer
             </Link>
             <Link to="/pharmacie" className="rounded-full border border-forest-300 text-forest-900 px-8 py-3.5 font-medium hover:bg-forest-50 transition">

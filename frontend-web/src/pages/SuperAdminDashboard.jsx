@@ -219,7 +219,7 @@ export default function SuperAdminDashboard() {
         <input required type="password" placeholder="Mot de passe temporaire" value={newEstablishment.admin_password}
           onChange={(e) => setNewEstablishment({ ...newEstablishment, admin_password: e.target.value })}
           className="rounded-lg border border-forest-100 px-3 py-2 sm:col-span-2" />
-        <button type="submit" className="sm:col-span-2 rounded-full bg-forest-700 text-white py-2.5 font-medium hover:bg-forest-900 transition">
+        <button type="submit" className="sm:col-span-2 rounded-full bg-primary-700 text-white py-2.5 font-medium hover:bg-primary-900 transition">
           Créer l'établissement
         </button>
       </form>
@@ -251,7 +251,7 @@ export default function SuperAdminDashboard() {
                   placeholder="Longitude" className="rounded-lg border border-forest-100 px-3 py-2" />
                 <div className="sm:col-span-2 flex gap-2">
                   <button onClick={() => saveEdit(est.id)} disabled={savingEdit}
-                    className="rounded-full bg-forest-700 text-white px-5 py-1.5 text-sm font-medium hover:bg-forest-900 transition disabled:opacity-50">
+                    className="rounded-full bg-primary-700 text-white px-5 py-1.5 text-sm font-medium hover:bg-primary-900 transition disabled:opacity-50">
                     {savingEdit ? 'Enregistrement...' : 'Enregistrer'}
                   </button>
                   <button onClick={cancelEdit}
@@ -274,7 +274,7 @@ export default function SuperAdminDashboard() {
                   <button
                     onClick={() => toggleActive(est)}
                     className={`text-sm px-4 py-1.5 rounded-full font-medium transition ${
-                      est.is_active ? 'border border-clay-500 text-clay-600 hover:bg-clay-500 hover:text-white' : 'bg-forest-700 text-white hover:bg-forest-900'
+                      est.is_active ? 'border border-clay-500 text-clay-600 hover:bg-clay-500 hover:text-white' : 'bg-primary-700 text-white hover:bg-primary-900'
                     }`}
                   >
                     {est.is_active ? 'Suspendre' : 'Reactiver'}

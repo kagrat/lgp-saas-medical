@@ -51,7 +51,7 @@ export default function ResetPassword() {
       {success ? (
         <div>
           <p className="text-forest-700 mb-6">Ton mot de passe a ete reinitialise avec succes.</p>
-          <Link to="/connexion" className="rounded-full bg-forest-700 text-white px-6 py-2.5 font-medium hover:bg-forest-900 transition inline-block">
+          <Link to="/connexion" className="rounded-full bg-primary-700 text-white px-6 py-2.5 font-medium hover:bg-primary-900 transition inline-block">
             Se connecter
           </Link>
         </div>
@@ -75,7 +75,7 @@ export default function ResetPassword() {
           {error && <p className="text-clay-600 text-sm">{error}</p>}
           <button
             type="submit" disabled={loading}
-            className="w-full rounded-full bg-forest-700 text-white py-3 font-medium hover:bg-forest-900 transition disabled:opacity-50"
+            className="w-full rounded-full bg-primary-700 text-white py-3 font-medium hover:bg-primary-900 transition disabled:opacity-50"
           >
             {loading ? 'Enregistrement...' : 'Reinitialiser le mot de passe'}
           </button>

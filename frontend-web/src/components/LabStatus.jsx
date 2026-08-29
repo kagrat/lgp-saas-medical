@@ -11,8 +11,8 @@ const STATUS_COLORS = {
   requested: 'bg-forest-50 text-forest-700',
   sample_collected: 'bg-forest-50 text-forest-700',
   in_progress: 'bg-amber-500/10 text-amber-600',
-  validated: 'bg-forest-500/10 text-forest-700',
-  delivered: 'bg-forest-500/10 text-forest-700',
+  validated: 'bg-success-500/10 text-success-700',
+  delivered: 'bg-success-500/10 text-success-700',
   cancelled: 'bg-clay-500/10 text-clay-600',
 }
 

@@ -128,7 +128,7 @@ export default function DoctorProfile() {
               placeholder="Heure préférée (optionnel)"
               className="rounded-lg border border-forest-100 px-4 py-2.5 focus:border-forest-500" />
             <button type="submit" disabled={searching}
-              className="sm:col-span-2 rounded-full bg-forest-700 text-white py-2.5 font-medium hover:bg-forest-900 transition disabled:opacity-50">
+              className="sm:col-span-2 rounded-full bg-primary-700 text-white py-2.5 font-medium hover:bg-primary-900 transition disabled:opacity-50">
               {searching ? 'Recherche...' : 'Voir les creneaux disponibles'}
             </button>
           </form>

@@ -181,7 +181,7 @@ export default function Pharmacy() {
             La pharmacie va vérifier la disponibilité et te transmettra une proposition a confirmer.
             Retrouve le suivi dans "Mon espace" - Mes commandes pharmacie.
           </p>
-          <button onClick={startOver} className="rounded-full bg-forest-700 text-white px-6 py-2.5 font-medium hover:bg-forest-900 transition">
+          <button onClick={startOver} className="rounded-full bg-primary-700 text-white px-6 py-2.5 font-medium hover:bg-primary-900 transition">
             Passer une autre commande
           </button>
         </div>
@@ -202,7 +202,7 @@ export default function Pharmacy() {
             </div>
             <div className="sm:col-span-2">
               <button type="submit" disabled={loading}
-                className="w-full sm:w-auto rounded-full bg-forest-700 text-white px-8 py-3 font-medium hover:bg-forest-900 transition disabled:opacity-50">
+                className="w-full sm:w-auto rounded-full bg-primary-700 text-white px-8 py-3 font-medium hover:bg-primary-900 transition disabled:opacity-50">
                 {loading ? 'Recherche...' : 'Rechercher des pharmacies'}
               </button>
             </div>
@@ -275,7 +275,7 @@ export default function Pharmacy() {
               placeholder="Nom du médicament ou référence..."
               className="flex-1 rounded-lg border border-forest-100 px-4 py-2.5 focus:border-forest-500"
             />
-            <button type="submit" disabled={loading} className="rounded-full bg-forest-700 text-white px-6 py-2.5 font-medium hover:bg-forest-900 transition disabled:opacity-50">
+            <button type="submit" disabled={loading} className="rounded-full bg-primary-700 text-white px-6 py-2.5 font-medium hover:bg-primary-900 transition disabled:opacity-50">
               {loading ? '...' : 'Rechercher'}
             </button>
           </form>
@@ -346,7 +346,7 @@ export default function Pharmacy() {
                 <button
                   onClick={submitOrder}
                   disabled={submitting}
-                  className="w-full sm:w-auto rounded-full bg-forest-700 text-white px-8 py-3 font-medium hover:bg-forest-900 transition disabled:opacity-50"
+                  className="w-full sm:w-auto rounded-full bg-primary-700 text-white px-8 py-3 font-medium hover:bg-primary-900 transition disabled:opacity-50"
                 >
                   {submitting ? 'Envoi...' : 'Envoyer la commande'}
                 </button>

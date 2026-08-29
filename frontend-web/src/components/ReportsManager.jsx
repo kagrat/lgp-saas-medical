@@ -57,7 +57,7 @@ export default function ReportsManager() {
       <div className="flex justify-between items-center mb-3">
         <h3 className="font-display text-lg text-forest-900 font-semibold">Revenu reel par departement</h3>
         <button onClick={exportInvoicesCsv} disabled={exporting}
-          className="text-sm bg-forest-700 text-white px-4 py-1.5 rounded-full font-medium hover:bg-forest-900 transition disabled:opacity-50">
+          className="text-sm bg-primary-700 text-white px-4 py-1.5 rounded-full font-medium hover:bg-primary-900 transition disabled:opacity-50">
           {exporting ? 'Export...' : 'Exporter les factures (CSV/Excel)'}
         </button>
       </div>

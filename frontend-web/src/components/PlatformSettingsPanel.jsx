@@ -57,7 +57,7 @@ export default function PlatformSettingsPanel() {
             className="w-full rounded-lg border border-forest-100 px-4 py-2.5 focus:border-forest-500" />
         </div>
         <button type="submit" disabled={saving}
-          className="rounded-full bg-forest-700 text-white px-6 py-2.5 font-medium hover:bg-forest-900 transition disabled:opacity-50">
+          className="rounded-full bg-primary-700 text-white px-6 py-2.5 font-medium hover:bg-primary-900 transition disabled:opacity-50">
           {saving ? 'Enregistrement...' : 'Enregistrer'}
         </button>
       </form>

@@ -55,7 +55,7 @@ export default function UserDirectory() {
           placeholder="Rechercher un utilisateur par nom..."
           className="flex-1 rounded-lg border border-forest-100 px-4 py-2.5 focus:border-forest-500"
         />
-        <button type="submit" className="rounded-full bg-forest-700 text-white px-6 py-2.5 font-medium hover:bg-forest-900 transition">
+        <button type="submit" className="rounded-full bg-primary-700 text-white px-6 py-2.5 font-medium hover:bg-primary-900 transition">
           Rechercher
         </button>
       </form>
@@ -83,7 +83,7 @@ export default function UserDirectory() {
                 <td className="px-4 py-3 text-forest-700">{ROLE_LABELS[u.role] || u.role}</td>
                 <td className="px-4 py-3 text-forest-700">{u.establishment_name || '-'}</td>
                 <td className="px-4 py-3">
-                  <span className={`text-xs px-3 py-1 rounded-full font-medium ${u.is_active ? 'bg-forest-500/10 text-forest-700' : 'bg-clay-500/10 text-clay-600'}`}>
+                  <span className={`text-xs px-3 py-1 rounded-full font-medium ${u.is_active ? 'bg-success-500/10 text-success-700' : 'bg-clay-500/10 text-clay-600'}`}>
                     {u.is_active ? 'Actif' : 'Desactive'}
                   </span>
                 </td>

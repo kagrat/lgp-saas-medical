@@ -1,6 +1,8 @@
 import { useEffect, useState } from 'react'
+import { BedDouble, Clock } from 'lucide-react'
 import api, { getErrorMessage } from '../api/client'
 import MySchedule from '../components/MySchedule'
+import SidebarLayout from '../components/SidebarLayout'
 
 /**
  * NOUVEAU (hospitalisation, demande confirmee par M. Faustin): espace
@@ -72,23 +74,21 @@ export default function DesktopNurseDashboard() {
     }
   }
 
+  const tabs = [
+    { id: 'patients', label: 'Patients hospitalises', icon: BedDouble },
+    { id: 'schedule', label: 'Mon planning', icon: Clock },
+  ]
+
   return (
-    <div className="max-w-5xl mx-auto px-6 py-10">
-      <p className="text-amber-600 font-medium tracking-wide uppercase text-xs mb-3">Hospitalisation</p>
-      <h1 className="font-display text-3xl font-semibold text-forest-900 mb-2">Espace infirmier(ere)</h1>
-      <p className="text-forest-700 mb-8">Consulte un patient pour relever ses constantes vitales, ou ton propre planning.</p>
-
-      <div className="flex gap-2 mb-8 border-b border-forest-100">
-        {[{ id: 'patients', label: 'Patients hospitalises' }, { id: 'schedule', label: 'Mon planning' }].map((t) => (
-          <button
-            key={t.id} onClick={() => { setTab(t.id); setError('') }}
-            className={`px-4 py-2 font-medium border-b-2 -mb-px transition ${tab === t.id ? 'border-amber-500 text-forest-900' : 'border-transparent text-forest-700 hover:text-forest-900'}`}
-          >
-            {t.label}
-          </button>
-        ))}
-      </div>
-
+    <SidebarLayout
+      portalLabel="Portail Infirmier"
+      title="Espace infirmier(ere)"
+      subtitle="Consulte un patient pour relever ses constantes vitales, ou ton propre planning."
+      tabs={tabs}
+      activeTab={tab}
+      onTabChange={(id) => { setTab(id); setError('') }}
+      accentColor="bg-primary-700"
+    >
       {error && <p className="text-clay-600 mb-6">{error}</p>}
 
       {tab === 'schedule' && <MySchedule />}
@@ -182,6 +182,6 @@ export default function DesktopNurseDashboard() {
       </div>
         </div>
       )}
-    </div>
+    </SidebarLayout>
   )
 }

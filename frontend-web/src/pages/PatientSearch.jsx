@@ -177,7 +177,7 @@ export default function PatientSearch() {
           </div>
           <div className="sm:col-span-2">
             <button type="submit" disabled={loading}
-              className="w-full sm:w-auto rounded-full bg-forest-700 text-white px-8 py-3 font-medium hover:bg-forest-900 transition disabled:opacity-50">
+              className="w-full sm:w-auto rounded-full bg-primary-700 text-white px-8 py-3 font-medium hover:bg-primary-900 transition disabled:opacity-50">
               {loading ? 'Recherche...' : 'Rechercher un creneau'}
             </button>
           </div>

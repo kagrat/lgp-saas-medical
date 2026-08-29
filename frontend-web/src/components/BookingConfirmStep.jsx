@@ -60,7 +60,7 @@ export default function BookingConfirmStep({ slot, onConfirmed, onCancel, stepTo
         <button
           onClick={handleConfirm}
           disabled={confirming}
-          className="flex-1 rounded-full bg-forest-700 text-white py-3 font-medium hover:bg-forest-900 transition disabled:opacity-50"
+          className="flex-1 rounded-full bg-primary-700 text-white py-3 font-medium hover:bg-primary-900 transition disabled:opacity-50"
         >
           {confirming ? 'Confirmation...' : 'Confirmer le rendez-vous'}
         </button>

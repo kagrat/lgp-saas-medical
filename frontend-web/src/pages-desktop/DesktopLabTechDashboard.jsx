@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react'
+import { FlaskConical, Clipboard, MessageSquare, Clock } from 'lucide-react'
 import api, { getErrorMessage } from '../api/client'
 import { LabStatsCards, RegisterTestByStaff } from '../components/LabStaffTools'
 import { LAB_STATUSES, LAB_STATUS_LABELS, LAB_STEPS } from '../components/LabStatus'
@@ -7,6 +8,7 @@ import StatusStepper from '../components/StatusStepper'
 import LabCatalogManager from '../components/LabCatalogManager'
 import ChatWindow from '../components/ChatWindow'
 import MySchedule from '../components/MySchedule'
+import SidebarLayout from '../components/SidebarLayout'
 
 export default function DesktopLabTechDashboard() {
   const [establishment, setEstablishment] = useState(null)
@@ -84,10 +86,10 @@ export default function DesktopLabTechDashboard() {
   }
 
   const tabs = [
-    { id: 'analyses', label: 'Analyses' },
-    { id: 'catalog', label: 'Catalogue' },
-    { id: 'messages', label: 'Messages' },
-    { id: 'schedule', label: 'Mon planning' },
+    { id: 'analyses', label: 'Analyses', icon: FlaskConical },
+    { id: 'catalog', label: 'Catalogue', icon: Clipboard },
+    { id: 'messages', label: 'Messages', icon: MessageSquare },
+    { id: 'schedule', label: 'Mon planning', icon: Clock },
   ]
 
   const labFilterOptions = [{ value: 'all', label: 'Tous' }, ...LAB_STATUSES.map((s) => ({ value: s, label: LAB_STATUS_LABELS[s] }))]
@@ -95,23 +97,15 @@ export default function DesktopLabTechDashboard() {
   const selectedConversation = conversations.find((c) => c.patient_id === selectedPatientId)
 
   return (
-    <div className="max-w-5xl mx-auto px-6 py-14">
-      <h1 className="font-display text-3xl font-semibold text-forest-900 mb-2">
-        {establishment ? establishment.name : 'Chargement...'}
-      </h1>
-      <p className="text-forest-700 mb-8">Ton espace technicien laboratoire.</p>
-
-      <div className="flex gap-2 mb-8 border-b border-forest-100 flex-wrap">
-        {tabs.map((t) => (
-          <button
-            key={t.id} onClick={() => { setTab(t.id); setError('') }}
-            className={`px-4 py-2 font-medium border-b-2 -mb-px transition ${tab === t.id ? 'border-amber-500 text-forest-900' : 'border-transparent text-forest-700 hover:text-forest-900'}`}
-          >
-            {t.label}
-          </button>
-        ))}
-      </div>
-
+    <SidebarLayout
+      portalLabel="Portail Laboratoire"
+      title={establishment ? establishment.name : 'Chargement...'}
+      subtitle="Ton espace technicien laboratoire."
+      tabs={tabs}
+      activeTab={tab}
+      onTabChange={(id) => { setTab(id); setError('') }}
+      accentColor="bg-secondary-600"
+    >
       {error && <p className="text-clay-600 mb-6">{error}</p>}
 
       {tab === 'analyses' && (
@@ -161,7 +155,7 @@ export default function DesktopLabTechDashboard() {
                 <button
                   onClick={() => submitLabUpdate(t.id)}
                   disabled={updatingLabId === t.id}
-                  className="rounded-full bg-forest-700 text-white px-5 py-1.5 text-sm font-medium hover:bg-forest-900 transition disabled:opacity-50"
+                  className="rounded-full bg-primary-700 text-white px-5 py-1.5 text-sm font-medium hover:bg-primary-900 transition disabled:opacity-50"
                 >
                   {updatingLabId === t.id ? 'Mise a jour...' : 'Mettre a jour'}
                 </button>
@@ -210,6 +204,6 @@ export default function DesktopLabTechDashboard() {
           )}
         </div>
       )}
-    </div>
+    </SidebarLayout>
   )
 }

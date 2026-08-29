@@ -65,7 +65,7 @@ export default function ChatWindow({ fetchUrl, sendUrl, currentSenderRole, title
           const isMine = m.sender_role === currentSenderRole
           return (
             <div key={m.id} className={`flex ${isMine ? 'justify-end' : 'justify-start'}`}>
-              <div className={`max-w-[75%] rounded-2xl px-4 py-2 text-sm ${isMine ? 'bg-forest-700 text-white' : 'bg-forest-50 text-forest-900'}`}>
+              <div className={`max-w-[75%] rounded-2xl px-4 py-2 text-sm ${isMine ? 'bg-primary-700 text-white' : 'bg-forest-50 text-forest-900'}`}>
                 {!isMine && <p className="text-xs font-medium mb-0.5 opacity-70">{m.sender_name}</p>}
                 <p>{m.content}</p>
                 <p className={`text-[10px] mt-1 ${isMine ? 'text-white/70' : 'text-forest-700/70'}`}>

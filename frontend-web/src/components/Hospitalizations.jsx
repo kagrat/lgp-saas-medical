@@ -179,7 +179,7 @@ export default function Hospitalizations() {
     <div>
       <div className="flex justify-between items-center mb-6">
         <p className="text-forest-700 text-sm">Patients actuellement hospitalises.</p>
-        <button onClick={() => setShowAdmitForm((v) => !v)} className="rounded-full bg-forest-700 text-white px-5 py-2 text-sm font-medium hover:bg-forest-900 transition">
+        <button onClick={() => setShowAdmitForm((v) => !v)} className="rounded-full bg-primary-700 text-white px-5 py-2 text-sm font-medium hover:bg-primary-900 transition">
           {showAdmitForm ? 'Annuler' : 'Admettre un patient'}
         </button>
       </div>
@@ -192,7 +192,7 @@ export default function Hospitalizations() {
           <form onSubmit={searchPatients} className="flex gap-2 mb-3">
             <input value={patientQuery} onChange={(e) => setPatientQuery(e.target.value)} placeholder="Nom du patient..."
               className="flex-1 rounded-lg border border-forest-100 px-3 py-2 text-sm" />
-            <button type="submit" className="rounded-full bg-forest-700 text-white px-4 py-2 text-sm font-medium hover:bg-forest-900 transition">Chercher</button>
+            <button type="submit" className="rounded-full bg-primary-700 text-white px-4 py-2 text-sm font-medium hover:bg-primary-900 transition">Chercher</button>
           </form>
           {patientResults.length > 0 && (
             <div className="space-y-1 mb-3">
@@ -278,7 +278,7 @@ export default function Hospitalizations() {
                     onChange={(e) => setTransferForm({ ...transferForm, note: e.target.value })}
                     className="w-full rounded-lg border border-forest-100 px-3 py-2 text-sm mb-2" />
                   <button onClick={submitTransfer} disabled={transferring}
-                    className="rounded-full bg-forest-700 text-white px-5 py-1.5 text-sm font-medium hover:bg-forest-900 transition disabled:opacity-50">
+                    className="rounded-full bg-primary-700 text-white px-5 py-1.5 text-sm font-medium hover:bg-primary-900 transition disabled:opacity-50">
                     {transferring ? 'Transfert...' : 'Confirmer le transfert'}
                   </button>
                 </div>

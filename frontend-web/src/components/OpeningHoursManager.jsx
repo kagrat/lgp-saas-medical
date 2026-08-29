@@ -69,7 +69,7 @@ export default function OpeningHoursManager() {
             className="rounded-lg border border-forest-100 px-3 py-2 text-sm" />
         </div>
         <button type="submit" disabled={saving}
-          className="rounded-full bg-forest-700 text-white px-5 py-2 text-sm font-medium hover:bg-forest-900 transition disabled:opacity-50">
+          className="rounded-full bg-primary-700 text-white px-5 py-2 text-sm font-medium hover:bg-primary-900 transition disabled:opacity-50">
           {saving ? 'Ajout...' : 'Ajouter'}
         </button>
       </form>

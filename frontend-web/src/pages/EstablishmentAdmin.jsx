@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react'
+import { BarChart, Stethoscope, Calendar, Pill, Package, FlaskConical, Users, MessageSquare, Building2, Clock, Clipboard, FileBarChart, Wrench } from 'lucide-react'
 import api, { getErrorMessage } from '../api/client'
 import { SPECIALTIES, DAYS_OF_WEEK } from '../constants'
 import StarRating from '../components/StarRating'
@@ -21,6 +22,7 @@ import ReservationReviewForm from '../components/ReservationReviewForm'
 import NotificationBell from '../components/NotificationBell'
 import ReportsManager from '../components/ReportsManager'
 import EquipmentSuppliersManager from '../components/EquipmentSuppliersManager'
+import SidebarLayout from '../components/SidebarLayout'
 
 export default function EstablishmentAdmin() {
   const [establishment, setEstablishment] = useState(null)
@@ -311,14 +313,14 @@ export default function EstablishmentAdmin() {
 
   const baseTabs = isLab
     ? [
-        { id: 'stats', label: 'Statistiques' },
-        { id: 'analyses', label: 'Analyses' },
+        { id: 'stats', label: 'Statistiques', icon: BarChart },
+        { id: 'analyses', label: 'Analyses', icon: FlaskConical },
       ]
     : isPharmacy
     ? [
-        { id: 'stats', label: 'Statistiques' },
-        { id: 'pharmacy', label: 'Pharmacie' },
-        { id: 'orders', label: 'Commandes' },
+        { id: 'stats', label: 'Statistiques', icon: BarChart },
+        { id: 'pharmacy', label: 'Pharmacie', icon: Pill },
+        { id: 'orders', label: 'Commandes', icon: Package },
       ]
     : [
         // Pharmacie/Commandes retires ici (demande M. Faustin): un hopital
@@ -326,13 +328,13 @@ export default function EstablishmentAdmin() {
         // propre tableau de bord - reserve au type d'etablissement pharmacie
         // ci-dessus. Cote serveur, les endpoints /pharmacy/* correspondants
         // sont desormais aussi bloques pour ce type (voir pharmacy.py).
-        { id: 'stats', label: 'Statistiques' },
-        { id: 'doctors', label: 'Médecins' },
-        { id: 'appointments', label: 'Rendez-vous' },
+        { id: 'stats', label: 'Statistiques', icon: BarChart },
+        { id: 'doctors', label: 'Médecins', icon: Stethoscope },
+        { id: 'appointments', label: 'Rendez-vous', icon: Calendar },
       ]
   const extraTabs = isLab
-    ? [{ id: 'catalog', label: 'Catalogue' }]
-    : [{ id: 'services', label: 'Services' }]
+    ? [{ id: 'catalog', label: 'Catalogue', icon: Clipboard }]
+    : [{ id: 'services', label: 'Services', icon: Wrench }]
   // Onglet Patients reserve aux hopitaux/cliniques: une pharmacie ou un
   // laboratoire n'a pas de dossier de consultation a afficher - seuls des
   // rendez-vous medicaux justifient cet annuaire (meme regle appliquee
@@ -340,18 +342,18 @@ export default function EstablishmentAdmin() {
   const showPatientsTab = !isPharmacy && !isLab
   const tabs = [
     ...baseTabs,
-    ...(showPatientsTab ? [{ id: 'patients', label: 'Patients' }] : []),
-    { id: 'messages', label: 'Messages' },
-    { id: 'team', label: 'Equipe' },
-    { id: 'hours', label: 'Horaires' },
+    ...(showPatientsTab ? [{ id: 'patients', label: 'Patients', icon: Users }] : []),
+    { id: 'messages', label: 'Messages', icon: MessageSquare },
+    { id: 'team', label: 'Equipe', icon: Building2 },
+    { id: 'hours', label: 'Horaires', icon: Clock },
     ...extraTabs,
     // NOUVEAU (reporting avance): disponible pour TOUS les types
     // d'etablissement, la facturation et le journal d'audit n'ayant aucune
     // restriction de type cote serveur (une pharmacie facture aussi).
-    { id: 'reports', label: 'Rapports' },
+    { id: 'reports', label: 'Rapports', icon: FileBarChart },
     // NOUVEAU (equipement + fournisseurs, dernier chantier du cahier des
     // charges): meme raisonnement, disponible partout.
-    { id: 'equipment', label: 'Equipement' },
+    { id: 'equipment', label: 'Equipement', icon: Wrench },
   ]
 
   const selectedConversation = conversations.find((c) => c.patient_id === selectedPatientId)
@@ -372,26 +374,16 @@ export default function EstablishmentAdmin() {
   const filteredLabTests = labFilter === 'all' ? labTests : labTests.filter((t) => t.status === labFilter)
 
   return (
-    <div className="max-w-5xl mx-auto px-6 py-14">
-      <div className="flex justify-between items-start mb-2">
-        <h1 className="font-display text-3xl font-semibold text-forest-900">{establishment.name}</h1>
-        <NotificationBell />
-      </div>
-      <p className="text-forest-700 mb-8">
-        {isLab ? 'Gestion des demandes d\'analyses.' : 'Gestion des medecins, rendez-vous et pharmacie de ton etablissement.'}
-      </p>
-
-      <div className="flex gap-2 mb-8 border-b border-forest-100 flex-wrap">
-        {tabs.map((t) => (
-          <button
-            key={t.id} onClick={() => { setTab(t.id); setError('') }}
-            className={`px-4 py-2 font-medium border-b-2 -mb-px transition ${tab === t.id ? 'border-amber-500 text-forest-900' : 'border-transparent text-forest-700 hover:text-forest-900'}`}
-          >
-            {t.label}
-          </button>
-        ))}
-      </div>
-
+    <SidebarLayout
+      portalLabel={isLab ? 'Portail Laboratoire' : isPharmacy ? 'Portail Pharmacie' : 'Portail Hôpital / Clinique'}
+      title={establishment.name}
+      subtitle={isLab ? 'Gestion des demandes d\'analyses.' : 'Gestion des medecins, rendez-vous et pharmacie de ton etablissement.'}
+      tabs={tabs}
+      activeTab={tab}
+      onTabChange={(id) => { setTab(id); setError('') }}
+      accentColor={isLab ? 'bg-secondary-600' : isPharmacy ? 'bg-success-700' : 'bg-primary-700'}
+      headerRight={<NotificationBell />}
+    >
       {error && <p className="text-clay-600 mb-6">{error}</p>}
 
       {tab === 'stats' && isPharmacy && <PharmacyStatsCards />}
@@ -427,7 +419,7 @@ export default function EstablishmentAdmin() {
             <input required type="number" placeholder="Prix consultation (FCFA)" value={newDoctor.consultation_price}
               onChange={(e) => setNewDoctor({ ...newDoctor, consultation_price: e.target.value })}
               className="rounded-lg border border-forest-100 px-3 py-2" />
-            <button type="submit" className="sm:col-span-2 rounded-full bg-forest-700 text-white py-2.5 font-medium hover:bg-forest-900 transition">
+            <button type="submit" className="sm:col-span-2 rounded-full bg-primary-700 text-white py-2.5 font-medium hover:bg-primary-900 transition">
               Ajouter ce médecin
             </button>
           </form>
@@ -493,7 +485,7 @@ export default function EstablishmentAdmin() {
                         <button
                           onClick={() => markCompleted(a.id)}
                           disabled={completingId === a.id}
-                          className="text-sm rounded-full bg-forest-700 text-white px-4 py-1.5 hover:bg-forest-900 transition disabled:opacity-50"
+                          className="text-sm rounded-full bg-primary-700 text-white px-4 py-1.5 hover:bg-primary-900 transition disabled:opacity-50"
                         >
                           {completingId === a.id ? 'Mise a jour...' : 'Marquer termine'}
                         </button>
@@ -595,7 +587,7 @@ export default function EstablishmentAdmin() {
             <input required type="number" placeholder="Prix unitaire (FCFA)" value={newStock.unit_price}
               onChange={(e) => setNewStock({ ...newStock, unit_price: e.target.value })}
               className="rounded-lg border border-forest-100 px-3 py-2" />
-            <button type="submit" className="rounded-full bg-forest-700 text-white py-2.5 font-medium hover:bg-forest-900 transition">
+            <button type="submit" className="rounded-full bg-primary-700 text-white py-2.5 font-medium hover:bg-primary-900 transition">
               Ajouter au stock
             </button>
           </form>
@@ -690,7 +682,7 @@ export default function EstablishmentAdmin() {
                     <button
                       onClick={() => submitOrderUpdate(o.id)}
                       disabled={updatingOrderId === o.id}
-                      className="rounded-full bg-forest-700 text-white px-5 py-1.5 text-sm font-medium hover:bg-forest-900 transition disabled:opacity-50"
+                      className="rounded-full bg-primary-700 text-white px-5 py-1.5 text-sm font-medium hover:bg-primary-900 transition disabled:opacity-50"
                     >
                       {updatingOrderId === o.id ? 'Mise a jour...' : 'Mettre a jour'}
                     </button>
@@ -749,7 +741,7 @@ export default function EstablishmentAdmin() {
                 <button
                   onClick={() => submitLabUpdate(t.id)}
                   disabled={updatingLabId === t.id}
-                  className="rounded-full bg-forest-700 text-white px-5 py-1.5 text-sm font-medium hover:bg-forest-900 transition disabled:opacity-50"
+                  className="rounded-full bg-primary-700 text-white px-5 py-1.5 text-sm font-medium hover:bg-primary-900 transition disabled:opacity-50"
                 >
                   {updatingLabId === t.id ? 'Mise a jour...' : 'Mettre a jour'}
                 </button>
@@ -810,7 +802,7 @@ export default function EstablishmentAdmin() {
       {tab === 'reports' && <ReportsManager />}
 
       {tab === 'equipment' && <EquipmentSuppliersManager />}
-    </div>
+    </SidebarLayout>
   )
 }
 

@@ -8,7 +8,7 @@ const TYPE_LABELS = {
 
 const TYPE_COLORS = {
   prescription: 'bg-amber-500/10 text-amber-600',
-  lab_result: 'bg-forest-500/10 text-forest-700',
+  lab_result: 'bg-success-500/10 text-success-700',
   consultation_note: 'bg-forest-50 text-forest-700',
   certificate: 'bg-forest-50 text-forest-700',
   other: 'bg-forest-50 text-forest-700',

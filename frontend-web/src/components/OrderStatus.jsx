@@ -16,7 +16,7 @@ const STATUS_COLORS = {
   preparing: 'bg-amber-500/10 text-amber-600',
   ready: 'bg-amber-500/10 text-amber-600',
   out_for_delivery: 'bg-amber-500/10 text-amber-600',
-  delivered: 'bg-forest-500/10 text-forest-700',
+  delivered: 'bg-success-500/10 text-success-700',
   cancelled: 'bg-clay-500/10 text-clay-600',
 }
 

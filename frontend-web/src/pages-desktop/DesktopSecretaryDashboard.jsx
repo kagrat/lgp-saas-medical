@@ -1,9 +1,11 @@
 import { useEffect, useState } from 'react'
+import { Calendar, Users, Clock } from 'lucide-react'
 import api, { getErrorMessage } from '../api/client'
 import { AppointmentStatusBadge } from '../components/AppointmentStatusUI'
 import FilterTabs from '../components/FilterTabs'
 import PatientDirectory from '../components/PatientDirectory'
 import MySchedule from '../components/MySchedule'
+import SidebarLayout from '../components/SidebarLayout'
 
 export default function DesktopSecretaryDashboard() {
   const [establishment, setEstablishment] = useState(null)
@@ -100,9 +102,9 @@ export default function DesktopSecretaryDashboard() {
   }
 
   const tabs = [
-    { id: 'appointments', label: 'Rendez-vous' },
-    { id: 'patients', label: 'Patients' },
-    { id: 'schedule', label: 'Mon planning' },
+    { id: 'appointments', label: 'Rendez-vous', icon: Calendar },
+    { id: 'patients', label: 'Patients', icon: Users },
+    { id: 'schedule', label: 'Mon planning', icon: Clock },
   ]
 
   const appointmentFilterOptions = [
@@ -115,23 +117,15 @@ export default function DesktopSecretaryDashboard() {
   const filteredAppointments = appointmentFilter === 'all' ? appointments : appointments.filter((a) => a.status === appointmentFilter)
 
   return (
-    <div className="max-w-5xl mx-auto px-6 py-14">
-      <h1 className="font-display text-3xl font-semibold text-forest-900 mb-2">
-        {establishment ? establishment.name : 'Chargement...'}
-      </h1>
-      <p className="text-forest-700 mb-8">Ton espace secrétariat - tous les rendez-vous de l'établissement.</p>
-
-      <div className="flex gap-2 mb-8 border-b border-forest-100 flex-wrap">
-        {tabs.map((t) => (
-          <button
-            key={t.id} onClick={() => { setTab(t.id); setError('') }}
-            className={`px-4 py-2 font-medium border-b-2 -mb-px transition ${tab === t.id ? 'border-amber-500 text-forest-900' : 'border-transparent text-forest-700 hover:text-forest-900'}`}
-          >
-            {t.label}
-          </button>
-        ))}
-      </div>
-
+    <SidebarLayout
+      portalLabel="Portail Secrétariat"
+      title={establishment ? establishment.name : 'Chargement...'}
+      subtitle="Tous les rendez-vous de l'établissement."
+      tabs={tabs}
+      activeTab={tab}
+      onTabChange={(id) => { setTab(id); setError('') }}
+      accentColor="bg-primary-700"
+    >
       {error && <p className="text-clay-600 mb-6">{error}</p>}
 
       {tab === 'appointments' && (
@@ -170,7 +164,7 @@ export default function DesktopSecretaryDashboard() {
                         <button
                           onClick={() => markCompleted(a.id)}
                           disabled={completingId === a.id}
-                          className="text-sm rounded-full bg-forest-700 text-white px-4 py-1.5 hover:bg-forest-900 transition disabled:opacity-50"
+                          className="text-sm rounded-full bg-primary-700 text-white px-4 py-1.5 hover:bg-primary-900 transition disabled:opacity-50"
                         >
                           {completingId === a.id ? 'Mise a jour...' : 'Marquer termine'}
                         </button>
@@ -209,6 +203,6 @@ export default function DesktopSecretaryDashboard() {
       {tab === 'patients' && <PatientDirectory />}
 
       {tab === 'schedule' && <MySchedule />}
-    </div>
+    </SidebarLayout>
   )
 }

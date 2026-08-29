@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react'
+import { Calendar, Users, BedDouble, Clock, MessageSquare } from 'lucide-react'
 import api, { getErrorMessage } from '../api/client'
 import { AppointmentStatusBadge } from '../components/AppointmentStatusUI'
 import { DOCUMENT_TYPES, DOCUMENT_TYPE_LABELS } from '../components/DocumentType'
@@ -8,6 +9,7 @@ import Hospitalizations from '../components/Hospitalizations'
 import PrescriptionItemsEditor from '../components/PrescriptionItemsEditor'
 import MySchedule from '../components/MySchedule'
 import LabReferralForm from '../components/LabReferralForm'
+import SidebarLayout from '../components/SidebarLayout'
 
 export default function DesktopDoctorDashboard() {
   const [establishment, setEstablishment] = useState(null)
@@ -159,33 +161,25 @@ export default function DesktopDoctorDashboard() {
   }
 
   const tabs = [
-    { id: 'appointments', label: 'Mes rendez-vous' },
-    { id: 'patients', label: 'Patients' },
-    { id: 'hospitalizations', label: 'Hospitalisations' },
-    { id: 'schedule', label: 'Mon planning' },
-    { id: 'messages', label: 'Messages' },
+    { id: 'appointments', label: 'Mes rendez-vous', icon: Calendar },
+    { id: 'patients', label: 'Patients', icon: Users },
+    { id: 'hospitalizations', label: 'Hospitalisations', icon: BedDouble },
+    { id: 'schedule', label: 'Mon planning', icon: Clock },
+    { id: 'messages', label: 'Messages', icon: MessageSquare },
   ]
 
   const selectedConversation = conversations.find((c) => c.patient_id === selectedPatientId)
 
   return (
-    <div className="max-w-5xl mx-auto px-6 py-14">
-      <h1 className="font-display text-3xl font-semibold text-forest-900 mb-2">
-        {establishment ? establishment.name : 'Chargement...'}
-      </h1>
-      <p className="text-forest-700 mb-8">Ton espace médecin - tes rendez-vous et tes patients uniquement.</p>
-
-      <div className="flex gap-2 mb-8 border-b border-forest-100 flex-wrap">
-        {tabs.map((t) => (
-          <button
-            key={t.id} onClick={() => { setTab(t.id); setError('') }}
-            className={`px-4 py-2 font-medium border-b-2 -mb-px transition ${tab === t.id ? 'border-amber-500 text-forest-900' : 'border-transparent text-forest-700 hover:text-forest-900'}`}
-          >
-            {t.label}
-          </button>
-        ))}
-      </div>
-
+    <SidebarLayout
+      portalLabel="Portail Médecin"
+      title={establishment ? establishment.name : 'Chargement...'}
+      subtitle="Ton espace médecin - tes rendez-vous et tes patients uniquement."
+      tabs={tabs}
+      activeTab={tab}
+      onTabChange={(id) => { setTab(id); setError('') }}
+      accentColor="bg-secondary-600"
+    >
       {error && <p className="text-clay-600 mb-6">{error}</p>}
 
       {tab === 'appointments' && (
@@ -233,7 +227,7 @@ export default function DesktopDoctorDashboard() {
                       <button
                         onClick={() => markCompleted(a.id)}
                         disabled={completingId === a.id}
-                        className="text-sm rounded-full bg-forest-700 text-white px-4 py-1.5 hover:bg-forest-900 transition disabled:opacity-50"
+                        className="text-sm rounded-full bg-primary-700 text-white px-4 py-1.5 hover:bg-primary-900 transition disabled:opacity-50"
                       >
                         {completingId === a.id ? 'Mise a jour...' : 'Marquer termine'}
                       </button>
@@ -359,6 +353,6 @@ export default function DesktopDoctorDashboard() {
           )}
         </div>
       )}
-    </div>
+    </SidebarLayout>
   )
 }

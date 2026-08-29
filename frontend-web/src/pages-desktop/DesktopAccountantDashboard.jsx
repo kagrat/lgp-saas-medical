@@ -1,11 +1,13 @@
 import { useEffect, useState } from 'react'
+import { Receipt, Clock } from 'lucide-react'
 import api, { getErrorMessage } from '../api/client'
 import MySchedule from '../components/MySchedule'
+import SidebarLayout from '../components/SidebarLayout'
 
 const STATUS_LABELS = { issued: 'Emise', partially_paid: 'Partiellement payee', paid: 'Payee', cancelled: 'Annulee' }
 const STATUS_COLORS = {
   issued: 'bg-amber-500/10 text-amber-600', partially_paid: 'bg-amber-500/10 text-amber-600',
-  paid: 'bg-forest-500/10 text-forest-700', cancelled: 'bg-clay-500/10 text-clay-600',
+  paid: 'bg-success-500/10 text-success-700', cancelled: 'bg-clay-500/10 text-clay-600',
 }
 
 /**
@@ -142,22 +144,20 @@ export default function DesktopAccountantDashboard() {
     }
   }
 
+  const tabs = [
+    { id: 'billing', label: 'Facturation', icon: Receipt },
+    { id: 'schedule', label: 'Mon planning', icon: Clock },
+  ]
+
   return (
-    <div className="max-w-5xl mx-auto px-6 py-10">
-      <p className="text-amber-600 font-medium tracking-wide uppercase text-xs mb-3">Comptabilite</p>
-      <h1 className="font-display text-3xl font-semibold text-forest-900 mb-8">Facturation</h1>
-
-      <div className="flex gap-2 mb-8 border-b border-forest-100">
-        {[{ id: 'billing', label: 'Facturation' }, { id: 'schedule', label: 'Mon planning' }].map((t) => (
-          <button
-            key={t.id} onClick={() => { setTab(t.id); setError('') }}
-            className={`px-4 py-2 font-medium border-b-2 -mb-px transition ${tab === t.id ? 'border-amber-500 text-forest-900' : 'border-transparent text-forest-700 hover:text-forest-900'}`}
-          >
-            {t.label}
-          </button>
-        ))}
-      </div>
-
+    <SidebarLayout
+      portalLabel="Portail Comptabilité"
+      title="Facturation"
+      tabs={tabs}
+      activeTab={tab}
+      onTabChange={(id) => { setTab(id); setError('') }}
+      accentColor="bg-primary-700"
+    >
       {error && <p className="text-clay-600 mb-6">{error}</p>}
 
       {tab === 'schedule' && <MySchedule />}
@@ -184,7 +184,7 @@ export default function DesktopAccountantDashboard() {
 
       <div className="flex justify-between items-center mb-4">
         <p className="text-forest-700 text-sm">Factures de l'etablissement.</p>
-        <button onClick={() => setShowCreateForm((v) => !v)} className="rounded-full bg-forest-700 text-white px-5 py-2 text-sm font-medium hover:bg-forest-900 transition">
+        <button onClick={() => setShowCreateForm((v) => !v)} className="rounded-full bg-primary-700 text-white px-5 py-2 text-sm font-medium hover:bg-primary-900 transition">
           {showCreateForm ? 'Annuler' : 'Nouvelle facture'}
         </button>
       </div>
@@ -195,7 +195,7 @@ export default function DesktopAccountantDashboard() {
           <form onSubmit={searchPatients} className="flex gap-2 mb-3">
             <input value={patientQuery} onChange={(e) => setPatientQuery(e.target.value)} placeholder="Nom du patient..."
               className="flex-1 rounded-lg border border-forest-100 px-3 py-2 text-sm" />
-            <button type="submit" className="rounded-full bg-forest-700 text-white px-4 py-2 text-sm font-medium hover:bg-forest-900 transition">Chercher</button>
+            <button type="submit" className="rounded-full bg-primary-700 text-white px-4 py-2 text-sm font-medium hover:bg-primary-900 transition">Chercher</button>
           </form>
           {patientResults.length > 0 && (
             <div className="space-y-1 mb-3">
@@ -296,7 +296,7 @@ export default function DesktopAccountantDashboard() {
                       className="rounded-lg border border-forest-100 px-3 py-2 text-sm" />
                   </div>
                   <button onClick={submitPayment} disabled={recordingPayment || !paymentForm.amount}
-                    className="rounded-full bg-forest-700 text-white px-5 py-1.5 text-sm font-medium hover:bg-forest-900 transition disabled:opacity-50">
+                    className="rounded-full bg-primary-700 text-white px-5 py-1.5 text-sm font-medium hover:bg-primary-900 transition disabled:opacity-50">
                     {recordingPayment ? 'Enregistrement...' : 'Enregistrer le paiement'}
                   </button>
                 </div>
@@ -340,6 +340,6 @@ export default function DesktopAccountantDashboard() {
       </div>
         </div>
       )}
-    </div>
+    </SidebarLayout>
   )
 }

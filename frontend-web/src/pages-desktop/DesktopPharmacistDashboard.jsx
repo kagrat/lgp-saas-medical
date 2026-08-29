@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react'
+import { BarChart, Pill, Package, MessageSquare, Clock } from 'lucide-react'
 import api, { getErrorMessage } from '../api/client'
 import PharmacyStatsCards from '../components/PharmacyStatsCards'
 import { RESERVATION_STATUSES, RESERVATION_STATUS_LABELS, RESERVATION_STEPS, STAFF_UPDATABLE_STATUSES, STAFF_ACTIONABLE_STATUSES } from '../components/OrderStatus'
@@ -7,6 +8,7 @@ import StatusStepper from '../components/StatusStepper'
 import ReservationReviewForm from '../components/ReservationReviewForm'
 import ChatWindow from '../components/ChatWindow'
 import MySchedule from '../components/MySchedule'
+import SidebarLayout from '../components/SidebarLayout'
 
 export default function DesktopPharmacistDashboard() {
   const [establishment, setEstablishment] = useState(null)
@@ -125,11 +127,11 @@ export default function DesktopPharmacistDashboard() {
   }
 
   const tabs = [
-    { id: 'stats', label: 'Statistiques' },
-    { id: 'pharmacy', label: 'Pharmacie' },
-    { id: 'orders', label: 'Commandes' },
-    { id: 'messages', label: 'Messages' },
-    { id: 'schedule', label: 'Mon planning' },
+    { id: 'stats', label: 'Statistiques', icon: BarChart },
+    { id: 'pharmacy', label: 'Pharmacie', icon: Pill },
+    { id: 'orders', label: 'Commandes', icon: Package },
+    { id: 'messages', label: 'Messages', icon: MessageSquare },
+    { id: 'schedule', label: 'Mon planning', icon: Clock },
   ]
 
   const orderFilterOptions = [{ value: 'all', label: 'Tous' }, ...RESERVATION_STATUSES.map((s) => ({ value: s, label: RESERVATION_STATUS_LABELS[s] }))]
@@ -137,23 +139,15 @@ export default function DesktopPharmacistDashboard() {
   const selectedConversation = conversations.find((c) => c.patient_id === selectedPatientId)
 
   return (
-    <div className="max-w-5xl mx-auto px-6 py-14">
-      <h1 className="font-display text-3xl font-semibold text-forest-900 mb-2">
-        {establishment ? establishment.name : 'Chargement...'}
-      </h1>
-      <p className="text-forest-700 mb-8">Ton espace pharmacien.</p>
-
-      <div className="flex gap-2 mb-8 border-b border-forest-100 flex-wrap">
-        {tabs.map((t) => (
-          <button
-            key={t.id} onClick={() => { setTab(t.id); setError('') }}
-            className={`px-4 py-2 font-medium border-b-2 -mb-px transition ${tab === t.id ? 'border-amber-500 text-forest-900' : 'border-transparent text-forest-700 hover:text-forest-900'}`}
-          >
-            {t.label}
-          </button>
-        ))}
-      </div>
-
+    <SidebarLayout
+      portalLabel="Portail Pharmacie"
+      title={establishment ? establishment.name : 'Chargement...'}
+      subtitle="Ton espace pharmacien."
+      tabs={tabs}
+      activeTab={tab}
+      onTabChange={(id) => { setTab(id); setError('') }}
+      accentColor="bg-success-700"
+    >
       {error && <p className="text-clay-600 mb-6">{error}</p>}
 
       {tab === 'stats' && <PharmacyStatsCards />}
@@ -179,7 +173,7 @@ export default function DesktopPharmacistDashboard() {
             <input required type="number" placeholder="Prix unitaire (FCFA)" value={newStock.unit_price}
               onChange={(e) => setNewStock({ ...newStock, unit_price: e.target.value })}
               className="rounded-lg border border-forest-100 px-3 py-2" />
-            <button type="submit" className="rounded-full bg-forest-700 text-white py-2.5 font-medium hover:bg-forest-900 transition">
+            <button type="submit" className="rounded-full bg-primary-700 text-white py-2.5 font-medium hover:bg-primary-900 transition">
               Ajouter au stock
             </button>
           </form>
@@ -270,7 +264,7 @@ export default function DesktopPharmacistDashboard() {
                     <button
                       onClick={() => submitOrderUpdate(o.id)}
                       disabled={updatingOrderId === o.id}
-                      className="rounded-full bg-forest-700 text-white px-5 py-1.5 text-sm font-medium hover:bg-forest-900 transition disabled:opacity-50"
+                      className="rounded-full bg-primary-700 text-white px-5 py-1.5 text-sm font-medium hover:bg-primary-900 transition disabled:opacity-50"
                     >
                       {updatingOrderId === o.id ? 'Mise a jour...' : 'Mettre a jour'}
                     </button>
@@ -317,6 +311,6 @@ export default function DesktopPharmacistDashboard() {
           )}
         </div>
       )}
-    </div>
+    </SidebarLayout>
   )
 }

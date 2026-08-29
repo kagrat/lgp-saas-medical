@@ -79,7 +79,7 @@ export default function Login() {
             {error && <p className="text-clay-600 text-sm">{error}</p>}
             <button
               type="submit" disabled={loading}
-              className="w-full rounded-full bg-forest-700 text-white py-3 font-medium hover:bg-forest-900 transition disabled:opacity-50"
+              className="w-full rounded-full bg-primary-700 text-white py-3 font-medium hover:bg-primary-900 transition disabled:opacity-50"
             >
               {loading ? 'Connexion...' : 'Se connecter'}
             </button>

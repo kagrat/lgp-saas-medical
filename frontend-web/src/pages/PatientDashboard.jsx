@@ -276,7 +276,7 @@ export default function PatientDashboard() {
                         <button
                           onClick={() => confirmOrder(o.id)}
                           disabled={confirmingOrderId === o.id}
-                          className="rounded-full bg-forest-700 text-white px-5 py-1.5 text-sm font-medium hover:bg-forest-900 transition disabled:opacity-50"
+                          className="rounded-full bg-primary-700 text-white px-5 py-1.5 text-sm font-medium hover:bg-primary-900 transition disabled:opacity-50"
                         >
                           {confirmingOrderId === o.id ? '...' : 'Confirmer'}
                         </button>
@@ -305,7 +305,7 @@ export default function PatientDashboard() {
                       <button
                         onClick={() => markOrderReceived(o.id)}
                         disabled={receivingOrderId === o.id}
-                        className="rounded-full bg-forest-700 text-white px-5 py-1.5 text-sm font-medium hover:bg-forest-900 transition disabled:opacity-50"
+                        className="rounded-full bg-primary-700 text-white px-5 py-1.5 text-sm font-medium hover:bg-primary-900 transition disabled:opacity-50"
                       >
                         {receivingOrderId === o.id ? '...' : "J'ai recu ma commande"}
                       </button>

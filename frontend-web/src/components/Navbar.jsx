@@ -20,7 +20,7 @@ export default function Navbar() {
       <div className="max-w-6xl mx-auto flex items-center justify-between px-6 py-4">
         <Link to="/" className="flex items-center gap-2">
           <span className="w-2.5 h-2.5 rounded-full bg-amber-500" aria-hidden="true"></span>
-          <span className="font-display text-xl font-semibold text-forest-900">LGP Santé</span>
+          <span className="font-display text-xl font-semibold text-forest-900">SpeedSanté+</span>
         </Link>
         <nav className="flex items-center gap-6 text-sm font-medium text-forest-700">
           {!isStaffRole && (
@@ -43,7 +43,7 @@ export default function Navbar() {
             </Link>
           )}
           {!role ? (
-            <Link to="/connexion" className="px-4 py-2 rounded-full bg-forest-700 text-white hover:bg-forest-900 transition">
+            <Link to="/connexion" className="px-4 py-2 rounded-full bg-primary-700 text-white hover:bg-primary-900 transition">
               Connexion
             </Link>
           ) : (

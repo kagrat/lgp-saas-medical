@@ -167,7 +167,7 @@ export default function Profile() {
               className="w-full rounded-lg border border-forest-100 px-4 py-2.5 focus:border-forest-500" />
           </div>
           <button type="submit" disabled={savingInfo}
-            className="rounded-full bg-forest-700 text-white px-6 py-2.5 font-medium hover:bg-forest-900 transition disabled:opacity-50">
+            className="rounded-full bg-primary-700 text-white px-6 py-2.5 font-medium hover:bg-primary-900 transition disabled:opacity-50">
             {savingInfo ? 'Enregistrement...' : 'Enregistrer'}
           </button>
         </form>
@@ -187,7 +187,7 @@ export default function Profile() {
               onChange={(e) => setDependentForm({ ...dependentForm, date_of_birth: e.target.value })}
               className="rounded-lg border border-forest-100 px-3 py-2" />
             <button type="submit" disabled={savingDependent}
-              className="sm:col-span-3 rounded-full bg-forest-700 text-white py-2.5 font-medium hover:bg-forest-900 transition disabled:opacity-50">
+              className="sm:col-span-3 rounded-full bg-primary-700 text-white py-2.5 font-medium hover:bg-primary-900 transition disabled:opacity-50">
               {savingDependent ? 'Ajout...' : 'Ajouter un proche'}
             </button>
           </form>

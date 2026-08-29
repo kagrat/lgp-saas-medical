@@ -79,7 +79,7 @@ export default function ReservationReviewForm({ reservation, onDone }) {
         className="w-full rounded-lg border border-forest-100 px-3 py-1.5 text-sm mb-2" />
       {error && <p className="text-clay-600 text-xs mb-2">{error}</p>}
       <button type="submit" disabled={submitting}
-        className="rounded-full bg-forest-700 text-white px-5 py-1.5 text-sm font-medium hover:bg-forest-900 transition disabled:opacity-50">
+        className="rounded-full bg-primary-700 text-white px-5 py-1.5 text-sm font-medium hover:bg-primary-900 transition disabled:opacity-50">
         {submitting ? 'Envoi...' : 'Transmettre au patient pour confirmation'}
       </button>
     </form>

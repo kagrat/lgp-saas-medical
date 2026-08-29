@@ -26,7 +26,7 @@ export default function StatusStepper({ steps, currentValue, labels }) {
             <div className="flex flex-col items-center">
               <div
                 className={`w-7 h-7 rounded-full flex items-center justify-center text-xs font-semibold ${
-                  isDone ? 'bg-forest-700 text-white' :
+                  isDone ? 'bg-primary-700 text-white' :
                   isCurrent ? 'bg-amber-500 text-forest-900' :
                   'bg-forest-50 text-forest-700'
                 }`}
@@ -38,7 +38,7 @@ export default function StatusStepper({ steps, currentValue, labels }) {
               </span>
             </div>
             {idx < steps.length - 1 && (
-              <div className={`flex-1 h-0.5 mx-1 ${isDone ? 'bg-forest-700' : 'bg-forest-100'}`} />
+              <div className={`flex-1 h-0.5 mx-1 ${isDone ? 'bg-primary-700' : 'bg-forest-100'}`} />
             )}
           </div>
         )

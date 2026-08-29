@@ -170,7 +170,7 @@ export default function MyPatients() {
           placeholder="Rechercher un de tes patients par nom..."
           className="flex-1 rounded-lg border border-forest-100 px-4 py-2.5 focus:border-forest-500"
         />
-        <button type="submit" className="rounded-full bg-forest-700 text-white px-6 py-2.5 font-medium hover:bg-forest-900 transition">
+        <button type="submit" className="rounded-full bg-primary-700 text-white px-6 py-2.5 font-medium hover:bg-primary-900 transition">
           Rechercher
         </button>
       </form>
@@ -286,7 +286,7 @@ export default function MyPatients() {
                           placeholder="Nom du medecin..."
                           className="flex-1 rounded-lg border border-forest-100 px-3 py-2 text-sm"
                         />
-                        <button type="submit" className="rounded-full bg-forest-700 text-white px-4 py-2 text-sm font-medium hover:bg-forest-900 transition">
+                        <button type="submit" className="rounded-full bg-primary-700 text-white px-4 py-2 text-sm font-medium hover:bg-primary-900 transition">
                           Chercher
                         </button>
                       </form>
