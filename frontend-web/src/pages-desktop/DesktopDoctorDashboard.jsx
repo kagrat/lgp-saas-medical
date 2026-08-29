@@ -5,6 +5,7 @@ import { DOCUMENT_TYPES, DOCUMENT_TYPE_LABELS } from '../components/DocumentType
 import ChatWindow from '../components/ChatWindow'
 import MyPatients from '../components/MyPatients'
 import Hospitalizations from '../components/Hospitalizations'
+import MySchedule from '../components/MySchedule'
 import LabReferralForm from '../components/LabReferralForm'
 
 export default function DesktopDoctorDashboard() {
@@ -154,6 +155,7 @@ export default function DesktopDoctorDashboard() {
     { id: 'appointments', label: 'Mes rendez-vous' },
     { id: 'patients', label: 'Patients' },
     { id: 'hospitalizations', label: 'Hospitalisations' },
+    { id: 'schedule', label: 'Mon planning' },
     { id: 'messages', label: 'Messages' },
   ]
 
@@ -307,6 +309,8 @@ export default function DesktopDoctorDashboard() {
       {tab === 'patients' && <MyPatients />}
 
       {tab === 'hospitalizations' && <Hospitalizations />}
+
+      {tab === 'schedule' && <MySchedule />}
 
       {tab === 'messages' && (
         <div>

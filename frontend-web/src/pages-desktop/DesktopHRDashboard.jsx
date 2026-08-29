@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import api, { getErrorMessage } from '../api/client'
 import TeamMembers from '../components/TeamMembers'
 import SchedulingManager from '../components/SchedulingManager'
+import MySchedule from '../components/MySchedule'
 
 /**
  * NOUVEAU (gestion interne complete, demande M. Faustin): espace du
@@ -36,7 +37,7 @@ export default function DesktopHRDashboard() {
       </p>
 
       <div className="flex gap-2 mb-8 border-b border-forest-100">
-        {[{ id: 'team', label: 'Equipe' }, { id: 'scheduling', label: 'Planning & Conges' }].map((t) => (
+        {[{ id: 'team', label: 'Equipe' }, { id: 'scheduling', label: 'Planning & Conges' }, { id: 'my-schedule', label: 'Mon planning' }].map((t) => (
           <button
             key={t.id} onClick={() => { setTab(t.id); setError('') }}
             className={`px-4 py-2 font-medium border-b-2 -mb-px transition ${tab === t.id ? 'border-amber-500 text-forest-900' : 'border-transparent text-forest-700 hover:text-forest-900'}`}
@@ -50,6 +51,7 @@ export default function DesktopHRDashboard() {
 
       {tab === 'team' && <TeamMembers />}
       {tab === 'scheduling' && <SchedulingManager />}
+      {tab === 'my-schedule' && <MySchedule />}
     </div>
   )
 }

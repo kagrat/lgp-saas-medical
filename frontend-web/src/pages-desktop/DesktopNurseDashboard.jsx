@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react'
 import api, { getErrorMessage } from '../api/client'
+import MySchedule from '../components/MySchedule'
 
 /**
  * NOUVEAU (hospitalisation, demande confirmee par M. Faustin): espace
@@ -7,6 +8,7 @@ import api, { getErrorMessage } from '../api/client'
  * constantes vitales.
  */
 export default function DesktopNurseDashboard() {
+  const [tab, setTab] = useState('patients')
   const [admissions, setAdmissions] = useState([])
   const [error, setError] = useState('')
   const [selectedId, setSelectedId] = useState(null)
@@ -73,11 +75,26 @@ export default function DesktopNurseDashboard() {
   return (
     <div className="max-w-5xl mx-auto px-6 py-10">
       <p className="text-amber-600 font-medium tracking-wide uppercase text-xs mb-3">Hospitalisation</p>
-      <h1 className="font-display text-3xl font-semibold text-forest-900 mb-2">Patients hospitalises</h1>
-      <p className="text-forest-700 mb-8">Consulte un patient pour relever ses constantes vitales.</p>
+      <h1 className="font-display text-3xl font-semibold text-forest-900 mb-2">Espace infirmier(ere)</h1>
+      <p className="text-forest-700 mb-8">Consulte un patient pour relever ses constantes vitales, ou ton propre planning.</p>
+
+      <div className="flex gap-2 mb-8 border-b border-forest-100">
+        {[{ id: 'patients', label: 'Patients hospitalises' }, { id: 'schedule', label: 'Mon planning' }].map((t) => (
+          <button
+            key={t.id} onClick={() => { setTab(t.id); setError('') }}
+            className={`px-4 py-2 font-medium border-b-2 -mb-px transition ${tab === t.id ? 'border-amber-500 text-forest-900' : 'border-transparent text-forest-700 hover:text-forest-900'}`}
+          >
+            {t.label}
+          </button>
+        ))}
+      </div>
 
       {error && <p className="text-clay-600 mb-6">{error}</p>}
 
+      {tab === 'schedule' && <MySchedule />}
+
+      {tab === 'patients' && (
+        <div>
       {selectedId && (
         <div className="rounded-xl border border-forest-300 bg-forest-50 p-5 mb-6">
           {loadingDetail && <p className="text-sm text-forest-700">Chargement...</p>}
@@ -163,6 +180,8 @@ export default function DesktopNurseDashboard() {
           </button>
         ))}
       </div>
+        </div>
+      )}
     </div>
   )
 }

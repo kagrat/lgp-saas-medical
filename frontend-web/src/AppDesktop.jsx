@@ -10,6 +10,7 @@ import DesktopSupportChat from './pages-desktop/DesktopSupportChat'
 import DesktopHRDashboard from './pages-desktop/DesktopHRDashboard'
 import DesktopNurseDashboard from './pages-desktop/DesktopNurseDashboard'
 import DesktopAccountantDashboard from './pages-desktop/DesktopAccountantDashboard'
+import DesktopReceptionistDashboard from './pages-desktop/DesktopReceptionistDashboard'
 import DesktopComingSoonDashboard from './pages-desktop/DesktopComingSoonDashboard'
 import EstablishmentAdmin from './pages/EstablishmentAdmin'
 import SuperAdminDashboard from './pages/SuperAdminDashboard'
@@ -60,7 +61,7 @@ export default function AppDesktop() {
         />
         <Route
           path="/mon-espace-accueil"
-          element={<ProtectedRoute allowedRoles={['receptionist']}><DesktopComingSoonDashboard /></ProtectedRoute>}
+          element={<ProtectedRoute allowedRoles={['receptionist']}><DesktopReceptionistDashboard /></ProtectedRoute>}
         />
         <Route
           path="/mon-espace-comptabilite"

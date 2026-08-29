@@ -6,6 +6,7 @@ import FilterTabs from '../components/FilterTabs'
 import StatusStepper from '../components/StatusStepper'
 import LabCatalogManager from '../components/LabCatalogManager'
 import ChatWindow from '../components/ChatWindow'
+import MySchedule from '../components/MySchedule'
 
 export default function DesktopLabTechDashboard() {
   const [establishment, setEstablishment] = useState(null)
@@ -86,6 +87,7 @@ export default function DesktopLabTechDashboard() {
     { id: 'analyses', label: 'Analyses' },
     { id: 'catalog', label: 'Catalogue' },
     { id: 'messages', label: 'Messages' },
+    { id: 'schedule', label: 'Mon planning' },
   ]
 
   const labFilterOptions = [{ value: 'all', label: 'Tous' }, ...LAB_STATUSES.map((s) => ({ value: s, label: LAB_STATUS_LABELS[s] }))]
@@ -170,6 +172,8 @@ export default function DesktopLabTechDashboard() {
       )}
 
       {tab === 'catalog' && <LabCatalogManager />}
+
+      {tab === 'schedule' && <MySchedule />}
 
       {tab === 'messages' && (
         <div>

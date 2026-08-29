@@ -3,6 +3,7 @@ import api, { getErrorMessage } from '../api/client'
 import { AppointmentStatusBadge } from '../components/AppointmentStatusUI'
 import FilterTabs from '../components/FilterTabs'
 import PatientDirectory from '../components/PatientDirectory'
+import MySchedule from '../components/MySchedule'
 
 export default function DesktopSecretaryDashboard() {
   const [establishment, setEstablishment] = useState(null)
@@ -101,6 +102,7 @@ export default function DesktopSecretaryDashboard() {
   const tabs = [
     { id: 'appointments', label: 'Rendez-vous' },
     { id: 'patients', label: 'Patients' },
+    { id: 'schedule', label: 'Mon planning' },
   ]
 
   const appointmentFilterOptions = [
@@ -205,6 +207,8 @@ export default function DesktopSecretaryDashboard() {
       )}
 
       {tab === 'patients' && <PatientDirectory />}
+
+      {tab === 'schedule' && <MySchedule />}
     </div>
   )
 }

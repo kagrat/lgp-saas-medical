@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react'
 import api, { getErrorMessage } from '../api/client'
+import MySchedule from '../components/MySchedule'
 
 const STATUS_LABELS = { issued: 'Emise', partially_paid: 'Partiellement payee', paid: 'Payee', cancelled: 'Annulee' }
 const STATUS_COLORS = {
@@ -13,6 +14,7 @@ const STATUS_COLORS = {
  * suivi des impayes. Remplace le placeholder "en construction".
  */
 export default function DesktopAccountantDashboard() {
+  const [tab, setTab] = useState('billing')
   const [summary, setSummary] = useState(null)
   const [invoices, setInvoices] = useState([])
   const [error, setError] = useState('')
@@ -145,8 +147,23 @@ export default function DesktopAccountantDashboard() {
       <p className="text-amber-600 font-medium tracking-wide uppercase text-xs mb-3">Comptabilite</p>
       <h1 className="font-display text-3xl font-semibold text-forest-900 mb-8">Facturation</h1>
 
+      <div className="flex gap-2 mb-8 border-b border-forest-100">
+        {[{ id: 'billing', label: 'Facturation' }, { id: 'schedule', label: 'Mon planning' }].map((t) => (
+          <button
+            key={t.id} onClick={() => { setTab(t.id); setError('') }}
+            className={`px-4 py-2 font-medium border-b-2 -mb-px transition ${tab === t.id ? 'border-amber-500 text-forest-900' : 'border-transparent text-forest-700 hover:text-forest-900'}`}
+          >
+            {t.label}
+          </button>
+        ))}
+      </div>
+
       {error && <p className="text-clay-600 mb-6">{error}</p>}
 
+      {tab === 'schedule' && <MySchedule />}
+
+      {tab === 'billing' && (
+        <div>
       {summary && (
         <div className="grid sm:grid-cols-3 gap-4 mb-8">
           <div className="rounded-xl border border-forest-100 bg-white p-4">
@@ -321,6 +338,8 @@ export default function DesktopAccountantDashboard() {
           </button>
         ))}
       </div>
+        </div>
+      )}
     </div>
   )
 }

@@ -6,6 +6,7 @@ import FilterTabs from '../components/FilterTabs'
 import StatusStepper from '../components/StatusStepper'
 import ReservationReviewForm from '../components/ReservationReviewForm'
 import ChatWindow from '../components/ChatWindow'
+import MySchedule from '../components/MySchedule'
 
 export default function DesktopPharmacistDashboard() {
   const [establishment, setEstablishment] = useState(null)
@@ -116,6 +117,7 @@ export default function DesktopPharmacistDashboard() {
     { id: 'pharmacy', label: 'Pharmacie' },
     { id: 'orders', label: 'Commandes' },
     { id: 'messages', label: 'Messages' },
+    { id: 'schedule', label: 'Mon planning' },
   ]
 
   const orderFilterOptions = [{ value: 'all', label: 'Tous' }, ...RESERVATION_STATUSES.map((s) => ({ value: s, label: RESERVATION_STATUS_LABELS[s] }))]
@@ -182,6 +184,8 @@ export default function DesktopPharmacistDashboard() {
           </div>
         </div>
       )}
+
+      {tab === 'schedule' && <MySchedule />}
 
       {tab === 'orders' && (
         <div>
