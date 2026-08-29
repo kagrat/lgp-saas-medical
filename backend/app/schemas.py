@@ -537,6 +537,17 @@ class InvoiceSummaryOut(BaseModel):
     issued_at: datetime
 
 
+class DepartmentRevenueOut(BaseModel):
+    """NOUVEAU (reporting avance): revenu REEL (encaisse) par departement,
+    calcule a partir des vraies factures/paiements - plus une estimation.
+    Les factures de consultation externe (non liees a une hospitalisation)
+    tombent dans le seau 'Consultations / non attribue', faute de lien
+    direct entre une consultation et un departement dans le modele actuel."""
+    department_name: str
+    total_invoiced: float
+    total_collected: float
+
+
 class BillingSummaryOut(BaseModel):
     """NOUVEAU: rapport financier reel (encaisse vs facture), remplace le
     simple revenu ESTIME du tableau de bord existant."""

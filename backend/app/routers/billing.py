@@ -17,10 +17,10 @@ from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
 
 from app.database import get_db
-from app.models import Invoice, InvoiceLineItem, Payment, Patient, User, UserRole, AuditLog
+from app.models import Invoice, InvoiceLineItem, Payment, Patient, User, UserRole, AuditLog, Admission
 from app.schemas import (
     InvoiceCreate, InvoiceOut, InvoiceSummaryOut, InvoiceLineItemOut,
-    PaymentCreate, PaymentOut, BillingSummaryOut,
+    PaymentCreate, PaymentOut, BillingSummaryOut, DepartmentRevenueOut,
 )
 from app.deps import require_roles
 
@@ -138,6 +138,43 @@ def my_invoices(db: Session = Depends(get_db), current_user: User = Depends(requ
     return [_to_summary_out(i) for i in invoices]
 
 
+@router.get("/invoices/export.csv")
+def export_invoices_csv(db: Session = Depends(get_db), current_user: User = Depends(require_roles(*BILLING_ROLES))):
+    """NOUVEAU (reporting avance): export des factures au format CSV,
+    ouvrable directement dans Excel/LibreOffice/Google Sheets.
+
+    ATTENTION ORDRE DES ROUTES: doit rester declare AVANT
+    /invoices/{invoice_id} plus bas - sinon FastAPI le confondrait avec une
+    demande de facture dont l'id serait litteralement "export.csv"."""
+    import csv
+    import io
+    from fastapi.responses import StreamingResponse
+
+    invoices = (
+        db.query(Invoice)
+        .filter(Invoice.establishment_id == current_user.establishment_id)
+        .order_by(Invoice.issued_at.desc())
+        .all()
+    )
+
+    buffer = io.StringIO()
+    writer = csv.writer(buffer, delimiter=';')  # point-virgule: plus fiable pour Excel FR
+    writer.writerow(["Numero", "Patient", "Statut", "Total (FCFA)", "Encaisse (FCFA)", "Solde du (FCFA)", "Date d'emission"])
+    for invoice in invoices:
+        paid = _amount_paid(invoice)
+        writer.writerow([
+            invoice.invoice_number, invoice.patient.user.full_name, invoice.status,
+            invoice.total_amount, round(paid, 2), round(invoice.total_amount - paid, 2),
+            invoice.issued_at.strftime("%d/%m/%Y") if invoice.issued_at else "",
+        ])
+
+    buffer.seek(0)
+    return StreamingResponse(
+        iter([buffer.getvalue()]), media_type="text/csv",
+        headers={"Content-Disposition": "attachment; filename=factures.csv"},
+    )
+
+
 @router.get("/invoices/{invoice_id}", response_model=InvoiceOut)
 def get_invoice(invoice_id: str, db: Session = Depends(get_db),
                  current_user: User = Depends(require_roles(*BILLING_ROLES, UserRole.PATIENT))):
@@ -229,3 +266,42 @@ def billing_summary(db: Session = Depends(get_db), current_user: User = Depends(
         total_outstanding=round(total_invoiced - total_collected, 2),
         invoice_count=len(invoices), unpaid_invoice_count=len(unpaid),
     )
+
+
+@router.get("/summary/by-department", response_model=list[DepartmentRevenueOut])
+def billing_summary_by_department(db: Session = Depends(get_db), current_user: User = Depends(require_roles(*BILLING_ROLES))):
+    """
+    NOUVEAU (reporting avance, ferme un point du cahier des charges): revenu
+    REEL par departement. Seules les factures liees a une hospitalisation
+    (admission_id) peuvent etre rattachees a un departement dans le modele
+    actuel - les consultations externes tombent dans un seau distinct,
+    presente honnetement plutot que d'inventer un rattachement force.
+    """
+    invoices = (
+        db.query(Invoice)
+        .filter(Invoice.establishment_id == current_user.establishment_id, Invoice.status != "cancelled")
+        .all()
+    )
+
+    buckets: dict[str, dict] = {}
+
+    def _bucket(name: str) -> dict:
+        return buckets.setdefault(name, {"total_invoiced": 0.0, "total_collected": 0.0})
+
+    for invoice in invoices:
+        department_name = "Consultations / non attribue"
+        if invoice.admission_id:
+            admission = db.query(Admission).filter(Admission.id == invoice.admission_id).first()
+            if admission and admission.department:
+                department_name = admission.department.name
+            elif admission:
+                department_name = "Hospitalisation (departement non renseigne)"
+
+        b = _bucket(department_name)
+        b["total_invoiced"] += invoice.total_amount
+        b["total_collected"] += _amount_paid(invoice)
+
+    return [
+        DepartmentRevenueOut(department_name=name, total_invoiced=round(v["total_invoiced"], 2), total_collected=round(v["total_collected"], 2))
+        for name, v in sorted(buckets.items(), key=lambda kv: kv[1]["total_invoiced"], reverse=True)
+    ]

@@ -36,3 +36,36 @@ def list_audit_logs(limit: int = 100, db: Session = Depends(get_db),
             created_at=log.created_at,
         ))
     return results
+
+
+@router.get("/establishment", response_model=list[AuditLogOut])
+def list_establishment_audit_logs(limit: int = 100, db: Session = Depends(get_db),
+                                   current_user: User = Depends(require_roles(UserRole.ESTABLISHMENT_ADMIN))):
+    """
+    NOUVEAU (reporting avance, ferme une lacune du cahier des charges): un
+    directeur d'etablissement ne pouvait jusqu'ici pas voir le journal
+    d'activite de son PROPRE etablissement (reserve au Super Admin
+    uniquement). Meme donnee (audit_logs), simplement filtree a son
+    etablissement - aucune nouvelle table.
+    """
+    limit = max(1, min(limit, 500))
+    logs = (
+        db.query(AuditLog)
+        .filter(AuditLog.establishment_id == current_user.establishment_id)
+        .order_by(AuditLog.created_at.desc())
+        .limit(limit)
+        .all()
+    )
+
+    results = []
+    for log in logs:
+        user = db.query(User).filter(User.id == log.user_id).first() if log.user_id else None
+        results.append(AuditLogOut(
+            id=log.id,
+            user_name=user.full_name if user else "Systeme",
+            establishment_name=None,  # inutile ici: toujours son propre etablissement
+            action=log.action,
+            details=log.details,
+            created_at=log.created_at,
+        ))
+    return results

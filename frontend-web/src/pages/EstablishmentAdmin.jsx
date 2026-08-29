@@ -19,6 +19,7 @@ import PharmacyStatsCards from '../components/PharmacyStatsCards'
 import LabReferralForm from '../components/LabReferralForm'
 import ReservationReviewForm from '../components/ReservationReviewForm'
 import NotificationBell from '../components/NotificationBell'
+import ReportsManager from '../components/ReportsManager'
 
 export default function EstablishmentAdmin() {
   const [establishment, setEstablishment] = useState(null)
@@ -339,6 +340,10 @@ export default function EstablishmentAdmin() {
     { id: 'team', label: 'Equipe' },
     { id: 'hours', label: 'Horaires' },
     ...extraTabs,
+    // NOUVEAU (reporting avance): disponible pour TOUS les types
+    // d'etablissement, la facturation et le journal d'audit n'ayant aucune
+    // restriction de type cote serveur (une pharmacie facture aussi).
+    { id: 'reports', label: 'Rapports' },
   ]
 
   const selectedConversation = conversations.find((c) => c.patient_id === selectedPatientId)
@@ -788,6 +793,8 @@ export default function EstablishmentAdmin() {
       {tab === 'services' && !isLab && <ServicesRoomsManager />}
 
       {tab === 'catalog' && isLab && <LabCatalogManager />}
+
+      {tab === 'reports' && <ReportsManager />}
     </div>
   )
 }
