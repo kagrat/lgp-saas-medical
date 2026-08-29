@@ -20,6 +20,7 @@ import LabReferralForm from '../components/LabReferralForm'
 import ReservationReviewForm from '../components/ReservationReviewForm'
 import NotificationBell from '../components/NotificationBell'
 import ReportsManager from '../components/ReportsManager'
+import EquipmentSuppliersManager from '../components/EquipmentSuppliersManager'
 
 export default function EstablishmentAdmin() {
   const [establishment, setEstablishment] = useState(null)
@@ -344,6 +345,9 @@ export default function EstablishmentAdmin() {
     // d'etablissement, la facturation et le journal d'audit n'ayant aucune
     // restriction de type cote serveur (une pharmacie facture aussi).
     { id: 'reports', label: 'Rapports' },
+    // NOUVEAU (equipement + fournisseurs, dernier chantier du cahier des
+    // charges): meme raisonnement, disponible partout.
+    { id: 'equipment', label: 'Equipement' },
   ]
 
   const selectedConversation = conversations.find((c) => c.patient_id === selectedPatientId)
@@ -795,6 +799,8 @@ export default function EstablishmentAdmin() {
       {tab === 'catalog' && isLab && <LabCatalogManager />}
 
       {tab === 'reports' && <ReportsManager />}
+
+      {tab === 'equipment' && <EquipmentSuppliersManager />}
     </div>
   )
 }

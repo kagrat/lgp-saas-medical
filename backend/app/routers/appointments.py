@@ -19,6 +19,7 @@ from app.schemas import (
 )
 from app.deps import require_roles, get_current_user
 from app.services.suggestion_engine import find_appointment_or_suggest
+from app.services.notifications import send_confirmation_email, send_sms
 
 router = APIRouter(prefix="/appointments", tags=["rendez-vous"])
 
@@ -101,6 +102,26 @@ def create_appointment(payload: AppointmentCreate, db: Session = Depends(get_db)
                      action="create_appointment", details=f"RDV cree pour patient {patient.dossier_number}"))
     db.commit()
     db.refresh(appointment)
+
+    # NOUVEAU: confirmation reelle par email/SMS - ces fonctions existaient
+    # deja mais n'etaient appelees NULLE PART dans tout le projet jusqu'ici
+    # (lacune decouverte en verifiant, pas juste supposee). Best-effort:
+    # une erreur d'envoi (SMTP/Twilio non configures, reseau...) ne doit
+    # JAMAIS faire echouer la reservation elle-meme, deja validee en base.
+    confirmation_text = (
+        f"Rendez-vous confirme avec {doctor.user.full_name} "
+        f"le {appointment.scheduled_at.strftime('%d/%m/%Y a %H:%M')}."
+    )
+    try:
+        send_confirmation_email(current_user.email, "Rendez-vous confirme", confirmation_text)
+    except Exception:
+        pass
+    if current_user.phone:
+        try:
+            send_sms(current_user.phone, confirmation_text)
+        except Exception:
+            pass
+
     return _to_appointment_out(appointment)
 
 

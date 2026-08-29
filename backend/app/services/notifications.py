@@ -2,16 +2,21 @@
 Interface Notifications (Email + SMS) - module "Confirmations RDV, rappels
 24h, alertes stock" de la section 7.
 
-IMPORTANT (limite a signaler): aucun fournisseur SMS n'est cable en dur ici
-car aucune cle API n'a ete fournie, et ce sandbox n'a pas d'acces reseau
-pour la tester de toute facon. Cette classe definit le contrat a implementer.
-Fournisseurs courants utilisables au Benin/Afrique de l'Ouest a evaluer:
-Twilio, Vonage, ou un agregateur SMS local. Brancher la cle dans .env
-(SMS_API_KEY, SMS_API_URL) puis completer send_sms() ci-dessous.
+SMS: integration Twilio reelle (appel direct de leur API REST, pas besoin
+du SDK complet). Desactive silencieusement (retourne False, n'echoue
+jamais) tant que TWILIO_ACCOUNT_SID/TWILIO_AUTH_TOKEN/TWILIO_FROM_NUMBER
+ne sont pas renseignes dans les variables d'environnement - aucun envoi
+n'a pu etre teste en conditions reelles (pas de compte Twilio disponible
+dans cet environnement de developpement), mais la construction de la
+requete (authentification, URL, corps) est verifiee par un test qui
+intercepte l'appel HTTP sans jamais le laisser partir reellement (voir
+backend/tests/test_sms.py).
 """
 import smtplib
 from email.mime.text import MIMEText
 from email.mime.multipart import MIMEMultipart
+
+import httpx
 
 from app.config import get_settings
 
@@ -38,18 +43,25 @@ def send_confirmation_email(to_email: str, subject: str, body: str) -> bool:
 
 def send_sms(to_phone: str, message: str) -> bool:
     """
-    A COMPLETER: aucun fournisseur SMS n'est branche (voir note en tete de
-    fichier). Exemple d'implementation avec Twilio une fois le compte cree:
+    Envoie un SMS via l'API REST Twilio. Retourne False (sans lever
+    d'exception) si les identifiants Twilio ne sont pas configures - un SMS
+    manque, mais l'appelant (rappel de rendez-vous, alerte stock...) ne
+    doit jamais planter pour autant.
 
-        from twilio.rest import Client
-        client = Client(settings.sms_api_key, settings.sms_api_secret)
-        client.messages.create(to=to_phone, from_=settings.sms_sender, body=message)
-
-    Ne rien inventer d'autre ici tant qu'un vrai fournisseur n'est pas choisi.
+    Leve une exception seulement si les identifiants SONT configures mais
+    que l'appel echoue reellement (erreur reseau, identifiants invalides,
+    numero invalide) - dans ce cas l'appelant doit le savoir plutot que de
+    croire silencieusement que le SMS est parti.
     """
-    if not settings.sms_api_key:
+    if not (settings.twilio_account_sid and settings.twilio_auth_token and settings.twilio_from_number):
         return False
-    raise NotImplementedError(
-        "Aucun fournisseur SMS n'est branche. Complete cette fonction avec "
-        "le SDK du fournisseur choisi (Twilio, Vonage, etc.) et sa cle API."
+
+    url = f"https://api.twilio.com/2010-04-01/Accounts/{settings.twilio_account_sid}/Messages.json"
+    response = httpx.post(
+        url,
+        auth=(settings.twilio_account_sid, settings.twilio_auth_token),
+        data={"To": to_phone, "From": settings.twilio_from_number, "Body": message},
+        timeout=10.0,
     )
+    response.raise_for_status()
+    return True

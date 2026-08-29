@@ -786,16 +786,65 @@ class ReferenceValue(Base):
 
 
 class Equipment(Base):
-    """Inventaire des equipements du laboratoire."""
+    """
+    Inventaire des equipements. Utilise a l'origine pour le laboratoire
+    (voir lab_catalog.py, endpoints inchanges), etendu ici (gestion interne
+    complete, demande M. Faustin) pour couvrir aussi l'equipement medical
+    general (hors labo) avec suivi de maintenance preventive. Les nouveaux
+    champs sont nullable: aucun impact sur les equipements labo existants.
+    """
     __tablename__ = "equipment"
 
     id = Column(UUID(as_uuid=False), primary_key=True, default=gen_uuid)
     establishment_id = Column(UUID(as_uuid=False), ForeignKey("establishments.id"), nullable=False)
+    department_id = Column(UUID(as_uuid=False), ForeignKey("departments.id"), nullable=True)
     name = Column(String(200), nullable=False)
+    category = Column(String(100), nullable=True)  # ex: "Imagerie", "Bloc operatoire"
     status = Column(String(50), nullable=False, default="fonctionnel")
+    notes = Column(Text, nullable=True)
+    last_maintenance_date = Column(Date, nullable=True)
+    next_maintenance_date = Column(Date, nullable=True)
+
+    establishment = relationship("Establishment")
+    department = relationship("Department")
+
+
+class Supplier(Base):
+    """NOUVEAU (gestion interne complete, demande M. Faustin) - fournisseur
+    pour le reapprovisionnement du stock general."""
+    __tablename__ = "suppliers"
+
+    id = Column(UUID(as_uuid=False), primary_key=True, default=gen_uuid)
+    establishment_id = Column(UUID(as_uuid=False), ForeignKey("establishments.id"), nullable=False)
+    name = Column(String(200), nullable=False)
+    contact_phone = Column(String(30), nullable=True)
+    contact_email = Column(String(255), nullable=True)
     notes = Column(Text, nullable=True)
 
     establishment = relationship("Establishment")
+
+
+class PurchaseOrder(Base):
+    """NOUVEAU: bon de commande passe a un fournisseur, optionnellement lie
+    a un article du stock general (InventoryItem) - a la reception, la
+    quantite commandee est ajoutee automatiquement au stock."""
+    __tablename__ = "purchase_orders"
+
+    id = Column(UUID(as_uuid=False), primary_key=True, default=gen_uuid)
+    establishment_id = Column(UUID(as_uuid=False), ForeignKey("establishments.id"), nullable=False)
+    supplier_id = Column(UUID(as_uuid=False), ForeignKey("suppliers.id"), nullable=False)
+    inventory_item_id = Column(UUID(as_uuid=False), ForeignKey("inventory_items.id"), nullable=True)
+    description = Column(String(300), nullable=False)
+    quantity = Column(Integer, nullable=False, default=1)
+    status = Column(String(20), nullable=False, default="pending")  # pending, received, cancelled
+    ordered_by_user_id = Column(UUID(as_uuid=False), ForeignKey("users.id"), nullable=False)
+    ordered_at = Column(DateTime, default=datetime.utcnow)
+    received_at = Column(DateTime, nullable=True)
+
+    establishment = relationship("Establishment")
+    supplier = relationship("Supplier")
+    inventory_item = relationship("InventoryItem")
+    ordered_by = relationship("User")
 
 class SupportMessage(Base):
     """Messagerie support plateforme - patient ou staff <-> Super Admin."""

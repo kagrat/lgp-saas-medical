@@ -27,9 +27,12 @@ class Settings(BaseSettings):
     smtp_password: str = ""
     smtp_from: str = ""
 
-    # SMS (interface uniquement, voir app/services/sms_provider.py)
-    sms_api_key: str = ""
-    sms_api_url: str = ""
+    # SMS (Twilio - voir app/services/notifications.py::send_sms). Vide par
+    # defaut = SMS silencieusement desactive (aucune erreur), tant que ces
+    # 3 valeurs ne sont pas renseignees dans les variables d'environnement.
+    twilio_account_sid: str = ""
+    twilio_auth_token: str = ""
+    twilio_from_number: str = ""
 
     environment: str = "development"
     cors_origins: str = "http://localhost:5173"

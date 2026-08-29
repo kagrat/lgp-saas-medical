@@ -35,6 +35,18 @@ def create_stock_alert(db: Session, establishment_id: str, item_name: str, quant
     db.add(notification)
 
 
+def create_maintenance_alert(db: Session, establishment_id: str, equipment_name: str, due_date) -> None:
+    """NOUVEAU (equipement general, gestion interne complete): meme
+    principe que create_stock_alert, pour la maintenance preventive
+    d'equipement echue ou a echeance."""
+    notification = Notification(
+        id=str(uuid.uuid4()), establishment_id=establishment_id, user_id=None,
+        notification_type="maintenance_alert", title="Maintenance a prevoir",
+        message=f"{equipment_name}: maintenance preventive prevue le {due_date.strftime('%d/%m/%Y')}.",
+    )
+    db.add(notification)
+
+
 @router.get("/establishment", response_model=list[NotificationOut])
 def list_notifications(unread_only: bool = False, db: Session = Depends(get_db),
                         current_user: User = Depends(require_roles(

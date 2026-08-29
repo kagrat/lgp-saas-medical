@@ -1079,6 +1079,77 @@ class EquipmentOut(BaseModel):
 
     model_config = {"from_attributes": True}
 
+class GeneralEquipmentCreate(BaseModel):
+    """NOUVEAU (gestion interne complete): equipement medical general (hors
+    laboratoire), avec suivi de maintenance preventive."""
+    name: str = Field(min_length=2, max_length=200)
+    category: Optional[str] = Field(default=None, max_length=100)
+    department_id: Optional[str] = None
+    status: str = Field(default="fonctionnel")
+    notes: Optional[str] = None
+    last_maintenance_date: Optional[date] = None
+    next_maintenance_date: Optional[date] = None
+
+    @field_validator("status")
+    @classmethod
+    def valid_status(cls, v: str) -> str:
+        allowed = {"fonctionnel", "maintenance", "hors_service"}
+        if v not in allowed:
+            raise ValueError(f"Statut invalide, doit etre parmi: {', '.join(allowed)}")
+        return v
+
+
+class GeneralEquipmentOut(BaseModel):
+    id: str
+    name: str
+    category: Optional[str] = None
+    department_id: Optional[str] = None
+    department_name: Optional[str] = None
+    status: str
+    notes: Optional[str] = None
+    last_maintenance_date: Optional[date] = None
+    next_maintenance_date: Optional[date] = None
+    maintenance_due: bool
+
+
+class SupplierCreate(BaseModel):
+    name: str = Field(min_length=2, max_length=200)
+    contact_phone: Optional[str] = None
+    contact_email: Optional[EmailStr] = None
+    notes: Optional[str] = None
+
+
+class SupplierOut(BaseModel):
+    id: str
+    name: str
+    contact_phone: Optional[str] = None
+    contact_email: Optional[str] = None
+    notes: Optional[str] = None
+
+    model_config = {"from_attributes": True}
+
+
+class PurchaseOrderCreate(BaseModel):
+    supplier_id: str
+    inventory_item_id: Optional[str] = None
+    description: str = Field(min_length=2, max_length=300)
+    quantity: int = Field(ge=1)
+
+
+class PurchaseOrderOut(BaseModel):
+    id: str
+    supplier_id: str
+    supplier_name: str
+    inventory_item_id: Optional[str] = None
+    inventory_item_name: Optional[str] = None
+    description: str
+    quantity: int
+    status: str
+    ordered_by_name: str
+    ordered_at: datetime
+    received_at: Optional[datetime] = None
+
+
 class PendingOverviewOut(BaseModel):
     pending_appointments: int
     pending_orders: int
