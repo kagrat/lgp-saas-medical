@@ -22,8 +22,8 @@ from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
 
 from app.database import get_db
-from app.models import MedicalDocument, Appointment, Patient, Doctor, User, UserRole, AuditLog
-from app.schemas import MedicalDocumentCreate, MedicalDocumentOut
+from app.models import MedicalDocument, Appointment, Patient, Doctor, User, UserRole, AuditLog, PrescriptionItem
+from app.schemas import MedicalDocumentCreate, MedicalDocumentOut, PrescriptionItemOut
 from app.deps import require_roles
 
 router = APIRouter(prefix="/health-records", tags=["dossier-sante"])
@@ -46,6 +46,10 @@ def _to_document_out(doc: MedicalDocument) -> MedicalDocumentOut:
         title=doc.title,
         content=doc.content,
         created_at=doc.created_at,
+        prescription_items=[
+            PrescriptionItemOut(id=i.id, medication_name=i.medication_name, quantity=i.quantity, dosage_instructions=i.dosage_instructions)
+            for i in doc.prescription_items
+        ],
     )
 
 
@@ -76,6 +80,16 @@ def create_document(payload: MedicalDocumentCreate, db: Session = Depends(get_db
         content=payload.content,
     )
     db.add(document)
+    db.flush()
+
+    if payload.prescription_items:
+        for item in payload.prescription_items:
+            db.add(PrescriptionItem(
+                id=str(uuid.uuid4()), document_id=document.id,
+                medication_name=item.medication_name, quantity=item.quantity,
+                dosage_instructions=item.dosage_instructions,
+            ))
+
     db.add(AuditLog(user_id=current_user.id, establishment_id=appointment.establishment_id,
                      action="create_medical_document", details=f"Document '{payload.title}' ajoute au dossier"))
     db.commit()

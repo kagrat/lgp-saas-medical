@@ -1,4 +1,5 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
+import { useLocation } from 'react-router-dom'
 import api, { getRole, getErrorMessage } from '../api/client'
 import StepIndicator from '../components/StepIndicator'
 
@@ -12,6 +13,9 @@ import StepIndicator from '../components/StepIndicator'
  * seule commande.
  */
 export default function Pharmacy() {
+  const location = useLocation()
+  const incomingPrescription = location.state || {}
+
   const [step, setStep] = useState(1) // 1: choix pharmacie, 2: produits + panier, 3: confirmation
   const [city, setCity] = useState('')
   const [pharmacyName, setPharmacyName] = useState('')
@@ -26,6 +30,12 @@ export default function Pharmacy() {
   const [submitting, setSubmitting] = useState(false)
   const [confirmation, setConfirmation] = useState(null)
   const role = getRole()
+
+  // NOUVEAU (lien ordonnance -> pharmacie): si le patient arrive depuis le
+  // bouton "Commander en pharmacie" de son dossier de sante.
+  const [prescriptionDocumentId] = useState(incomingPrescription.prescriptionDocumentId || null)
+  const [prescriptionMatches, setPrescriptionMatches] = useState(null)
+  const [loadingMatches, setLoadingMatches] = useState(false)
 
   async function searchPharmacies(e) {
     if (e) e.preventDefault()
@@ -50,6 +60,23 @@ export default function Pharmacy() {
     setError('')
     setStep(2)
     await browseStock(pharmacy.id, '')
+    if (prescriptionDocumentId) {
+      await loadPrescriptionMatches(pharmacy.id)
+    }
+  }
+
+  async function loadPrescriptionMatches(establishmentId) {
+    setLoadingMatches(true)
+    try {
+      const { data } = await api.get('/pharmacy/match-prescription', {
+        params: { document_id: prescriptionDocumentId, establishment_id: establishmentId },
+      })
+      setPrescriptionMatches(data)
+    } catch (err) {
+      setError(getErrorMessage(err, "Impossible de rapprocher l'ordonnance avec le stock de cette pharmacie."))
+    } finally {
+      setLoadingMatches(false)
+    }
   }
 
   async function browseStock(establishmentId, name) {
@@ -110,6 +137,7 @@ export default function Pharmacy() {
       const { data } = await api.post('/pharmacy/reservations', {
         items: cart.map((l) => ({ medication_id: l.medication_id, quantity: l.quantity })),
         delivery_mode: deliveryMode,
+        prescription_document_id: prescriptionDocumentId || undefined,
       })
       setConfirmation(data)
       setStep(3)
@@ -123,6 +151,7 @@ export default function Pharmacy() {
   function backToPharmacies() {
     setSelectedPharmacy(null)
     setCart([])
+    setPrescriptionMatches(null)
     setStep(1)
   }
 
@@ -206,6 +235,39 @@ export default function Pharmacy() {
               ← Changer de pharmacie
             </button>
           </div>
+
+          {prescriptionDocumentId && (
+            <div className="rounded-2xl border border-amber-300 bg-amber-500/5 p-5 mb-6">
+              <p className="text-sm font-medium text-forest-900 mb-3">Ton ordonnance dans cette pharmacie</p>
+              {loadingMatches && <p className="text-sm text-forest-700">Recherche des correspondances...</p>}
+              {prescriptionMatches && prescriptionMatches.map((match) => (
+                <div key={match.prescribed_name} className="mb-3 last:mb-0">
+                  <p className="text-sm text-forest-900 font-medium">
+                    {match.prescribed_name} (prescrit: {match.prescribed_quantity}{match.dosage_instructions ? ` - ${match.dosage_instructions}` : ''})
+                  </p>
+                  {match.matches.length === 0 ? (
+                    <p className="text-xs text-clay-600 mt-1">Non disponible dans cette pharmacie.</p>
+                  ) : (
+                    <div className="flex flex-wrap gap-2 mt-1">
+                      {match.matches.map((stockItem) => {
+                        const inCart = cart.find((l) => l.medication_id === stockItem.id)
+                        return (
+                          <button
+                            key={stockItem.id}
+                            onClick={() => addToCart(stockItem)}
+                            disabled={inCart && inCart.quantity >= stockItem.quantity}
+                            className="text-xs rounded-full border border-amber-400 bg-white px-3 py-1.5 hover:bg-amber-50 transition disabled:opacity-50"
+                          >
+                            {inCart ? `${stockItem.medication_name} - au panier (${inCart.quantity})` : `+ ${stockItem.medication_name} (${stockItem.unit_price.toLocaleString('fr-FR')} FCFA)`}
+                          </button>
+                        )
+                      })}
+                    </div>
+                  )}
+                </div>
+              ))}
+            </div>
+          )}
 
           <form onSubmit={searchProducts} className="flex gap-3 mb-6">
             <input

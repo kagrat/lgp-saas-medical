@@ -280,6 +280,9 @@ class ReservationCreate(BaseModel):
     """
     items: list[ReservationItemCreate] = Field(min_length=1)
     delivery_mode: DeliveryMode = DeliveryMode.PICKUP
+    # NOUVEAU (lien ordonnance -> pharmacie): reference optionnelle vers
+    # l'ordonnance dont provient cette commande.
+    prescription_document_id: Optional[str] = None
 
 
 class ReservationItemOut(BaseModel):
@@ -307,8 +310,20 @@ class ReservationOut(BaseModel):
     total_amount: Optional[float] = None
     """Somme (confirmed_quantity * confirmed_unit_price) sur toutes les
     lignes - None tant que le pharmacien n'a pas encore tout verifie."""
+    prescription_document_id: Optional[str] = None
 
     model_config = {"from_attributes": True}
+
+
+class PrescriptionMatchOut(BaseModel):
+    """NOUVEAU (lien ordonnance -> pharmacie): pour un medicament prescrit,
+    les articles correspondants trouves dans LE STOCK D'UNE PHARMACIE
+    PRECISE (une ordonnance ne connait pas a l'avance quelle pharmacie sera
+    choisie, le rapprochement se fait ici, au moment de la commande)."""
+    prescribed_name: str
+    prescribed_quantity: int
+    dosage_instructions: Optional[str] = None
+    matches: list[StockItemOut] = []
 
 
 # ---------- TABLEAU DE BORD ----------
@@ -360,11 +375,31 @@ class ReservationHistoryOut(BaseModel):
     model_config = {"from_attributes": True}
 
 
+class PrescriptionItemCreate(BaseModel):
+    medication_name: str = Field(min_length=1, max_length=200)
+    quantity: int = Field(default=1, ge=1)
+    dosage_instructions: Optional[str] = Field(default=None, max_length=300)
+
+
+class PrescriptionItemOut(BaseModel):
+    id: str
+    medication_name: str
+    quantity: int
+    dosage_instructions: Optional[str] = None
+
+    model_config = {"from_attributes": True}
+
+
 class MedicalDocumentCreate(BaseModel):
     appointment_id: str
     document_type: DocumentType
     title: str = Field(min_length=2, max_length=200)
     content: str = Field(min_length=1)
+    # NOUVEAU (lien ordonnance -> pharmacie): liste structuree de
+    # medicaments, en plus du texte libre - n'a de sens que pour
+    # document_type=prescription mais accepte quel que soit le type, sans
+    # validation forcee ici (souplesse).
+    prescription_items: Optional[list[PrescriptionItemCreate]] = None
 
 
 class ProgressNoteCreate(BaseModel):
@@ -385,6 +420,7 @@ class MedicalDocumentOut(BaseModel):
     title: str
     content: str
     created_at: datetime
+    prescription_items: list[PrescriptionItemOut] = []
 
     model_config = {"from_attributes": True}
 

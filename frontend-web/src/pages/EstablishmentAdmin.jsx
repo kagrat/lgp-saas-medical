@@ -622,6 +622,11 @@ export default function EstablishmentAdmin() {
             {filteredOrders.map((o) => (
               <div key={o.id} className="rounded-xl border border-forest-100 bg-white p-4">
                 <div className="mb-3">
+                  {o.prescription_document_id && (
+                    <span className="inline-block text-xs px-2 py-0.5 rounded-full bg-amber-500/10 text-amber-600 font-medium mb-2">
+                      Issue d'une ordonnance
+                    </span>
+                  )}
                   <div className="space-y-1 mb-2">
                     {o.items.map((item) => (
                       <p key={item.id} className="text-forest-900 font-medium">

@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import api, { getErrorMessage } from '../api/client'
 import { DocumentTypeBadge, DOCUMENT_TYPES, DOCUMENT_TYPE_LABELS } from './DocumentType'
+import PrescriptionItemsEditor from './PrescriptionItemsEditor'
 
 /**
  * NOUVEAU (demande M. Faustin): "Mes patients" cote medecin - distinct du
@@ -19,6 +20,7 @@ export default function MyPatients() {
   const [loadingDetail, setLoadingDetail] = useState(false)
 
   const [docForm, setDocForm] = useState({ appointment_id: '', document_type: 'consultation_note', title: '', content: '' })
+  const [prescriptionItems, setPrescriptionItems] = useState([])
   const [savingDoc, setSavingDoc] = useState(false)
   const [docMessage, setDocMessage] = useState('')
 
@@ -92,14 +94,19 @@ export default function MyPatients() {
     setDocMessage('')
     setError('')
     try {
+      const validItems = prescriptionItems.filter((it) => it.medication_name.trim())
       await api.post('/health-records', {
         appointment_id: docForm.appointment_id,
         document_type: docForm.document_type,
         title: docForm.title,
         content: docForm.content,
+        prescription_items: docForm.document_type === 'prescription' && validItems.length > 0
+          ? validItems.map((it) => ({ medication_name: it.medication_name, quantity: Number(it.quantity) || 1, dosage_instructions: it.dosage_instructions || null }))
+          : null,
       })
       setDocMessage('Ajoute au dossier du patient.')
       setDocForm({ ...docForm, title: '', content: '' })
+      setPrescriptionItems([])
       const { data } = await api.get(`/doctors/me/patients/${selectedId}`)
       setDetail(data)
     } catch (err) {
@@ -237,6 +244,9 @@ export default function MyPatients() {
                       {DOCUMENT_TYPES.map((t) => <option key={t} value={t}>{DOCUMENT_TYPE_LABELS[t]}</option>)}
                     </select>
                   </div>
+                  {docForm.document_type === 'prescription' && (
+                    <PrescriptionItemsEditor items={prescriptionItems} onChange={setPrescriptionItems} />
+                  )}
                   <input
                     placeholder="Titre (ex: Ordonnance du 21 mai)"
                     value={docForm.title}

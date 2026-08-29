@@ -5,6 +5,7 @@ import { DOCUMENT_TYPES, DOCUMENT_TYPE_LABELS } from '../components/DocumentType
 import ChatWindow from '../components/ChatWindow'
 import MyPatients from '../components/MyPatients'
 import Hospitalizations from '../components/Hospitalizations'
+import PrescriptionItemsEditor from '../components/PrescriptionItemsEditor'
 import MySchedule from '../components/MySchedule'
 import LabReferralForm from '../components/LabReferralForm'
 
@@ -23,6 +24,7 @@ export default function DesktopDoctorDashboard() {
   const [rescheduleValue, setRescheduleValue] = useState('')
   const [expandedAppointmentId, setExpandedAppointmentId] = useState(null)
   const [docForm, setDocForm] = useState({ document_type: 'consultation_note', title: '', content: '' })
+  const [prescriptionItems, setPrescriptionItems] = useState([])
   const [savingDoc, setSavingDoc] = useState(false)
   const [docMessage, setDocMessage] = useState('')
   const [showCompleted, setShowCompleted] = useState(false)
@@ -136,14 +138,19 @@ export default function DesktopDoctorDashboard() {
     setDocMessage('')
     setError('')
     try {
+      const validItems = prescriptionItems.filter((it) => it.medication_name.trim())
       await api.post('/health-records', {
         appointment_id: appointmentId,
         document_type: docForm.document_type,
         title: docForm.title,
         content: docForm.content,
+        prescription_items: docForm.document_type === 'prescription' && validItems.length > 0
+          ? validItems.map((it) => ({ medication_name: it.medication_name, quantity: Number(it.quantity) || 1, dosage_instructions: it.dosage_instructions || null }))
+          : null,
       })
       setDocMessage('Ajoute au dossier de sante du patient.')
       setDocForm({ document_type: 'consultation_note', title: '', content: '' })
+      setPrescriptionItems([])
     } catch (err) {
       setError(getErrorMessage(err, "Impossible d'ajouter ce document au dossier."))
     } finally {
@@ -283,6 +290,9 @@ export default function DesktopDoctorDashboard() {
                       className="rounded-lg border border-forest-100 px-3 py-2 text-sm"
                     />
                   </div>
+                  {docForm.document_type === 'prescription' && (
+                    <PrescriptionItemsEditor items={prescriptionItems} onChange={setPrescriptionItems} />
+                  )}
                   <textarea
                     placeholder="Contenu (traitement prescrit, résultat, observations...)"
                     value={docForm.content}

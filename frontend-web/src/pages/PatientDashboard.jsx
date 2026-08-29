@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react'
+import { useNavigate } from 'react-router-dom'
 import api, { getErrorMessage } from '../api/client'
 import { StatusBadge, RESERVATION_STEPS, RESERVATION_STATUS_LABELS } from '../components/OrderStatus'
 import { DocumentTypeBadge } from '../components/DocumentType'
@@ -386,6 +387,19 @@ export default function PatientDashboard() {
                 <p className="text-xs text-forest-700">
                   {doc.doctor_name} - {doc.establishment_name} - {new Date(doc.created_at).toLocaleDateString('fr-FR')}
                 </p>
+                {doc.document_type === 'prescription' && doc.prescription_items && doc.prescription_items.length > 0 && (
+                  <div className="mt-3 pt-3 border-t border-forest-100">
+                    <p className="text-xs text-forest-700 mb-2">
+                      {doc.prescription_items.map((i) => i.medication_name).join(', ')}
+                    </p>
+                    <button
+                      onClick={() => navigate('/pharmacie', { state: { prescriptionDocumentId: doc.id, prescriptionItems: doc.prescription_items } })}
+                      className="rounded-full bg-amber-500 text-forest-900 px-4 py-1.5 text-sm font-semibold hover:bg-amber-400 transition"
+                    >
+                      Commander en pharmacie
+                    </button>
+                  </div>
+                )}
               </div>
             ))}
           </div>

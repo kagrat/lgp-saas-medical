@@ -30,11 +30,12 @@ from app.database import get_db
 from app.models import (
     PharmacyStock, PharmacyReservation, PharmacyOrderItem, PharmacyReservationStatusHistory,
     Patient, User, UserRole, ReservationStatus, EstablishmentType, Establishment, AuditLog,
+    PrescriptionItem, MedicalDocument, DocumentType,
 )
 from app.schemas import (
     StockItemCreate, StockItemOut, ReservationCreate, ReservationOut, ReservationItemOut,
     ReservationStatusUpdate, ReservationHistoryOut, PharmacyStatsOut, ReservationReview,
-    PharmacySearchResult,
+    PharmacySearchResult, PrescriptionMatchOut,
 )
 from app.deps import require_roles, require_establishment_types
 from app.services.geo import resolve_city_coordinates, haversine_km
@@ -84,6 +85,7 @@ def _to_reservation_out(reservation: PharmacyReservation) -> ReservationOut:
         status=reservation.status, estimated_ready_at=reservation.estimated_ready_at,
         pharmacist_note=reservation.pharmacist_note, created_at=reservation.created_at,
         total_amount=total_amount,
+        prescription_document_id=reservation.prescription_document_id,
     )
 
 
@@ -187,6 +189,48 @@ def browse_pharmacy_stock(establishment_id: str, name: Optional[str] = None, db:
         )
     items = query.order_by(PharmacyStock.medication_name).limit(100).all()
     return [_to_stock_out(i) for i in items]
+
+
+@router.get("/match-prescription", response_model=list[PrescriptionMatchOut])
+def match_prescription(document_id: str, establishment_id: str, db: Session = Depends(get_db),
+                        current_user: User = Depends(require_roles(UserRole.PATIENT))):
+    """
+    NOUVEAU (lien ordonnance -> pharmacie, lacune identifiee lors d'un
+    audit complet): pour chaque medicament prescrit dans cette ordonnance,
+    cherche les articles correspondants dans le stock de LA PHARMACIE
+    CHOISIE par le patient. Le rapprochement se fait ici (pas a la creation
+    de l'ordonnance) car le medecin ne sait pas a l'avance quelle pharmacie
+    sera choisie ni son catalogue exact.
+    """
+    patient = db.query(Patient).filter(Patient.user_id == current_user.id).first()
+    if not patient:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Dossier patient introuvable")
+
+    document = db.query(MedicalDocument).filter(
+        MedicalDocument.id == document_id, MedicalDocument.patient_id == patient.id,
+        MedicalDocument.document_type == DocumentType.PRESCRIPTION,
+    ).first()
+    if not document:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Ordonnance introuvable")
+
+    results: list[PrescriptionMatchOut] = []
+    for item in document.prescription_items:
+        matches = (
+            db.query(PharmacyStock)
+            .filter(
+                PharmacyStock.establishment_id == establishment_id,
+                PharmacyStock.quantity > 0,
+                PharmacyStock.medication_name.ilike(f"%{item.medication_name}%"),
+            )
+            .limit(10)
+            .all()
+        )
+        results.append(PrescriptionMatchOut(
+            prescribed_name=item.medication_name, prescribed_quantity=item.quantity,
+            dosage_instructions=item.dosage_instructions,
+            matches=[_to_stock_out(m) for m in matches],
+        ))
+    return results
 
 
 @router.get("/stats", response_model=PharmacyStatsOut, dependencies=[_PHARMACY_ONLY])
@@ -313,10 +357,22 @@ def create_reservation(payload: ReservationCreate, db: Session = Depends(get_db)
         )
     establishment_id = establishment_ids.pop()
 
+    # NOUVEAU (lien ordonnance -> pharmacie): si la commande provient d'une
+    # ordonnance, verifie qu'elle appartient bien AU PATIENT qui commande
+    # (pas a un autre patient) avant de l'associer.
+    if payload.prescription_document_id:
+        prescription_doc = db.query(MedicalDocument).filter(
+            MedicalDocument.id == payload.prescription_document_id,
+            MedicalDocument.patient_id == patient.id,
+        ).first()
+        if not prescription_doc:
+            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Ordonnance introuvable")
+
     reservation = PharmacyReservation(
         id=str(uuid.uuid4()), establishment_id=establishment_id,
         patient_id=patient.id, delivery_mode=payload.delivery_mode,
         status=ReservationStatus.PENDING,
+        prescription_document_id=payload.prescription_document_id,
     )
     db.add(reservation)
     db.flush()

@@ -383,8 +383,13 @@ class PharmacyReservation(Base):
     estimated_ready_at = Column(DateTime, nullable=True)
     pharmacist_note = Column(Text, nullable=True)
     created_at = Column(DateTime, default=datetime.utcnow)
+    # NOUVEAU (lien ordonnance -> pharmacie): reference optionnelle vers
+    # l'ordonnance d'origine, pour que le pharmacien puisse la consulter
+    # lors de sa verification.
+    prescription_document_id = Column(UUID(as_uuid=False), ForeignKey("medical_documents.id"), nullable=True)
 
     items = relationship("PharmacyOrderItem", back_populates="reservation", cascade="all, delete-orphan")
+    prescription_document = relationship("MedicalDocument")
 
 
 class PharmacyOrderItem(Base):
@@ -494,6 +499,30 @@ class MedicalDocument(Base):
     doctor = relationship("Doctor")
     author = relationship("User")
     establishment = relationship("Establishment")
+    prescription_items = relationship("PrescriptionItem", back_populates="document", cascade="all, delete-orphan")
+
+
+class PrescriptionItem(Base):
+    """
+    NOUVEAU (lien ordonnance -> pharmacie, lacune identifiee lors d'un
+    audit complet: une ordonnance etait ecrite en texte libre, totalement
+    deconnectee de la pharmacie - le patient devait tout retaper de
+    memoire). Une ligne structuree de medicament au sein d'une ordonnance
+    (document_type=PRESCRIPTION). Le nom du medicament reste du texte
+    libre (une ordonnance ne connait pas a l'avance quelle pharmacie sera
+    choisie, ni son catalogue exact) - le rapprochement avec le stock reel
+    d'une pharmacie se fait au moment de la commande (voir
+    pharmacy.py::match_prescription).
+    """
+    __tablename__ = "prescription_items"
+
+    id = Column(UUID(as_uuid=False), primary_key=True, default=gen_uuid)
+    document_id = Column(UUID(as_uuid=False), ForeignKey("medical_documents.id"), nullable=False)
+    medication_name = Column(String(200), nullable=False)
+    quantity = Column(Integer, nullable=False, default=1)
+    dosage_instructions = Column(String(300), nullable=True)
+
+    document = relationship("MedicalDocument", back_populates="prescription_items")
 
 
 class PatientRecordShare(Base):
