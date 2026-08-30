@@ -1,6 +1,16 @@
 import { LogOut } from 'lucide-react'
 import { clearSession } from '../api/client'
 
+// CORRECTIF (meme categorie de bug que celui trouve dans api/client.js):
+// ce composant est utilise par TOUS les tableaux de bord du personnel,
+// certains atteints UNIQUEMENT via desktop.html (Electron), d'autres
+// (EstablishmentAdmin) via desktop.html OU index.html selon le contexte.
+// "window.location.href = '/'" navigue toujours vers l'app PATIENT
+// (index.html, via la reecriture generique de Vercel) - jamais correct
+// pour un compte personnel sur Electron. Meme detection que api/client.js.
+const CLIENT_TYPE = (typeof window !== 'undefined' && window.__LGP_CLIENT_TYPE__) || 'web'
+const LOGOUT_REDIRECT = CLIENT_TYPE === 'desktop' ? '/desktop.html' : '/connexion'
+
 /**
  * NOUVEAU (refonte visuelle SpeedSante+, demande M. Faustin): remplace le
  * systeme d'onglets horizontaux utilise jusqu'ici par un menu lateral fixe
@@ -26,11 +36,11 @@ export default function SidebarLayout({
 }) {
   function handleLogout() {
     clearSession()
-    window.location.href = '/'
+    window.location.href = LOGOUT_REDIRECT
   }
 
   return (
-    <div className="flex min-h-screen bg-paper">
+    <div className="flex h-screen bg-paper overflow-hidden">
       <aside className={`w-64 shrink-0 ${accentColor} text-white flex flex-col`}>
         <div className="px-6 py-6 border-b border-white/10">
           <div className="flex items-center gap-2 mb-1">
@@ -57,14 +67,14 @@ export default function SidebarLayout({
 
         <button
           onClick={handleLogout}
-          className="flex items-center gap-3 px-6 py-4 text-sm font-medium text-white/80 hover:bg-white/10 hover:text-white transition border-t border-white/10"
+          className="flex items-center gap-3 px-6 py-4 text-sm font-medium text-white/80 hover:bg-white/10 hover:text-white transition border-t border-white/10 shrink-0"
         >
           <LogOut className="w-4.5 h-4.5" strokeWidth={1.75} />
           Deconnexion
         </button>
       </aside>
 
-      <main className="flex-1 min-w-0">
+      <main className="flex-1 min-w-0 overflow-y-auto">
         <div className="max-w-5xl mx-auto px-8 py-10">
           <div className="flex justify-between items-start mb-8">
             <div>

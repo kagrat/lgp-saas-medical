@@ -34,7 +34,7 @@ export default function PatientLayout() {
   }
 
   return (
-    <div className="flex min-h-screen bg-paper">
+    <div className="flex h-screen bg-paper overflow-hidden">
       <aside className="w-64 shrink-0 bg-primary-700 text-white flex flex-col">
         <div className="px-6 py-6 border-b border-white/10">
           <div className="flex items-center gap-2 mb-1">
@@ -74,14 +74,14 @@ export default function PatientLayout() {
 
         <button
           onClick={handleLogout}
-          className="flex items-center gap-3 px-6 py-4 text-sm font-medium text-white/80 hover:bg-white/10 hover:text-white transition border-t border-white/10"
+          className="flex items-center gap-3 px-6 py-4 text-sm font-medium text-white/80 hover:bg-white/10 hover:text-white transition border-t border-white/10 shrink-0"
         >
           <LogOut className="w-4.5 h-4.5" strokeWidth={1.75} />
           Deconnexion
         </button>
       </aside>
 
-      <main className="flex-1 min-w-0">
+      <main className="flex-1 min-w-0 overflow-y-auto">
         <Outlet />
       </main>
     </div>

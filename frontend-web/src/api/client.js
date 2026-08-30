@@ -10,7 +10,14 @@ import axios from 'axios'
  */
 const CLIENT_TYPE = (typeof window !== 'undefined' && window.__LGP_CLIENT_TYPE__) || 'web'
 const STORAGE_PREFIX = CLIENT_TYPE === 'desktop' ? 'lgp_desktop_' : 'lgp_'
-const LOGIN_PATH = CLIENT_TYPE === 'desktop' ? '/' : '/connexion'
+// CORRECTIF (bug reel decouvert en test): window.location.href plus bas est
+// une VRAIE navigation de document, pas un changement de route interne au
+// HashRouter. Pointer vers "/" faisait atterrir Electron sur index.html
+// (l'app PATIENT, via la regle de reecriture generique de Vercel) au lieu
+// de desktop.html des qu'une session expirait - meme categorie de bug que
+// celui deja corrige pour Ctrl+R, mais celui-ci le contournait
+// completement puisqu'il ne s'agit pas d'un routage client-side.
+const LOGIN_PATH = CLIENT_TYPE === 'desktop' ? '/desktop.html' : '/connexion'
 
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000'
 
