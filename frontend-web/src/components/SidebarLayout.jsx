@@ -1,4 +1,5 @@
-import { LogOut } from 'lucide-react'
+import { useState } from 'react'
+import { LogOut, Menu, X } from 'lucide-react'
 import { clearSession } from '../api/client'
 
 // CORRECTIF (meme categorie de bug que celui trouve dans api/client.js):
@@ -22,6 +23,12 @@ const LOGOUT_REDIRECT = CLIENT_TYPE === 'desktop' ? '/desktop.html' : '/connexio
  * accentColor: classe Tailwind du fond de la barre laterale, alignee sur
  * le code couleur par portail des maquettes (teal pour patient/hopital,
  * bleu pour medecin/laboratoire, vert pour pharmacie).
+ *
+ * CORRIGE (meme bug mobile que PatientLayout.jsx): en dessous de "md"
+ * (768px), le menu se cache et s'ouvre desormais en tiroir via un bouton
+ * hamburger, au lieu de toujours occuper 256px fixes sur l'ecran - utile
+ * pour EstablishmentAdmin notamment, accessible depuis le web (donc
+ * potentiellement un telephone), pas seulement Electron.
  */
 export default function SidebarLayout({
   portalLabel,
@@ -34,27 +41,55 @@ export default function SidebarLayout({
   accentColor = 'bg-primary-700',
   children,
 }) {
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
+
   function handleLogout() {
     clearSession()
     window.location.href = LOGOUT_REDIRECT
   }
 
+  function selectTab(id) {
+    onTabChange(id)
+    setMobileMenuOpen(false)
+  }
+
   return (
     <div className="flex h-screen bg-paper overflow-hidden">
-      <aside className={`w-64 shrink-0 ${accentColor} text-white flex flex-col`}>
-        <div className="px-6 py-6 border-b border-white/10">
-          <div className="flex items-center gap-2 mb-1">
-            <span className="w-2.5 h-2.5 rounded-full bg-amber-500" aria-hidden="true"></span>
-            <span className="font-display text-lg font-semibold">SpeedSanté+</span>
+      <div className={`md:hidden fixed top-0 left-0 right-0 z-30 ${accentColor} text-white flex items-center justify-between px-4 py-3`}>
+        <button onClick={() => setMobileMenuOpen(true)} aria-label="Ouvrir le menu">
+          <Menu className="w-6 h-6" strokeWidth={1.75} />
+        </button>
+        <span className="font-display text-base font-semibold">{title}</span>
+        <span className="w-6" aria-hidden="true"></span>
+      </div>
+
+      {mobileMenuOpen && (
+        <div className="md:hidden fixed inset-0 bg-black/40 z-40" onClick={() => setMobileMenuOpen(false)} aria-hidden="true"></div>
+      )}
+
+      <aside
+        className={`w-64 shrink-0 ${accentColor} text-white flex flex-col fixed inset-y-0 left-0 z-50 transition-transform duration-200 md:static md:translate-x-0 ${
+          mobileMenuOpen ? 'translate-x-0' : '-translate-x-full'
+        }`}
+      >
+        <div className="px-6 py-6 border-b border-white/10 flex items-center justify-between">
+          <div>
+            <div className="flex items-center gap-2 mb-1">
+              <span className="w-2.5 h-2.5 rounded-full bg-amber-500" aria-hidden="true"></span>
+              <span className="font-display text-lg font-semibold">SpeedSanté+</span>
+            </div>
+            {portalLabel && <p className="text-xs text-white/70 uppercase tracking-wide">{portalLabel}</p>}
           </div>
-          {portalLabel && <p className="text-xs text-white/70 uppercase tracking-wide">{portalLabel}</p>}
+          <button onClick={() => setMobileMenuOpen(false)} className="md:hidden" aria-label="Fermer le menu">
+            <X className="w-5 h-5" strokeWidth={1.75} />
+          </button>
         </div>
 
         <nav className="flex-1 py-4 overflow-y-auto">
           {tabs.map((t) => (
             <button
               key={t.id}
-              onClick={() => onTabChange(t.id)}
+              onClick={() => selectTab(t.id)}
               className={`w-full flex items-center gap-3 px-6 py-3 text-sm font-medium transition text-left ${
                 activeTab === t.id ? 'bg-white/15 text-white border-r-4 border-amber-500' : 'text-white/80 hover:bg-white/10 hover:text-white'
               }`}
@@ -74,7 +109,7 @@ export default function SidebarLayout({
         </button>
       </aside>
 
-      <main className="flex-1 min-w-0 overflow-y-auto">
+      <main className="flex-1 min-w-0 overflow-y-auto pt-14 md:pt-0">
         <div className="max-w-5xl mx-auto px-8 py-10">
           <div className="flex justify-between items-start mb-8">
             <div>

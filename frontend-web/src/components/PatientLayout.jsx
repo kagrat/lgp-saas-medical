@@ -1,5 +1,6 @@
-import { NavLink, Outlet, useNavigate } from 'react-router-dom'
-import { Home, Calendar, Pill, FlaskConical, MessageCircle, Receipt, UserRound, LogOut } from 'lucide-react'
+import { useState } from 'react'
+import { NavLink, Outlet, useNavigate, useLocation } from 'react-router-dom'
+import { Home, Calendar, Pill, FlaskConical, MessageCircle, Receipt, UserRound, LogOut, Menu, X } from 'lucide-react'
 import { clearSession } from '../api/client'
 
 const MENU_ITEMS = [
@@ -20,6 +21,14 @@ const MENU_ITEMS = [
  * distinctes (Consultation, Pharmacie, Laboratoire...), contrairement au
  * personnel qui reste sur un seul ecran avec du contenu qui change.
  *
+ * CORRIGE (bug reel signale: sur telephone, le menu fixe de 256px
+ * prenait une part disproportionnee de l'ecran, au point de rendre le
+ * contenu de droite quasi invisible). En dessous du breakpoint "md"
+ * (768px), le menu est desormais cache par defaut et s'ouvre en tiroir
+ * coulissant via un bouton hamburger - le contenu prend toute la largeur
+ * disponible. Au-dessus de "md", comportement inchange (menu toujours
+ * visible, fixe a gauche).
+ *
  * NOTE: "Profil" reste volontairement HORS de ce menu - cette page est
  * partagee par tous les roles (patient, admin, super admin), pas
  * seulement le patient, donc elle garde sa presentation actuelle plutot
@@ -27,21 +36,54 @@ const MENU_ITEMS = [
  */
 export default function PatientLayout() {
   const navigate = useNavigate()
+  const location = useLocation()
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
 
   function handleLogout() {
     clearSession()
     navigate('/connexion')
   }
 
+  function closeMobileMenu() {
+    setMobileMenuOpen(false)
+  }
+
+  const currentItem = MENU_ITEMS.find((item) => item.to === location.pathname)
+
   return (
     <div className="flex h-screen bg-paper overflow-hidden">
-      <aside className="w-64 shrink-0 bg-primary-700 text-white flex flex-col">
-        <div className="px-6 py-6 border-b border-white/10">
-          <div className="flex items-center gap-2 mb-1">
-            <span className="w-2.5 h-2.5 rounded-full bg-amber-500" aria-hidden="true"></span>
-            <span className="font-display text-lg font-semibold">SpeedSanté+</span>
+      {/* NOUVEAU: barre mobile avec bouton hamburger, visible uniquement
+          en dessous du breakpoint "md" - remplace le menu fixe qui
+          prenait trop de place sur telephone. */}
+      <div className="md:hidden fixed top-0 left-0 right-0 z-30 bg-primary-700 text-white flex items-center justify-between px-4 py-3">
+        <button onClick={() => setMobileMenuOpen(true)} aria-label="Ouvrir le menu">
+          <Menu className="w-6 h-6" strokeWidth={1.75} />
+        </button>
+        <span className="font-display text-base font-semibold">{currentItem ? currentItem.label : 'SpeedSanté+'}</span>
+        <span className="w-6" aria-hidden="true"></span>
+      </div>
+
+      {/* NOUVEAU: fond assombri derriere le tiroir mobile, cliquer dessus le ferme */}
+      {mobileMenuOpen && (
+        <div className="md:hidden fixed inset-0 bg-black/40 z-40" onClick={closeMobileMenu} aria-hidden="true"></div>
+      )}
+
+      <aside
+        className={`w-64 shrink-0 bg-primary-700 text-white flex flex-col fixed inset-y-0 left-0 z-50 transition-transform duration-200 md:static md:translate-x-0 ${
+          mobileMenuOpen ? 'translate-x-0' : '-translate-x-full'
+        }`}
+      >
+        <div className="px-6 py-6 border-b border-white/10 flex items-center justify-between">
+          <div>
+            <div className="flex items-center gap-2 mb-1">
+              <span className="w-2.5 h-2.5 rounded-full bg-amber-500" aria-hidden="true"></span>
+              <span className="font-display text-lg font-semibold">SpeedSanté+</span>
+            </div>
+            <p className="text-xs text-white/70 uppercase tracking-wide">Portail Patient</p>
           </div>
-          <p className="text-xs text-white/70 uppercase tracking-wide">Portail Patient</p>
+          <button onClick={closeMobileMenu} className="md:hidden" aria-label="Fermer le menu">
+            <X className="w-5 h-5" strokeWidth={1.75} />
+          </button>
         </div>
 
         <nav className="flex-1 py-4 overflow-y-auto">
@@ -49,6 +91,7 @@ export default function PatientLayout() {
             <NavLink
               key={item.to}
               to={item.to}
+              onClick={closeMobileMenu}
               className={({ isActive }) =>
                 `w-full flex items-center gap-3 px-6 py-3 text-sm font-medium transition ${
                   isActive ? 'bg-white/15 text-white border-r-4 border-amber-500' : 'text-white/80 hover:bg-white/10 hover:text-white'
@@ -61,6 +104,7 @@ export default function PatientLayout() {
           ))}
           <NavLink
             to="/profil"
+            onClick={closeMobileMenu}
             className={({ isActive }) =>
               `w-full flex items-center gap-3 px-6 py-3 text-sm font-medium transition ${
                 isActive ? 'bg-white/15 text-white border-r-4 border-amber-500' : 'text-white/80 hover:bg-white/10 hover:text-white'
@@ -81,7 +125,7 @@ export default function PatientLayout() {
         </button>
       </aside>
 
-      <main className="flex-1 min-w-0 overflow-y-auto">
+      <main className="flex-1 min-w-0 overflow-y-auto pt-14 md:pt-0">
         <Outlet />
       </main>
     </div>
