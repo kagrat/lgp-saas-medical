@@ -2,7 +2,7 @@
 Module "Messagerie support plateforme" (nouveau).
 
 Distinct du chat concierge patient<->etablissement deja existant: ici
-c'est un canal patient OU staff <-> Super Admin / equipe LGP HOLDINGS,
+c'est un canal patient OU staff <-> Super Admin / equipe SpeedSanté+,
 pour les questions techniques ou administratives sur la plateforme elle-
 meme (pas liees a un etablissement precis). Nouvelle table isolee, ne
 touche a rien d'existant.
@@ -102,7 +102,7 @@ def reply_to_thread(user_id: str, payload: SupportMessageCreate, db: Session = D
 
     message = SupportMessage(
         id=str(uuid.uuid4()), user_id=user_id,
-        sender_role="support", sender_name="Support LGP HOLDINGS", content=payload.content,
+        sender_role="support", sender_name="Support SpeedSanté+", content=payload.content,
     )
     db.add(message)
     db.commit()

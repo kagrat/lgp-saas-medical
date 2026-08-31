@@ -73,7 +73,7 @@ def login(payload: LoginRequest, db: Session = Depends(get_db),
     if x_client_type == "web" and is_staff:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
-            detail="Ce compte doit se connecter depuis l'application LGP Console (Desktop).",
+            detail="Ce compte doit se connecter depuis l'application SpeedSanté+ (Desktop).",
         )
 
     if user.establishment_id and user.role != UserRole.SUPER_ADMIN:
@@ -201,7 +201,7 @@ def forgot_password(payload: ForgotPasswordRequest, db: Session = Depends(get_db
     reset_link = f"{settings.frontend_url}/reinitialiser-mot-de-passe?token={raw_token}"
     body = (
         f"Bonjour {user.full_name},\n\n"
-        f"Une demande de reinitialisation de mot de passe a ete faite pour ton compte LGP Sante.\n"
+        f"Une demande de reinitialisation de mot de passe a ete faite pour ton compte SpeedSanté+.\n"
         f"Clique sur ce lien pour choisir un nouveau mot de passe (valable 1 heure):\n{reset_link}\n\n"
         f"Si tu n'es pas a l'origine de cette demande, ignore simplement cet email - "
         f"ton mot de passe actuel reste inchange."

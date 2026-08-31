@@ -46,13 +46,19 @@ export default function App() {
         <Route path="/soins" element={<Care />} />
         <Route path="/rechercher" element={<PatientSearch />} />
         <Route path="/medecin/:doctorId" element={<DoctorProfile />} />
-        <Route path="/profil" element={<ProtectedRoute><Profile /></ProtectedRoute>} />
         <Route
           path="/super-admin"
           element={<ProtectedRoute allowedRoles={['super_admin']}><SuperAdminDashboard /></ProtectedRoute>}
         />
         <Route path="/support" element={<ProtectedRoute><SupportChat /></ProtectedRoute>} />
       </Route>
+
+      {/* NOUVEAU: /profil est desormais autonome (pas de shell impose ici) -
+          Profile.jsx choisit lui-meme son habillage selon le role (menu
+          lateral pour un patient, barre classique pour les autres),
+          corrigeant l'incoherence ou un patient perdait temporairement
+          son menu lateral en visitant cette page partagee. */}
+      <Route path="/profil" element={<ProtectedRoute><Profile /></ProtectedRoute>} />
 
       {/* EstablishmentAdmin a deja son propre menu lateral integre (voir
           SidebarLayout dans le composant) - pas de barre supplementaire ici. */}

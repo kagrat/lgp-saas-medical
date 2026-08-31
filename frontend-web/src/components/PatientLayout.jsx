@@ -13,28 +13,15 @@ const MENU_ITEMS = [
 ]
 
 /**
- * NOUVEAU (refonte visuelle SpeedSante+, demande M. Faustin): portail
- * patient avec menu lateral fixe, meme esprit que SidebarLayout.jsx (deja
- * utilise par tous les tableaux de bord du personnel) mais adapte a une
- * navigation par VRAIES ROUTES (chaque clic change de page reelle) plutot
- * que par onglets internes - le patient navigue entre plusieurs pages
- * distinctes (Consultation, Pharmacie, Laboratoire...), contrairement au
- * personnel qui reste sur un seul ecran avec du contenu qui change.
- *
- * CORRIGE (bug reel signale: sur telephone, le menu fixe de 256px
- * prenait une part disproportionnee de l'ecran, au point de rendre le
- * contenu de droite quasi invisible). En dessous du breakpoint "md"
- * (768px), le menu est desormais cache par defaut et s'ouvre en tiroir
- * coulissant via un bouton hamburger - le contenu prend toute la largeur
- * disponible. Au-dessus de "md", comportement inchange (menu toujours
- * visible, fixe a gauche).
- *
- * NOTE: "Profil" reste volontairement HORS de ce menu - cette page est
- * partagee par tous les roles (patient, admin, super admin), pas
- * seulement le patient, donc elle garde sa presentation actuelle plutot
- * que d'etre dupliquee ici.
+ * NOUVEAU (corrige une incoherence visuelle signalee): chrome du menu
+ * lateral patient extrait en composant reutilisable independant du
+ * routage (accepte des "children" plutot que de toujours utiliser
+ * <Outlet/>). Permet a Profile.jsx de s'en servir aussi pour "Mon profil"
+ * - avant ce correctif, cette page (partagee par tous les roles) faisait
+ * quitter temporairement le menu lateral pour l'ancienne barre du haut,
+ * ce qui donnait une impression d'aller-retour incoherente.
  */
-export default function PatientLayout() {
+export function PatientSidebarChrome({ children }) {
   const navigate = useNavigate()
   const location = useLocation()
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
@@ -52,18 +39,14 @@ export default function PatientLayout() {
 
   return (
     <div className="flex h-screen bg-paper overflow-hidden">
-      {/* NOUVEAU: barre mobile avec bouton hamburger, visible uniquement
-          en dessous du breakpoint "md" - remplace le menu fixe qui
-          prenait trop de place sur telephone. */}
       <div className="md:hidden fixed top-0 left-0 right-0 z-30 bg-primary-700 text-white flex items-center justify-between px-4 py-3">
         <button onClick={() => setMobileMenuOpen(true)} aria-label="Ouvrir le menu">
           <Menu className="w-6 h-6" strokeWidth={1.75} />
         </button>
-        <span className="font-display text-base font-semibold">{currentItem ? currentItem.label : 'SpeedSanté+'}</span>
+        <span className="font-display text-base font-semibold">{currentItem ? currentItem.label : 'Mon profil'}</span>
         <span className="w-6" aria-hidden="true"></span>
       </div>
 
-      {/* NOUVEAU: fond assombri derriere le tiroir mobile, cliquer dessus le ferme */}
       {mobileMenuOpen && (
         <div className="md:hidden fixed inset-0 bg-black/40 z-40" onClick={closeMobileMenu} aria-hidden="true"></div>
       )}
@@ -126,8 +109,20 @@ export default function PatientLayout() {
       </aside>
 
       <main className="flex-1 min-w-0 overflow-y-auto pt-14 md:pt-0">
-        <Outlet />
+        {children}
       </main>
     </div>
+  )
+}
+
+/**
+ * Wrapper de routage (layout route): utilise PatientSidebarChrome avec
+ * <Outlet/> pour le contenu qui change selon la page visitee.
+ */
+export default function PatientLayout() {
+  return (
+    <PatientSidebarChrome>
+      <Outlet />
+    </PatientSidebarChrome>
   )
 }

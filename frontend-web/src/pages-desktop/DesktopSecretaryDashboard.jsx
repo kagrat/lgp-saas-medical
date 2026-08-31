@@ -1,9 +1,10 @@
 import { useEffect, useState } from 'react'
-import { Calendar, Users, Clock } from 'lucide-react'
+import { Calendar, Users, Clock, UserPlus } from 'lucide-react'
 import api, { getErrorMessage } from '../api/client'
 import { AppointmentStatusBadge } from '../components/AppointmentStatusUI'
 import FilterTabs from '../components/FilterTabs'
 import PatientDirectory from '../components/PatientDirectory'
+import WalkInPatientForm from '../components/WalkInPatientForm'
 import MySchedule from '../components/MySchedule'
 import SidebarLayout from '../components/SidebarLayout'
 
@@ -104,6 +105,7 @@ export default function DesktopSecretaryDashboard() {
   const tabs = [
     { id: 'appointments', label: 'Rendez-vous', icon: Calendar },
     { id: 'patients', label: 'Patients', icon: Users },
+    { id: 'nouveau-patient', label: 'Nouveau patient', icon: UserPlus },
     { id: 'schedule', label: 'Mon planning', icon: Clock },
   ]
 
@@ -201,6 +203,8 @@ export default function DesktopSecretaryDashboard() {
       )}
 
       {tab === 'patients' && <PatientDirectory />}
+
+      {tab === 'nouveau-patient' && <WalkInPatientForm />}
 
       {tab === 'schedule' && <MySchedule />}
     </SidebarLayout>

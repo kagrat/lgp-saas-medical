@@ -24,6 +24,30 @@ class TokenResponse(BaseModel):
     establishment_id: Optional[str] = None
 
 
+class WalkInPatientCreate(BaseModel):
+    """NOUVEAU (demande M. Faustin): le personnel d'accueil cree un patient
+    qui se presente physiquement, sans passer par l'auto-inscription. Email
+    optionnel - contrairement a l'inscription publique (PatientRegisterRequest),
+    qui l'exige."""
+    full_name: str = Field(min_length=2, max_length=200)
+    phone: Optional[str] = None
+    email: Optional[EmailStr] = None
+    date_of_birth: Optional[date] = None
+    gender: Optional[str] = Field(default=None, max_length=20)
+    residence: Optional[str] = Field(default=None, max_length=200)
+
+
+class WalkInPatientOut(BaseModel):
+    id: str
+    dossier_number: str
+    full_name: str
+    phone: Optional[str] = None
+    has_real_email: bool
+    """False si aucun email n'a ete fourni: le compte a recu un email de
+    substitution et ne peut pas encore etre utilise pour se connecter -
+    le patient devra completer son inscription plus tard avec un vrai email."""
+
+
 class PatientRegisterRequest(BaseModel):
     """Inscription publique - reservee au role patient. Les autres comptes
     sont crees par un admin (establishment_admin ou super_admin), jamais

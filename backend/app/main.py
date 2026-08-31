@@ -1,5 +1,5 @@
 """
-Point d'entree de l'API backend LGP HOLDINGS - Plateforme SaaS Medicale.
+Point d'entree de l'API backend SpeedSanté+ - Plateforme SaaS Medicale.
 
 Lancement local: uvicorn app.main:app --reload
 Voir README.md a la racine du projet pour l'installation complete.
@@ -14,7 +14,7 @@ from app.routers import settings as settings_router
 settings = get_settings()
 
 app = FastAPI(
-    title="LGP HOLDINGS - Plateforme SaaS Medicale",
+    title="SpeedSanté+ - Plateforme SaaS Medicale",
     description="API multi-tenant: gestion hospitaliere, rendez-vous, pharmacie.",
     version="1.0.0",
     # Documentation interactive desactivee en production par securite

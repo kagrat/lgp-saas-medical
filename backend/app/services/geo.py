@@ -17,7 +17,7 @@ import math
 from typing import Optional
 
 # Coordonnees approximatives de centre-ville (latitude, longitude).
-# Liste non exhaustive - a completer si LGP HOLDINGS adhère des etablissements
+# Liste non exhaustive - a completer si SpeedSanté+ adhère des etablissements
 # dans d'autres localites que celles listees ici.
 BENIN_CITY_COORDINATES: dict[str, tuple[float, float]] = {
     "cotonou": (6.3654, 2.4183),

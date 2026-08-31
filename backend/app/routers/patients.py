@@ -6,6 +6,7 @@ une relation reelle avec SON etablissement (rendez-vous, commande
 pharmacie, ou demande d'analyse) - meme regle que pour la messagerie.
 """
 import uuid
+import secrets
 from typing import Optional
 
 from fastapi import APIRouter, Depends, HTTPException, status
@@ -13,12 +14,72 @@ from sqlalchemy.orm import Session
 
 from app.database import get_db
 from app.models import (
-    Patient, User, UserRole, Appointment, PharmacyReservation, LabTestRequest, Dependent, EstablishmentType,
+    Patient, User, UserRole, Appointment, PharmacyReservation, LabTestRequest, Dependent, EstablishmentType, AuditLog,
 )
-from app.schemas import PatientDirectoryOut, DependentCreate, DependentOut
+from app.schemas import PatientDirectoryOut, DependentCreate, DependentOut, WalkInPatientCreate, WalkInPatientOut
 from app.deps import require_roles, require_establishment_types
+from app.security import hash_password
 
 router = APIRouter(prefix="/patients", tags=["patients"])
+
+
+@router.post("/walk-in", response_model=WalkInPatientOut, status_code=status.HTTP_201_CREATED)
+def create_walk_in_patient(payload: WalkInPatientCreate, db: Session = Depends(get_db),
+                            current_user: User = Depends(require_roles(
+                                UserRole.RECEPTIONIST, UserRole.SECRETARY, UserRole.ESTABLISHMENT_ADMIN))):
+    """
+    NOUVEAU (demande M. Faustin): permet au personnel d'accueil de creer un
+    patient qui se presente PHYSIQUEMENT sans jamais etre passe par
+    l'auto-inscription de la plateforme - contrairement a
+    auth.py::register_patient qui exige un email et un mot de passe choisis
+    par le patient lui-meme.
+
+    Si aucun email n'est fourni (cas courant a l'accueil), un email de
+    substitution reconnaissable est genere pour respecter la contrainte
+    technique d'unicite du champ - AUCUNE migration necessaire, aucune
+    nouvelle colonne. Ce compte ne peut pas encore etre utilise pour se
+    connecter (mot de passe aleatoire jamais communique) - une prochaine
+    evolution naturelle serait un parcours "completer mon inscription"
+    permettant au patient d'ajouter son vrai email et choisir son mot de
+    passe plus tard, une fois chez lui.
+    """
+    real_email_provided = bool(payload.email)
+
+    if payload.email:
+        existing = db.query(User).filter(User.email == payload.email.lower()).first()
+        if existing:
+            raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail="Un compte existe deja avec cet email")
+        email = payload.email.lower()
+    else:
+        # Domaine volontairement non-livrable et reconnaissable - jamais un
+        # vrai email, ne risque jamais d'atteindre un destinataire reel.
+        email = f"patient.{uuid.uuid4().hex[:10]}@sans-email.speedsante.local"
+
+    # Mot de passe aleatoire, jamais communique a personne - ce compte sert
+    # uniquement a exister dans le systeme (dossier, rendez-vous...) tant
+    # que le patient n'a pas complete son inscription avec un vrai email.
+    random_password = secrets.token_urlsafe(16)
+
+    user = User(
+        id=str(uuid.uuid4()), email=email, hashed_password=hash_password(random_password),
+        full_name=payload.full_name, phone=payload.phone, role=UserRole.PATIENT,
+        establishment_id=None, gender=payload.gender, residence=payload.residence,
+    )
+    db.add(user)
+    db.flush()
+
+    dossier_number = f"PAT-{uuid.uuid4().hex[:8].upper()}"
+    patient = Patient(id=str(uuid.uuid4()), user_id=user.id, dossier_number=dossier_number, date_of_birth=payload.date_of_birth)
+    db.add(patient)
+
+    db.add(AuditLog(user_id=current_user.id, establishment_id=current_user.establishment_id,
+                     action="create_walk_in_patient", details=f"Patient cree en presentiel: {payload.full_name} ({dossier_number})"))
+    db.commit()
+
+    return WalkInPatientOut(
+        id=patient.id, dossier_number=dossier_number, full_name=user.full_name,
+        phone=user.phone, has_real_email=real_email_provided,
+    )
 
 
 @router.get("/establishment", response_model=list[PatientDirectoryOut],

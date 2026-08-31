@@ -1,5 +1,7 @@
 import { useEffect, useState } from 'react'
 import api, { getErrorMessage, getRole } from '../api/client'
+import Navbar from '../components/Navbar'
+import { PatientSidebarChrome } from '../components/PatientLayout'
 
 export default function Profile() {
   const [profile, setProfile] = useState(null)
@@ -116,15 +118,30 @@ export default function Profile() {
     }
   }
 
-  if (!profile) {
+  // NOUVEAU (corrige une incoherence visuelle signalee): un patient garde
+  // desormais son menu lateral sur cette page, au lieu d'atterrir sur
+  // l'ancienne barre du haut comme avant ce correctif. Les autres roles
+  // (admin, super admin) gardent la presentation classique - ils n'ont pas
+  // de menu lateral "personnel" a preserver ici.
+  function withChrome(content) {
+    if (role === 'patient') return <PatientSidebarChrome>{content}</PatientSidebarChrome>
     return (
+      <div className="min-h-screen bg-paper">
+        <Navbar />
+        {content}
+      </div>
+    )
+  }
+
+  if (!profile) {
+    return withChrome(
       <div className="max-w-2xl mx-auto px-6 py-14">
         {error ? <p className="text-clay-600">{error}</p> : <p className="text-forest-700">Chargement...</p>}
       </div>
     )
   }
 
-  return (
+  return withChrome(
     <div className="max-w-2xl mx-auto px-6 py-14">
       <h1 className="font-display text-3xl font-semibold text-forest-900 mb-8">Mon profil</h1>
 

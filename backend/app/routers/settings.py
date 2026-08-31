@@ -17,7 +17,7 @@ from app.deps import require_roles
 router = APIRouter(prefix="/settings", tags=["parametres"])
 
 DEFAULTS = {
-    "platform_name": "LGP Sante",
+    "platform_name": "SpeedSanté+",
     "support_email": "",
     "support_phone": "",
 }
