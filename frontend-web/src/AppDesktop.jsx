@@ -1,5 +1,4 @@
 import { Routes, Route } from 'react-router-dom'
-import DesktopNavbar from './components/DesktopNavbar'
 import ProtectedRoute from './components/ProtectedRoute'
 import DesktopLogin from './pages-desktop/DesktopLogin'
 import DesktopDoctorDashboard from './pages-desktop/DesktopDoctorDashboard'
@@ -26,7 +25,6 @@ import Profile from './pages/Profile'
 export default function AppDesktop() {
   return (
     <div className="min-h-screen bg-paper">
-      <DesktopNavbar />
       <Routes>
         <Route path="/desktop.html" element={<DesktopLogin />} />
         <Route path="/" element={<DesktopLogin />} />
