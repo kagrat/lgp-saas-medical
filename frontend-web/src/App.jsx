@@ -9,7 +9,11 @@ import Register from './pages/Register'
 import Care from './pages/Care'
 import PatientSearch from './pages/PatientSearch'
 import Consultation from './pages/Consultation'
-import PatientDashboard from './pages/PatientDashboard'
+import PatientHome from './pages/PatientHome'
+import PatientAppointments from './pages/PatientAppointments'
+import PatientRecords from './pages/PatientRecords'
+import PatientPrescriptions from './pages/PatientPrescriptions'
+import PatientLabResults from './pages/PatientLabResults'
 import MyInvoices from './pages/MyInvoices'
 import Pharmacy from './pages/Pharmacy'
 import Laboratory from './pages/Laboratory'
@@ -70,7 +74,11 @@ export default function App() {
       {/* Portail patient: menu lateral fixe, conforme aux maquettes de
           reference - remplace la barre du haut pour toutes ces pages. */}
       <Route element={<ProtectedRoute allowedRoles={['patient']}><PatientLayout /></ProtectedRoute>}>
-        <Route path="/espace-patient" element={<PatientDashboard />} />
+        <Route path="/espace-patient" element={<PatientHome />} />
+        <Route path="/mes-rendez-vous" element={<PatientAppointments />} />
+        <Route path="/mon-dossier" element={<PatientRecords />} />
+        <Route path="/mes-ordonnances" element={<PatientPrescriptions />} />
+        <Route path="/mes-analyses" element={<PatientLabResults />} />
         <Route path="/mes-factures" element={<MyInvoices />} />
         <Route path="/consultation" element={<Consultation />} />
         <Route path="/pharmacie" element={<Pharmacy />} />

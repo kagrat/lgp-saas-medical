@@ -6,7 +6,7 @@ const QUICK_ACTIONS = [
   { to: '/consultation', label: 'Consultation', icon: Stethoscope },
   { to: '/pharmacie', label: 'Pharmacie', icon: Pill },
   { to: '/laboratoire', label: 'Laboratoire', icon: FlaskConical },
-  { to: '/espace-patient', label: 'Mes rendez-vous', icon: Calendar },
+  { to: '/mes-rendez-vous', label: 'Mes rendez-vous', icon: Calendar },
   { to: '/mes-factures', label: 'Mes factures', icon: Receipt },
   { to: '/messages', label: 'Messages', icon: MessageCircle },
   { to: '/profil', label: 'Mon profil', icon: UserRound },

@@ -12,7 +12,7 @@ import SidebarLayout from '../components/SidebarLayout'
 
 export default function DesktopPharmacistDashboard() {
   const [establishment, setEstablishment] = useState(null)
-  const [tab, setTab] = useState('stats')
+  const [tab, setTab] = useState('orders')
   const [stock, setStock] = useState([])
   const [orders, setOrders] = useState([])
   const [orderFilter, setOrderFilter] = useState('all')
@@ -127,11 +127,12 @@ export default function DesktopPharmacistDashboard() {
   }
 
   const tabs = [
-    { id: 'stats', label: 'Statistiques', icon: BarChart },
     { id: 'pharmacy', label: 'Pharmacie', icon: Pill },
     { id: 'orders', label: 'Commandes', icon: Package },
     { id: 'messages', label: 'Messages', icon: MessageSquare },
     { id: 'schedule', label: 'Mon planning', icon: Clock },
+    // NOUVEAU (demande M. Faustin): Statistiques en derniere position.
+    { id: 'stats', label: 'Statistiques', icon: BarChart },
   ]
 
   const orderFilterOptions = [{ value: 'all', label: 'Tous' }, ...RESERVATION_STATUSES.map((s) => ({ value: s, label: RESERVATION_STATUS_LABELS[s] }))]

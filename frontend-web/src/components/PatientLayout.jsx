@@ -1,13 +1,17 @@
 import { useState } from 'react'
 import { NavLink, Outlet, useNavigate, useLocation } from 'react-router-dom'
-import { Home, Calendar, Pill, FlaskConical, MessageCircle, Receipt, UserRound, LogOut, Menu, X } from 'lucide-react'
+import { Home, Calendar, CalendarPlus, Pill, FlaskConical, Microscope, MessageCircle, Receipt, UserRound, LogOut, Menu, X, FileText, ClipboardList } from 'lucide-react'
 import { clearSession } from '../api/client'
 
 const MENU_ITEMS = [
   { to: '/espace-patient', label: 'Accueil', icon: Home },
-  { to: '/consultation', label: 'Consultation', icon: Calendar },
+  { to: '/mes-rendez-vous', label: 'Mes rendez-vous', icon: Calendar },
+  { to: '/mon-dossier', label: 'Mon dossier patient', icon: FileText },
+  { to: '/mes-analyses', label: 'Mes analyses', icon: FlaskConical },
+  { to: '/mes-ordonnances', label: 'Mes ordonnances', icon: ClipboardList },
+  { to: '/consultation', label: 'Consultation', icon: CalendarPlus },
   { to: '/pharmacie', label: 'Pharmacie', icon: Pill },
-  { to: '/laboratoire', label: 'Laboratoire', icon: FlaskConical },
+  { to: '/laboratoire', label: 'Laboratoire', icon: Microscope },
   { to: '/messages', label: 'Messages', icon: MessageCircle },
   { to: '/mes-factures', label: 'Mes factures', icon: Receipt },
 ]
@@ -77,7 +81,7 @@ export function PatientSidebarChrome({ children }) {
               onClick={closeMobileMenu}
               className={({ isActive }) =>
                 `w-full flex items-center gap-3 px-6 py-3 text-sm font-medium transition ${
-                  isActive ? 'bg-white/15 text-white border-r-4 border-amber-500' : 'text-white/80 hover:bg-white/10 hover:text-white'
+                  isActive ? 'bg-white/15 text-white border-r-4 border-white' : 'text-white/80 hover:bg-white/10 hover:text-white'
                 }`
               }
             >
@@ -90,7 +94,7 @@ export function PatientSidebarChrome({ children }) {
             onClick={closeMobileMenu}
             className={({ isActive }) =>
               `w-full flex items-center gap-3 px-6 py-3 text-sm font-medium transition ${
-                isActive ? 'bg-white/15 text-white border-r-4 border-amber-500' : 'text-white/80 hover:bg-white/10 hover:text-white'
+                isActive ? 'bg-white/15 text-white border-r-4 border-white' : 'text-white/80 hover:bg-white/10 hover:text-white'
               }`
             }
           >

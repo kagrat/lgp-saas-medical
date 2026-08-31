@@ -728,6 +728,8 @@ class DoctorPatientDetailOut(BaseModel):
     id: str
     full_name: str
     dossier_number: str
+    phone: Optional[str] = None
+    date_of_birth: Optional[date] = None
     appointments: list[DoctorPatientAppointmentOut]
     documents: list[MedicalDocumentOut]
     can_add_document: bool

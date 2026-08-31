@@ -22,6 +22,7 @@ from app.schemas import (
 )
 from app.deps import require_roles, get_current_user
 from app.security import hash_password
+from app.routers.health_records import _to_document_out
 
 router = APIRouter(prefix="/doctors", tags=["medecins"])
 
@@ -392,15 +393,9 @@ def my_patient_detail(patient_id: str, db: Session = Depends(get_db),
 
     return DoctorPatientDetailOut(
         id=patient.id, full_name=patient.user.full_name, dossier_number=patient.dossier_number,
+        phone=patient.user.phone, date_of_birth=patient.date_of_birth,
         appointments=[DoctorPatientAppointmentOut(id=a.id, scheduled_at=a.scheduled_at) for a in source_appointments],
-        documents=[
-            MedicalDocumentOut(
-                id=d.id, appointment_id=d.appointment_id, patient_id=d.patient_id,
-                doctor_name=d.doctor.user.full_name if d.doctor else "Inconnu",
-                establishment_name=d.establishment.name if d.establishment else "Inconnu",
-                document_type=d.document_type, title=d.title, content=d.content, created_at=d.created_at,
-            ) for d in documents
-        ],
+        documents=[_to_document_out(d) for d in documents],
         can_add_document=can_add_document,
         viewed_via_share_from=viewed_via_share_from,
     )

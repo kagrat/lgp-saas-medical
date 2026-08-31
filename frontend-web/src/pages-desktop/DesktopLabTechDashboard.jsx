@@ -104,7 +104,7 @@ export default function DesktopLabTechDashboard() {
       tabs={tabs}
       activeTab={tab}
       onTabChange={(id) => { setTab(id); setError('') }}
-      accentColor="bg-secondary-600"
+      accentColor="bg-amber-600"
     >
       {error && <p className="text-clay-600 mb-6">{error}</p>}
 

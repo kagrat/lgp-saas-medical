@@ -75,6 +75,12 @@ export default function EstablishmentAdmin() {
     try {
       const { data } = await api.get('/establishments/me')
       setEstablishment(data)
+      // NOUVEAU (demande M. Faustin): ouvrir directement sur l'onglet
+      // operationnel pertinent selon le type d'etablissement, plutot que
+      // sur les statistiques par defaut.
+      if (data.type === 'pharmacie') setTab('orders')
+      else if (data.type === 'laboratoire') setTab('analyses')
+      else setTab('appointments')
     } catch (err) {
       setError(getErrorMessage(err, "Impossible de charger les informations de l'établissement."))
     }
@@ -313,12 +319,10 @@ export default function EstablishmentAdmin() {
 
   const baseTabs = isLab
     ? [
-        { id: 'stats', label: 'Statistiques', icon: BarChart },
         { id: 'analyses', label: 'Analyses', icon: FlaskConical },
       ]
     : isPharmacy
     ? [
-        { id: 'stats', label: 'Statistiques', icon: BarChart },
         { id: 'pharmacy', label: 'Pharmacie', icon: Pill },
         { id: 'orders', label: 'Commandes', icon: Package },
       ]
@@ -328,7 +332,6 @@ export default function EstablishmentAdmin() {
         // propre tableau de bord - reserve au type d'etablissement pharmacie
         // ci-dessus. Cote serveur, les endpoints /pharmacy/* correspondants
         // sont desormais aussi bloques pour ce type (voir pharmacy.py).
-        { id: 'stats', label: 'Statistiques', icon: BarChart },
         { id: 'doctors', label: 'Médecins', icon: Stethoscope },
         { id: 'appointments', label: 'Rendez-vous', icon: Calendar },
       ]
@@ -354,6 +357,10 @@ export default function EstablishmentAdmin() {
     // NOUVEAU (equipement + fournisseurs, dernier chantier du cahier des
     // charges): meme raisonnement, disponible partout.
     { id: 'equipment', label: 'Equipement', icon: Wrench },
+    // NOUVEAU (demande M. Faustin): Statistiques desormais en toute
+    // derniere position du menu, plus en tete - l'onglet operationnel
+    // (rendez-vous/commandes/analyses) doit primer visuellement.
+    { id: 'stats', label: 'Statistiques', icon: BarChart },
   ]
 
   const selectedConversation = conversations.find((c) => c.patient_id === selectedPatientId)
@@ -381,7 +388,7 @@ export default function EstablishmentAdmin() {
       tabs={tabs}
       activeTab={tab}
       onTabChange={(id) => { setTab(id); setError('') }}
-      accentColor={isLab ? 'bg-secondary-600' : isPharmacy ? 'bg-success-700' : 'bg-primary-700'}
+      accentColor={isLab ? 'bg-amber-600' : isPharmacy ? 'bg-success-700' : 'bg-primary-700'}
       headerRight={<NotificationBell />}
     >
       {error && <p className="text-clay-600 mb-6">{error}</p>}

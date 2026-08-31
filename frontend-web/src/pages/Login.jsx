@@ -38,6 +38,7 @@ export default function Login() {
       saveSession(data.access_token, data.role, data.establishment_id)
       if (data.role === 'super_admin') navigate('/super-admin')
       else if (data.role === 'establishment_admin') navigate('/admin-etablissement')
+      else if (data.role === 'patient') navigate('/espace-patient')
       else navigate('/')
     } catch (err) {
       setError(getErrorMessage(err, 'Connexion impossible. Verifie tes identifiants.'))

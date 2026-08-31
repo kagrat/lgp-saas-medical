@@ -91,7 +91,7 @@ export default function SidebarLayout({
               key={t.id}
               onClick={() => selectTab(t.id)}
               className={`w-full flex items-center gap-3 px-6 py-3 text-sm font-medium transition text-left ${
-                activeTab === t.id ? 'bg-white/15 text-white border-r-4 border-amber-500' : 'text-white/80 hover:bg-white/10 hover:text-white'
+                activeTab === t.id ? 'bg-white/15 text-white border-r-4 border-white' : 'text-white/80 hover:bg-white/10 hover:text-white'
               }`}
             >
               {t.icon && <t.icon className="w-4.5 h-4.5 shrink-0" strokeWidth={1.75} />}

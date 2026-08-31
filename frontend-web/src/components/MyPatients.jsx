@@ -2,6 +2,14 @@ import { useEffect, useState } from 'react'
 import api, { getErrorMessage } from '../api/client'
 import { DocumentTypeBadge, DOCUMENT_TYPES, DOCUMENT_TYPE_LABELS } from './DocumentType'
 import PrescriptionItemsEditor from './PrescriptionItemsEditor'
+import { downloadDocumentAsPdf } from '../utils/pdf'
+
+function calculateAge(dateOfBirth) {
+  if (!dateOfBirth) return null
+  const dob = new Date(dateOfBirth)
+  const diff = Date.now() - dob.getTime()
+  return Math.floor(diff / (365.25 * 24 * 60 * 60 * 1000))
+}
 
 /**
  * NOUVEAU (demande M. Faustin): "Mes patients" cote medecin - distinct du
@@ -18,6 +26,7 @@ export default function MyPatients() {
   const [selectedId, setSelectedId] = useState(null)
   const [detail, setDetail] = useState(null)
   const [loadingDetail, setLoadingDetail] = useState(false)
+  const [panelTab, setPanelTab] = useState('consultation')
 
   const [docForm, setDocForm] = useState({ appointment_id: '', document_type: 'consultation_note', title: '', content: '' })
   const [prescriptionItems, setPrescriptionItems] = useState([])
@@ -70,6 +79,7 @@ export default function MyPatients() {
     setDocMessage('')
     setShareOpen(false)
     setShareMessage('')
+    setPanelTab('consultation')
     try {
       const { data } = await api.get(`/doctors/me/patients/${patientId}`)
       setDetail(data)
@@ -144,6 +154,17 @@ export default function MyPatients() {
     }
   }
 
+  function downloadDocument(doc) {
+    downloadDocumentAsPdf({
+      title: doc.title, subtitle: DOCUMENT_TYPE_LABELS[doc.document_type] || doc.document_type,
+      meta: [
+        `Patient: ${detail?.full_name || ''}`, `Medecin: ${doc.doctor_name}`,
+        `Date: ${new Date(doc.created_at).toLocaleDateString('fr-FR')}`,
+      ],
+      content: doc.content, filename: `${doc.title.replace(/[^a-z0-9]/gi, '_')}.pdf`,
+    })
+  }
+
   return (
     <div>
       {sharedWithMe.length > 0 && (
@@ -178,139 +199,191 @@ export default function MyPatients() {
       {error && <p className="text-clay-600 mb-4">{error}</p>}
 
       {selectedId && (
-        <div className="rounded-xl border border-forest-300 bg-forest-50 p-5 mb-4">
-          {loadingDetail && <p className="text-sm text-forest-700">Chargement...</p>}
+        <div className="rounded-2xl border border-forest-100 bg-white shadow-sm mb-4 overflow-hidden">
+          {loadingDetail && <p className="text-sm text-forest-700 p-5">Chargement...</p>}
           {detail && (
             <div>
-              <div className="flex justify-between items-start mb-3">
-                <div>
-                  <p className="font-display text-lg text-forest-900 font-semibold">{detail.full_name}</p>
-                  <p className="text-sm text-forest-700">Dossier {detail.dossier_number}</p>
-                  {detail.viewed_via_share_from && (
-                    <p className="text-xs text-amber-600 font-medium mt-1">
-                      Dossier consulte en lecture seule - partage par {detail.viewed_via_share_from}
+              {/* NOUVEAU (demande M. Faustin): en-tete façon carte patient,
+                  avec age/telephone quand disponibles, comme sur la
+                  maquette de reference. */}
+              <div className="flex justify-between items-start p-5 border-b border-forest-100">
+                <div className="flex items-center gap-4">
+                  <div className="w-14 h-14 rounded-full bg-secondary-500/10 text-secondary-600 flex items-center justify-center font-display text-xl font-semibold shrink-0">
+                    {detail.full_name.charAt(0).toUpperCase()}
+                  </div>
+                  <div>
+                    <p className="font-display text-lg text-forest-900 font-semibold">{detail.full_name}</p>
+                    <p className="text-sm text-forest-700">
+                      {calculateAge(detail.date_of_birth) !== null && `${calculateAge(detail.date_of_birth)} ans - `}
+                      Dossier {detail.dossier_number}
                     </p>
-                  )}
+                    {detail.phone && <p className="text-sm text-forest-700">Tél. : {detail.phone}</p>}
+                    {detail.viewed_via_share_from && (
+                      <p className="text-xs text-amber-600 font-medium mt-1">
+                        Dossier consulte en lecture seule - partage par {detail.viewed_via_share_from}
+                      </p>
+                    )}
+                  </div>
                 </div>
-                <button onClick={closePatient} className="text-sm text-forest-700 hover:text-forest-900 hover:underline">
-                  Fermer
-                </button>
+                <button onClick={closePatient} className="text-sm text-forest-700 hover:text-forest-900 hover:underline">Fermer</button>
               </div>
 
-              <p className="text-sm font-medium text-forest-900 mb-2">Historique des consultations</p>
-              {detail.appointments.length === 0 && <p className="text-sm text-forest-700 mb-3">Aucun rendez-vous.</p>}
-              <div className="space-y-1 mb-4">
-                {detail.appointments.map((a) => (
-                  <p key={a.id} className="text-sm text-forest-700">{new Date(a.scheduled_at).toLocaleString('fr-FR')}</p>
-                ))}
-              </div>
-
-              <p className="text-sm font-medium text-forest-900 mb-2">Documents du dossier</p>
-              {detail.documents.length === 0 && <p className="text-sm text-forest-700 mb-3">Aucun document.</p>}
-              <div className="space-y-2 mb-4">
-                {detail.documents.map((d) => (
-                  <div key={d.id} className="bg-white rounded-lg p-3">
-                    <div className="flex justify-between items-center mb-1">
-                      <p className="text-sm text-forest-900 font-medium">{d.title}</p>
-                      <DocumentTypeBadge type={d.document_type} />
-                    </div>
-                    <p className="text-xs text-forest-700 mb-1">{d.doctor_name} - {new Date(d.created_at).toLocaleDateString('fr-FR')}</p>
-                    <p className="text-sm text-forest-700 whitespace-pre-wrap">{d.content}</p>
-                  </div>
-                ))}
-              </div>
-
-              {detail.can_add_document && (
-                <div className="bg-white rounded-lg p-4 mb-4">
-                  <p className="text-sm font-medium text-forest-900 mb-2">Ajouter au dossier</p>
-                  {docMessage && <p className="text-forest-900 bg-forest-50 border border-forest-300 rounded-lg p-2 mb-3 text-sm">{docMessage}</p>}
-                  <div className="grid sm:grid-cols-2 gap-3 mb-3">
-                    <select
-                      value={docForm.appointment_id}
-                      onChange={(e) => setDocForm({ ...docForm, appointment_id: e.target.value })}
-                      className="rounded-lg border border-forest-100 px-3 py-2 text-sm bg-white"
-                    >
-                      {detail.appointments.map((a) => (
-                        <option key={a.id} value={a.id}>
-                          Consultation du {new Date(a.scheduled_at).toLocaleDateString('fr-FR')}
-                        </option>
-                      ))}
-                    </select>
-                    <select
-                      value={docForm.document_type}
-                      onChange={(e) => setDocForm({ ...docForm, document_type: e.target.value })}
-                      className="rounded-lg border border-forest-100 px-3 py-2 text-sm bg-white"
-                    >
-                      {DOCUMENT_TYPES.map((t) => <option key={t} value={t}>{DOCUMENT_TYPE_LABELS[t]}</option>)}
-                    </select>
-                  </div>
-                  {docForm.document_type === 'prescription' && (
-                    <PrescriptionItemsEditor items={prescriptionItems} onChange={setPrescriptionItems} />
-                  )}
-                  <input
-                    placeholder="Titre (ex: Ordonnance du 21 mai)"
-                    value={docForm.title}
-                    onChange={(e) => setDocForm({ ...docForm, title: e.target.value })}
-                    className="w-full rounded-lg border border-forest-100 px-3 py-2 text-sm mb-3"
-                  />
-                  <textarea
-                    placeholder="Contenu (traitement prescrit, resultat, observations...)"
-                    value={docForm.content}
-                    onChange={(e) => setDocForm({ ...docForm, content: e.target.value })}
-                    rows={3}
-                    className="w-full rounded-lg border border-forest-100 px-3 py-2 text-sm mb-3"
-                  />
+              <div className="flex gap-1 px-5 border-b border-forest-100">
+                {[
+                  { id: 'consultation', label: 'Consultation' },
+                  { id: 'historique', label: 'Historique' },
+                  { id: 'documents', label: 'Documents' },
+                  { id: 'messages', label: 'Messages' },
+                ].map((t) => (
                   <button
-                    onClick={submitDocument}
-                    disabled={savingDoc || !docForm.appointment_id || !docForm.title || !docForm.content}
-                    className="rounded-full bg-amber-500 text-forest-900 px-5 py-1.5 text-sm font-semibold hover:bg-amber-400 transition disabled:opacity-50"
+                    key={t.id} onClick={() => setPanelTab(t.id)}
+                    className={`px-4 py-3 text-sm font-medium border-b-2 -mb-px transition ${panelTab === t.id ? 'border-secondary-500 text-forest-900' : 'border-transparent text-forest-700 hover:text-forest-900'}`}
                   >
-                    {savingDoc ? 'Ajout...' : 'Ajouter au dossier'}
+                    {t.label}
                   </button>
-                </div>
-              )}
+                ))}
+              </div>
 
-              {detail.can_add_document && (
-                <div className="bg-white rounded-lg p-4">
-                  {shareMessage && <p className="text-forest-900 text-sm mb-2">{shareMessage}</p>}
-                  {!shareOpen ? (
-                    <button onClick={() => setShareOpen(true)} className="text-sm text-amber-600 font-medium hover:underline">
-                      Envoyer ce dossier a un confrere
-                    </button>
-                  ) : (
-                    <div>
-                      <p className="text-sm font-medium text-forest-900 mb-2">Envoyer a un confrere</p>
-                      <form onSubmit={searchDoctors} className="flex gap-2 mb-2">
-                        <input
-                          value={doctorQuery} onChange={(e) => setDoctorQuery(e.target.value)}
-                          placeholder="Nom du medecin..."
-                          className="flex-1 rounded-lg border border-forest-100 px-3 py-2 text-sm"
-                        />
-                        <button type="submit" className="rounded-full bg-primary-700 text-white px-4 py-2 text-sm font-medium hover:bg-primary-900 transition">
-                          Chercher
-                        </button>
-                      </form>
-                      <input
-                        placeholder="Note (optionnel)"
-                        value={shareNote} onChange={(e) => setShareNote(e.target.value)}
-                        className="w-full rounded-lg border border-forest-100 px-3 py-2 text-sm mb-2"
-                      />
-                      <div className="space-y-1">
-                        {doctorResults.map((doc) => (
-                          <button
-                            key={doc.id}
-                            onClick={() => sendShare(doc.id)}
-                            disabled={sharing}
-                            className="w-full text-left rounded-lg border border-forest-100 p-2 text-sm hover:border-forest-300 transition disabled:opacity-50"
+              <div className="p-5">
+                {error && <p className="text-clay-600 mb-4">{error}</p>}
+
+                {panelTab === 'consultation' && (
+                  <div>
+                    {detail.can_add_document ? (
+                      <div className="bg-forest-50 rounded-lg p-4 mb-4">
+                        <p className="text-sm font-medium text-forest-900 mb-2">Notes de consultation / Ordonnance</p>
+                        {docMessage && <p className="text-forest-900 bg-white border border-forest-300 rounded-lg p-2 mb-3 text-sm">{docMessage}</p>}
+                        <div className="grid sm:grid-cols-2 gap-3 mb-3">
+                          <select
+                            value={docForm.appointment_id}
+                            onChange={(e) => setDocForm({ ...docForm, appointment_id: e.target.value })}
+                            className="rounded-lg border border-forest-100 px-3 py-2 text-sm bg-white"
                           >
-                            {doc.full_name} - {doc.specialty}
-                          </button>
-                        ))}
+                            {detail.appointments.map((a) => (
+                              <option key={a.id} value={a.id}>Consultation du {new Date(a.scheduled_at).toLocaleDateString('fr-FR')}</option>
+                            ))}
+                          </select>
+                          <select
+                            value={docForm.document_type}
+                            onChange={(e) => setDocForm({ ...docForm, document_type: e.target.value })}
+                            className="rounded-lg border border-forest-100 px-3 py-2 text-sm bg-white"
+                          >
+                            {DOCUMENT_TYPES.map((t) => <option key={t} value={t}>{DOCUMENT_TYPE_LABELS[t]}</option>)}
+                          </select>
+                        </div>
+                        {docForm.document_type === 'prescription' && (
+                          <PrescriptionItemsEditor items={prescriptionItems} onChange={setPrescriptionItems} />
+                        )}
+                        <input
+                          placeholder="Motif / titre (ex: Suivi general, Ordonnance du 21 mai)"
+                          value={docForm.title}
+                          onChange={(e) => setDocForm({ ...docForm, title: e.target.value })}
+                          className="w-full rounded-lg border border-forest-100 px-3 py-2 text-sm mb-3"
+                        />
+                        <textarea
+                          placeholder="Notes de consultation (observations, traitement, diagnostic...)"
+                          value={docForm.content}
+                          onChange={(e) => setDocForm({ ...docForm, content: e.target.value })}
+                          rows={4}
+                          className="w-full rounded-lg border border-forest-100 px-3 py-2 text-sm mb-3"
+                        />
+                        <button
+                          onClick={submitDocument}
+                          disabled={savingDoc || !docForm.appointment_id || !docForm.title || !docForm.content}
+                          className="rounded-full bg-secondary-500 text-white px-5 py-1.5 text-sm font-semibold hover:bg-secondary-600 transition disabled:opacity-50"
+                        >
+                          {savingDoc ? 'Enregistrement...' : 'Ajouter au dossier'}
+                        </button>
                       </div>
+                    ) : (
+                      <p className="text-sm text-forest-700 mb-4">Dossier en lecture seule - impossible d'ajouter une note depuis un partage recu.</p>
+                    )}
+
+                    {detail.can_add_document && (
+                      <div className="bg-forest-50 rounded-lg p-4">
+                        {shareMessage && <p className="text-forest-900 text-sm mb-2">{shareMessage}</p>}
+                        {!shareOpen ? (
+                          <button onClick={() => setShareOpen(true)} className="text-sm text-secondary-600 font-medium hover:underline">
+                            Envoyer ce dossier a un confrere
+                          </button>
+                        ) : (
+                          <div>
+                            <p className="text-sm font-medium text-forest-900 mb-2">Envoyer a un confrere</p>
+                            <form onSubmit={searchDoctors} className="flex gap-2 mb-2">
+                              <input
+                                value={doctorQuery} onChange={(e) => setDoctorQuery(e.target.value)}
+                                placeholder="Nom du medecin..."
+                                className="flex-1 rounded-lg border border-forest-100 px-3 py-2 text-sm"
+                              />
+                              <button type="submit" className="rounded-full bg-primary-700 text-white px-4 py-2 text-sm font-medium hover:bg-primary-900 transition">
+                                Chercher
+                              </button>
+                            </form>
+                            <input
+                              placeholder="Note (optionnel)"
+                              value={shareNote} onChange={(e) => setShareNote(e.target.value)}
+                              className="w-full rounded-lg border border-forest-100 px-3 py-2 text-sm mb-2"
+                            />
+                            <div className="space-y-1">
+                              {doctorResults.map((doc) => (
+                                <button
+                                  key={doc.id} onClick={() => sendShare(doc.id)} disabled={sharing}
+                                  className="w-full text-left rounded-lg border border-forest-100 p-2 text-sm hover:border-forest-300 transition disabled:opacity-50"
+                                >
+                                  {doc.full_name} - {doc.specialty}
+                                </button>
+                              ))}
+                            </div>
+                          </div>
+                        )}
+                      </div>
+                    )}
+                  </div>
+                )}
+
+                {panelTab === 'historique' && (
+                  <div>
+                    <p className="text-sm font-medium text-forest-900 mb-2">Consultations passees</p>
+                    {detail.appointments.length === 0 && <p className="text-sm text-forest-700">Aucun rendez-vous.</p>}
+                    <div className="space-y-1">
+                      {detail.appointments.map((a) => (
+                        <p key={a.id} className="text-sm text-forest-700">{new Date(a.scheduled_at).toLocaleString('fr-FR')}</p>
+                      ))}
                     </div>
-                  )}
-                </div>
-              )}
+                  </div>
+                )}
+
+                {panelTab === 'documents' && (
+                  <div>
+                    <p className="text-sm font-medium text-forest-900 mb-2">Documents du dossier</p>
+                    {detail.documents.length === 0 && <p className="text-sm text-forest-700">Aucun document.</p>}
+                    <div className="space-y-2">
+                      {detail.documents.map((d) => (
+                        <div key={d.id} className="bg-forest-50 rounded-lg p-3">
+                          <div className="flex justify-between items-center mb-1">
+                            <p className="text-sm text-forest-900 font-medium">{d.title}</p>
+                            <div className="flex items-center gap-3">
+                              <DocumentTypeBadge type={d.document_type} />
+                              {/* NOUVEAU (demande M. Faustin): le medecin peut
+                                  desormais telecharger un document depuis
+                                  son propre espace, pas seulement le patient. */}
+                              <button onClick={() => downloadDocument(d)} className="text-xs text-secondary-600 hover:underline">
+                                Telecharger
+                              </button>
+                            </div>
+                          </div>
+                          <p className="text-xs text-forest-700 mb-1">{d.doctor_name} - {new Date(d.created_at).toLocaleDateString('fr-FR')}</p>
+                          <p className="text-sm text-forest-700 whitespace-pre-wrap">{d.content}</p>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                {panelTab === 'messages' && (
+                  <p className="text-sm text-forest-700">Utilise l'onglet "Messages" du menu pour contacter ce patient directement.</p>
+                )}
+              </div>
             </div>
           )}
         </div>
