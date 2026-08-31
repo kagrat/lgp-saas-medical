@@ -1,7 +1,8 @@
 import { useEffect, useState } from 'react'
-import { BedDouble, Clock } from 'lucide-react'
+import { BedDouble, Clock, ClipboardCheck } from 'lucide-react'
 import api, { getErrorMessage } from '../api/client'
 import MySchedule from '../components/MySchedule'
+import AppointmentCheckIn from '../components/AppointmentCheckIn'
 import SidebarLayout from '../components/SidebarLayout'
 
 /**
@@ -75,6 +76,7 @@ export default function DesktopNurseDashboard() {
   }
 
   const tabs = [
+    { id: 'arrivees', label: 'Arrivées du jour', icon: ClipboardCheck },
     { id: 'patients', label: 'Patients hospitalises', icon: BedDouble },
     { id: 'schedule', label: 'Mon planning', icon: Clock },
   ]
@@ -92,6 +94,8 @@ export default function DesktopNurseDashboard() {
       {error && <p className="text-clay-600 mb-6">{error}</p>}
 
       {tab === 'schedule' && <MySchedule />}
+
+      {tab === 'arrivees' && <AppointmentCheckIn />}
 
       {tab === 'patients' && (
         <div>

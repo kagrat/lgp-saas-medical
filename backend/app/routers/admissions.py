@@ -74,7 +74,7 @@ def _to_full_out(db: Session, admission: Admission) -> AdmissionOut:
         vital_signs=[
             VitalSignsOut(
                 id=v.id, recorded_by_name=v.recorded_by.full_name if v.recorded_by else "Inconnu",
-                recorded_at=v.recorded_at, temperature_celsius=v.temperature_celsius,
+                recorded_at=v.recorded_at, weight_kg=v.weight_kg, temperature_celsius=v.temperature_celsius,
                 blood_pressure=v.blood_pressure, pulse_bpm=v.pulse_bpm,
                 respiratory_rate=v.respiratory_rate, notes=v.notes,
             ) for v in admission.vital_signs
@@ -162,7 +162,7 @@ def record_vitals(admission_id: str, payload: VitalSignsCreate, db: Session = De
 
     vitals = VitalSigns(
         id=str(uuid.uuid4()), admission_id=admission.id, recorded_by_user_id=current_user.id,
-        temperature_celsius=payload.temperature_celsius, blood_pressure=payload.blood_pressure,
+        weight_kg=payload.weight_kg, temperature_celsius=payload.temperature_celsius, blood_pressure=payload.blood_pressure,
         pulse_bpm=payload.pulse_bpm, respiratory_rate=payload.respiratory_rate, notes=payload.notes,
     )
     db.add(vitals)
@@ -170,7 +170,7 @@ def record_vitals(admission_id: str, payload: VitalSignsCreate, db: Session = De
     db.refresh(vitals)
     return VitalSignsOut(
         id=vitals.id, recorded_by_name=current_user.full_name, recorded_at=vitals.recorded_at,
-        temperature_celsius=vitals.temperature_celsius, blood_pressure=vitals.blood_pressure,
+        weight_kg=vitals.weight_kg, temperature_celsius=vitals.temperature_celsius, blood_pressure=vitals.blood_pressure,
         pulse_bpm=vitals.pulse_bpm, respiratory_rate=vitals.respiratory_rate, notes=vitals.notes,
     )
 

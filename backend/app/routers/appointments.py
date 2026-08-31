@@ -13,9 +13,10 @@ from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
 
 from app.database import get_db
-from app.models import Appointment, Doctor, Patient, User, UserRole, AppointmentStatus, AuditLog
+from app.models import Appointment, Doctor, Patient, User, UserRole, AppointmentStatus, AuditLog, VitalSigns
 from app.schemas import (
-    AppointmentCreate, AppointmentOut, AppointmentSearchRequest, AppointmentSearchResponse, AppointmentReschedule
+    AppointmentCreate, AppointmentOut, AppointmentSearchRequest, AppointmentSearchResponse, AppointmentReschedule,
+    VitalSignsCreate, VitalSignsOut,
 )
 from app.deps import require_roles, get_current_user
 from app.services.suggestion_engine import find_appointment_or_suggest
@@ -163,7 +164,8 @@ def cancel_appointment(appointment_id: str, db: Session = Depends(get_db),
 @router.post("/{appointment_id}/arrive", response_model=AppointmentOut)
 def mark_arrived(appointment_id: str, db: Session = Depends(get_db),
                   current_user: User = Depends(require_roles(
-                      UserRole.ESTABLISHMENT_ADMIN, UserRole.SECRETARY, UserRole.DOCTOR))):
+                      UserRole.ESTABLISHMENT_ADMIN, UserRole.SECRETARY, UserRole.DOCTOR,
+                      UserRole.NURSE, UserRole.RECEPTIONIST))):
     appointment = db.query(Appointment).filter(Appointment.id == appointment_id).first()
     if not appointment:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Rendez-vous introuvable")
@@ -239,7 +241,12 @@ def complete_appointment(appointment_id: str, db: Session = Depends(get_db),
 @router.get("/establishment", response_model=list[AppointmentOut])
 def establishment_appointments(include_completed: bool = False, db: Session = Depends(get_db),
                                 current_user: User = Depends(require_roles(
-                                    UserRole.ESTABLISHMENT_ADMIN, UserRole.SECRETARY, UserRole.DOCTOR))):
+                                    UserRole.ESTABLISHMENT_ADMIN, UserRole.SECRETARY, UserRole.DOCTOR,
+                                    # CORRIGE (meme categorie de bug que auth.py::STAFF_ROLES): ces 2
+                                    # roles ajoutes en Phase A n'avaient jamais ete ajoutes ici -
+                                    # l'infirmier et le receptionniste ne pouvaient meme pas VOIR
+                                    # la liste des rendez-vous, encore moins prendre des constantes.
+                                    UserRole.NURSE, UserRole.RECEPTIONIST))):
     query = db.query(Appointment).filter(Appointment.establishment_id == current_user.establishment_id)
     if current_user.role == UserRole.DOCTOR:
         doctor = db.query(Doctor).filter(Doctor.user_id == current_user.id).first()
@@ -254,3 +261,66 @@ def establishment_appointments(include_completed: bool = False, db: Session = De
             query = query.filter(Appointment.status != AppointmentStatus.COMPLETED)
     appointments = query.order_by(Appointment.scheduled_at.asc()).all()
     return [_to_appointment_out(a) for a in appointments]
+
+
+@router.post("/{appointment_id}/vitals", response_model=VitalSignsOut, status_code=status.HTTP_201_CREATED)
+def record_appointment_vitals(appointment_id: str, payload: VitalSignsCreate, db: Session = Depends(get_db),
+                               current_user: User = Depends(require_roles(
+                                   UserRole.NURSE, UserRole.RECEPTIONIST, UserRole.DOCTOR))):
+    """
+    NOUVEAU (demande M. Faustin, clarifiee en echange): les constantes
+    (poids, temperature, tension) d'une simple consultation externe
+    n'avaient jusqu'ici aucun endroit ou exister - seule l'hospitalisation
+    en avait un (voir admissions.py::record_vitals). Ouvert a 3 roles a
+    dessein: selon l'etablissement, c'est parfois l'infirmier(e), parfois
+    le/la receptionniste (les deux fonctions sont parfois tenues par la
+    meme personne dans une petite structure), et le medecin doit pouvoir
+    les saisir lui-meme si personne ne l'a fait avant la consultation.
+    """
+    appointment = db.query(Appointment).filter(Appointment.id == appointment_id).first()
+    if not appointment:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Rendez-vous introuvable")
+    if appointment.establishment_id != current_user.establishment_id:
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Acces refuse")
+
+    vitals = VitalSigns(
+        id=str(uuid.uuid4()), appointment_id=appointment.id, recorded_by_user_id=current_user.id,
+        weight_kg=payload.weight_kg, temperature_celsius=payload.temperature_celsius, blood_pressure=payload.blood_pressure,
+        pulse_bpm=payload.pulse_bpm, respiratory_rate=payload.respiratory_rate, notes=payload.notes,
+    )
+    db.add(vitals)
+    db.commit()
+    db.refresh(vitals)
+    return VitalSignsOut(
+        id=vitals.id, recorded_by_name=current_user.full_name, recorded_at=vitals.recorded_at,
+        weight_kg=vitals.weight_kg, temperature_celsius=vitals.temperature_celsius, blood_pressure=vitals.blood_pressure,
+        pulse_bpm=vitals.pulse_bpm, respiratory_rate=vitals.respiratory_rate, notes=vitals.notes,
+    )
+
+
+@router.get("/{appointment_id}/vitals", response_model=list[VitalSignsOut])
+def list_appointment_vitals(appointment_id: str, db: Session = Depends(get_db),
+                             current_user: User = Depends(require_roles(
+                                 UserRole.NURSE, UserRole.RECEPTIONIST, UserRole.DOCTOR,
+                                 UserRole.ESTABLISHMENT_ADMIN, UserRole.SECRETARY))):
+    """Le medecin consulte ceci au moment de la consultation - les
+    constantes prises avant qu'il ne recoive le patient."""
+    appointment = db.query(Appointment).filter(Appointment.id == appointment_id).first()
+    if not appointment:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Rendez-vous introuvable")
+    if appointment.establishment_id != current_user.establishment_id:
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Acces refuse")
+
+    vitals_list = (
+        db.query(VitalSigns)
+        .filter(VitalSigns.appointment_id == appointment_id)
+        .order_by(VitalSigns.recorded_at.desc())
+        .all()
+    )
+    return [
+        VitalSignsOut(
+            id=v.id, recorded_by_name=v.recorded_by.full_name if v.recorded_by else "Inconnu",
+            recorded_at=v.recorded_at, weight_kg=v.weight_kg, temperature_celsius=v.temperature_celsius,
+            blood_pressure=v.blood_pressure, pulse_bpm=v.pulse_bpm, respiratory_rate=v.respiratory_rate, notes=v.notes,
+        ) for v in vitals_list
+    ]

@@ -450,6 +450,7 @@ class MedicalDocumentOut(BaseModel):
 
 
 class VitalSignsCreate(BaseModel):
+    weight_kg: Optional[float] = Field(default=None, ge=0, le=400)
     temperature_celsius: Optional[float] = Field(default=None, ge=30, le=45)
     blood_pressure: Optional[str] = Field(default=None, max_length=20)
     pulse_bpm: Optional[int] = Field(default=None, ge=0, le=300)
@@ -461,6 +462,7 @@ class VitalSignsOut(BaseModel):
     id: str
     recorded_by_name: str
     recorded_at: datetime
+    weight_kg: Optional[float] = None
     temperature_celsius: Optional[float] = None
     blood_pressure: Optional[str] = None
     pulse_bpm: Optional[int] = None

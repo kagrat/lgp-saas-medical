@@ -152,15 +152,25 @@ class Admission(Base):
 
 
 class VitalSigns(Base):
-    """NOUVEAU: constantes releves par l'infirmier(e) pendant un sejour.
-    Champs simples (pas de sur-ingenierie), suffisants pour un suivi
-    quotidien de base."""
+    """
+    Constantes cliniques (poids, temperature, tension...). Rattachees soit
+    a une hospitalisation (Admission), soit a un simple rendez-vous de
+    consultation externe (Appointment) - exactement un des deux doit etre
+    renseigne, meme principe que MedicalDocument (appointment_id/admission_id).
+    Champs simples (pas de sur-ingenierie), suffisants pour un usage
+    clinique de base.
+
+    ATTENTION MIGRATION: admission_id devient nullable ici (il etait
+    obligatoire avant) - necessite un ALTER COLUMN en production.
+    """
     __tablename__ = "vital_signs"
 
     id = Column(UUID(as_uuid=False), primary_key=True, default=gen_uuid)
-    admission_id = Column(UUID(as_uuid=False), ForeignKey("admissions.id"), nullable=False)
+    admission_id = Column(UUID(as_uuid=False), ForeignKey("admissions.id"), nullable=True)
+    appointment_id = Column(UUID(as_uuid=False), ForeignKey("appointments.id"), nullable=True)
     recorded_by_user_id = Column(UUID(as_uuid=False), ForeignKey("users.id"), nullable=False)
     recorded_at = Column(DateTime, default=datetime.utcnow)
+    weight_kg = Column(Float, nullable=True)
     temperature_celsius = Column(Float, nullable=True)
     blood_pressure = Column(String(20), nullable=True)  # format libre "120/80"
     pulse_bpm = Column(Integer, nullable=True)
@@ -168,6 +178,7 @@ class VitalSigns(Base):
     notes = Column(Text, nullable=True)
 
     admission = relationship("Admission", back_populates="vital_signs")
+    appointment = relationship("Appointment")
     recorded_by = relationship("User")
 
 

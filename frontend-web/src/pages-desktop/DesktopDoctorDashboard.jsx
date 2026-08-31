@@ -25,6 +25,9 @@ export default function DesktopDoctorDashboard() {
   const [reschedulingId, setReschedulingId] = useState(null)
   const [rescheduleValue, setRescheduleValue] = useState('')
   const [expandedAppointmentId, setExpandedAppointmentId] = useState(null)
+  const [vitalsAppointmentId, setVitalsAppointmentId] = useState(null)
+  const [vitalsData, setVitalsData] = useState([])
+  const [loadingVitals, setLoadingVitals] = useState(false)
   const [docForm, setDocForm] = useState({ document_type: 'consultation_note', title: '', content: '' })
   const [prescriptionItems, setPrescriptionItems] = useState([])
   const [savingDoc, setSavingDoc] = useState(false)
@@ -135,6 +138,23 @@ export default function DesktopDoctorDashboard() {
     setDocForm({ document_type: 'consultation_note', title: '', content: '' })
   }
 
+  async function toggleVitals(appointmentId) {
+    if (vitalsAppointmentId === appointmentId) {
+      setVitalsAppointmentId(null)
+      return
+    }
+    setVitalsAppointmentId(appointmentId)
+    setLoadingVitals(true)
+    try {
+      const { data } = await api.get(`/appointments/${appointmentId}/vitals`)
+      setVitalsData(data)
+    } catch (err) {
+      setError(getErrorMessage(err, 'Impossible de charger les constantes.'))
+    } finally {
+      setLoadingVitals(false)
+    }
+  }
+
   async function submitDocument(appointmentId) {
     setSavingDoc(true)
     setDocMessage('')
@@ -205,6 +225,12 @@ export default function DesktopDoctorDashboard() {
                 </div>
                 <div className="flex items-center gap-2 flex-wrap">
                   <AppointmentStatusBadge status={a.status} />
+                  <button
+                    onClick={() => toggleVitals(a.id)}
+                    className="text-sm rounded-full border border-secondary-500 text-secondary-600 px-4 py-1.5 hover:bg-forest-50 transition"
+                  >
+                    {vitalsAppointmentId === a.id ? 'Fermer' : 'Constantes'}
+                  </button>
                   {a.status === 'confirmed' && (
                     <>
                       <button
@@ -263,6 +289,28 @@ export default function DesktopDoctorDashboard() {
                     className="rounded-full bg-amber-500 text-forest-900 px-4 py-1.5 text-sm font-semibold hover:bg-amber-400 transition">
                     Confirmer le report
                   </button>
+                </div>
+              )}
+
+              {vitalsAppointmentId === a.id && (
+                <div className="mt-4 pt-4 border-t border-forest-100">
+                  {loadingVitals && <p className="text-sm text-forest-700">Chargement...</p>}
+                  {!loadingVitals && vitalsData.length === 0 && (
+                    <p className="text-sm text-forest-700">Aucune constante relevee pour ce rendez-vous.</p>
+                  )}
+                  <div className="space-y-2">
+                    {vitalsData.map((v) => (
+                      <div key={v.id} className="bg-forest-50 rounded-lg p-3 text-sm">
+                        <p className="text-forest-700">{new Date(v.recorded_at).toLocaleString('fr-FR')} - {v.recorded_by_name}</p>
+                        <p className="text-forest-900">
+                          {v.weight_kg !== null && `Poids: ${v.weight_kg}kg  `}
+                          {v.temperature_celsius !== null && `Temp: ${v.temperature_celsius}°C  `}
+                          {v.blood_pressure && `Tension: ${v.blood_pressure}  `}
+                          {v.pulse_bpm !== null && `Pouls: ${v.pulse_bpm}bpm`}
+                        </p>
+                      </div>
+                    ))}
+                  </div>
                 </div>
               )}
 
