@@ -43,8 +43,11 @@ export function RegisterTestByStaff({ onRegistered }) {
   const [patientSearch, setPatientSearch] = useState('')
   const [patients, setPatients] = useState([])
   const [selectedPatientId, setSelectedPatientId] = useState('')
-  const [testName, setTestName] = useState('')
-  const [sampleType, setSampleType] = useState('')
+  // NOUVEAU (demande M. Faustin): plusieurs lignes d'analyses pour le
+  // meme patient, ajoutees/retirees avant un seul envoi groupe - utile
+  // pour un patient present sur place qui commande plusieurs analyses
+  // a la fois (ex: glycemie + cholesterol + creatinine).
+  const [tests, setTests] = useState([{ test_name: '', sample_type: '' }])
   const [error, setError] = useState('')
   const [message, setMessage] = useState('')
   const [saving, setSaving] = useState(false)
@@ -60,27 +63,38 @@ export function RegisterTestByStaff({ onRegistered }) {
     }
   }
 
+  function updateTest(idx, field, value) {
+    setTests((rows) => rows.map((r, i) => (i === idx ? { ...r, [field]: value } : r)))
+  }
+
+  function addTestRow() {
+    setTests((rows) => [...rows, { test_name: '', sample_type: '' }])
+  }
+
+  function removeTestRow(idx) {
+    setTests((rows) => rows.filter((_, i) => i !== idx))
+  }
+
   async function handleRegister(e) {
     e.preventDefault()
     setError('')
     setMessage('')
-    if (!selectedPatientId || !testName) {
-      setError('Choisis un patient et precise le nom de l\'analyse.')
+    const validTests = tests.filter((t) => t.test_name.trim())
+    if (!selectedPatientId || validTests.length === 0) {
+      setError('Choisis un patient et precise le nom d\'au moins une analyse.')
       return
     }
     setSaving(true)
     try {
-      await api.post('/lab/tests/register', {
+      const { data } = await api.post('/lab/tests/register', {
         patient_id: selectedPatientId,
-        test_name: testName,
-        sample_type: sampleType || null,
+        tests: validTests.map((t) => ({ test_name: t.test_name, sample_type: t.sample_type || null })),
       })
-      setMessage('Analyse enregistree - prelevement marque comme effectue.')
-      setTestName('')
-      setSampleType('')
+      setMessage(`${data.length} analyse${data.length > 1 ? 's' : ''} enregistree${data.length > 1 ? 's' : ''} - prelevement marque comme effectue.`)
+      setTests([{ test_name: '', sample_type: '' }])
       if (onRegistered) onRegistered()
     } catch (err) {
-      setError(getErrorMessage(err, "Impossible d'enregistrer cette analyse."))
+      setError(getErrorMessage(err, "Impossible d'enregistrer ces analyses."))
     } finally {
       setSaving(false)
     }
@@ -88,7 +102,7 @@ export function RegisterTestByStaff({ onRegistered }) {
 
   return (
     <div className="rounded-xl border border-forest-100 bg-white p-5 mb-6">
-      <p className="font-medium text-forest-900 mb-3">Enregistrer une analyse pour un patient présent sur place</p>
+      <p className="font-medium text-forest-900 mb-3">Enregistrer une ou plusieurs analyses pour un patient présent sur place</p>
 
       <form onSubmit={searchPatients} className="flex gap-2 mb-3">
         <input
@@ -111,20 +125,37 @@ export function RegisterTestByStaff({ onRegistered }) {
         </select>
       )}
 
-      <div className="grid sm:grid-cols-2 gap-2 mb-3">
-        <input placeholder="Nom de l'analyse" value={testName} onChange={(e) => setTestName(e.target.value)}
-          className="rounded-lg border border-forest-100 px-3 py-2 text-sm" />
-        <input placeholder="Type de prelevement (optionnel)" value={sampleType} onChange={(e) => setSampleType(e.target.value)}
-          className="rounded-lg border border-forest-100 px-3 py-2 text-sm" />
+      <p className="text-xs text-forest-700 mb-2">Analyses a enregistrer</p>
+      <div className="space-y-2 mb-2">
+        {tests.map((t, idx) => (
+          <div key={idx} className="grid sm:grid-cols-[1fr_1fr_auto] gap-2 items-center">
+            <input placeholder="Nom de l'analyse" value={t.test_name}
+              onChange={(e) => updateTest(idx, 'test_name', e.target.value)}
+              className="rounded-lg border border-forest-100 px-3 py-2 text-sm" />
+            <input placeholder="Type de prelevement (optionnel)" value={t.sample_type}
+              onChange={(e) => updateTest(idx, 'sample_type', e.target.value)}
+              className="rounded-lg border border-forest-100 px-3 py-2 text-sm" />
+            {tests.length > 1 && (
+              <button type="button" onClick={() => removeTestRow(idx)} className="text-xs text-clay-600 hover:underline">
+                Retirer
+              </button>
+            )}
+          </div>
+        ))}
       </div>
+      <button type="button" onClick={addTestRow} className="text-xs text-[var(--portal-accent)] font-medium hover:underline mb-3">
+        + Ajouter une autre analyse pour ce patient
+      </button>
 
       {error && <p className="text-clay-600 text-sm mb-2">{error}</p>}
       {message && <p className="text-forest-900 bg-forest-50 border border-forest-300 rounded-lg p-2 mb-2 text-sm">{message}</p>}
 
-      <button onClick={handleRegister} disabled={saving}
-        className="rounded-full bg-[var(--portal-accent)] text-white px-5 py-2 text-sm font-medium hover:brightness-90 transition disabled:opacity-50">
-        {saving ? 'Enregistrement...' : "Enregistrer l'analyse"}
-      </button>
+      <div>
+        <button onClick={handleRegister} disabled={saving}
+          className="rounded-full bg-[var(--portal-accent)] text-white px-5 py-2 text-sm font-medium hover:brightness-90 transition disabled:opacity-50">
+          {saving ? 'Enregistrement...' : `Enregistrer ${tests.filter((t) => t.test_name.trim()).length > 1 ? 'ces analyses' : "l'analyse"}`}
+        </button>
+      </div>
     </div>
   )
 }

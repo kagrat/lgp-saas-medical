@@ -1022,10 +1022,20 @@ class OpeningHoursOut(BaseModel):
 
     model_config = {"from_attributes": True}
 
-class LabTestRegisterByStaff(BaseModel):
-    patient_id: str
+class LabTestItemInput(BaseModel):
     test_name: str = Field(min_length=2, max_length=200)
     sample_type: Optional[str] = None
+
+
+class LabTestRegisterByStaff(BaseModel):
+    """
+    ELARGI (demande M. Faustin): un patient present sur place peut
+    commander PLUSIEURS analyses a la fois (ex: glycemie + cholesterol +
+    creatinine) - avant, il fallait repeter tout le formulaire, en
+    reselectionnant le patient, pour chaque analyse individuellement.
+    """
+    patient_id: str
+    tests: list[LabTestItemInput] = Field(min_length=1)
 
 
 class LabStatsOut(BaseModel):

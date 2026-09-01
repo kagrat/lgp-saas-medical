@@ -96,24 +96,35 @@ def request_test(payload: LabTestRequestCreate, db: Session = Depends(get_db),
     return _to_lab_test_out(lab_test, db)
 
 
-@router.post("/tests/register", response_model=LabTestRequestOut, status_code=status.HTTP_201_CREATED)
+@router.post("/tests/register", response_model=list[LabTestRequestOut], status_code=status.HTTP_201_CREATED)
 def register_test_by_staff(payload: LabTestRegisterByStaff, db: Session = Depends(get_db),
                             current_user: User = Depends(require_roles(
                                 UserRole.ESTABLISHMENT_ADMIN, UserRole.LAB_TECHNICIAN))):
+    """
+    ELARGI (demande M. Faustin): enregistre PLUSIEURS analyses en une
+    seule fois pour un patient present sur place, toutes dans la MEME
+    transaction - soit toutes reussissent, soit aucune (pas de risque
+    d'enregistrer 2 analyses sur 3 puis d'echouer sur la derniere).
+    """
     patient = db.query(Patient).filter(Patient.id == payload.patient_id).first()
     if not patient:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Patient introuvable")
 
-    lab_test = LabTestRequest(
-        id=str(uuid.uuid4()), establishment_id=current_user.establishment_id, patient_id=patient.id,
-        test_name=payload.test_name, sample_type=payload.sample_type,
-        status=LabTestStatus.SAMPLE_COLLECTED,
-        sample_collected_at=datetime.utcnow(),
-    )
-    db.add(lab_test)
+    lab_tests = []
+    for item in payload.tests:
+        lab_test = LabTestRequest(
+            id=str(uuid.uuid4()), establishment_id=current_user.establishment_id, patient_id=patient.id,
+            test_name=item.test_name, sample_type=item.sample_type,
+            status=LabTestStatus.SAMPLE_COLLECTED,
+            sample_collected_at=datetime.utcnow(),
+        )
+        db.add(lab_test)
+        lab_tests.append(lab_test)
+
     db.commit()
-    db.refresh(lab_test)
-    return _to_lab_test_out(lab_test, db)
+    for lab_test in lab_tests:
+        db.refresh(lab_test)
+    return [_to_lab_test_out(lab_test, db) for lab_test in lab_tests]
 
 
 @router.post("/tests/refer", response_model=LabTestRequestOut, status_code=status.HTTP_201_CREATED)

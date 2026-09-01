@@ -14,7 +14,7 @@ export default function DesktopLabTechDashboard() {
   const [establishment, setEstablishment] = useState(null)
   const [tab, setTab] = useState('analyses')
   const [labTests, setLabTests] = useState([])
-  const [labFilter, setLabFilter] = useState('all')
+  const [labFilter, setLabFilter] = useState('requested')
   const [conversations, setConversations] = useState([])
   const [selectedPatientId, setSelectedPatientId] = useState(null)
   const [error, setError] = useState('')

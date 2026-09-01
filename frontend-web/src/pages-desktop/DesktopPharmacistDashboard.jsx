@@ -15,7 +15,7 @@ export default function DesktopPharmacistDashboard() {
   const [tab, setTab] = useState('orders')
   const [stock, setStock] = useState([])
   const [orders, setOrders] = useState([])
-  const [orderFilter, setOrderFilter] = useState('all')
+  const [orderFilter, setOrderFilter] = useState('pending')
   const [conversations, setConversations] = useState([])
   const [selectedPatientId, setSelectedPatientId] = useState(null)
   const [error, setError] = useState('')

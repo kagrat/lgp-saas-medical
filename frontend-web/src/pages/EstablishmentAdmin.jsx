@@ -33,9 +33,9 @@ export default function EstablishmentAdmin() {
   const [appointmentFilter, setAppointmentFilter] = useState('all')
   const [stock, setStock] = useState([])
   const [orders, setOrders] = useState([])
-  const [orderFilter, setOrderFilter] = useState('all')
+  const [orderFilter, setOrderFilter] = useState('pending')
   const [labTests, setLabTests] = useState([])
-  const [labFilter, setLabFilter] = useState('all')
+  const [labFilter, setLabFilter] = useState('requested')
   const [conversations, setConversations] = useState([])
   const [selectedPatientId, setSelectedPatientId] = useState(null)
   const [error, setError] = useState('')
@@ -701,9 +701,14 @@ export default function EstablishmentAdmin() {
         </div>
       )}
 
+      {/* CORRIGE (bug reel signale): les statistiques du laboratoire
+          etaient rendues a l'interieur de l'onglet "Analyses" au lieu de
+          leur propre onglet "Statistiques" (qui restait vide) - oubli lors
+          du deplacement de "Statistiques" en derniere position du menu. */}
+      {tab === 'stats' && isLab && <LabStatsCards />}
+
       {tab === 'analyses' && isLab && (
         <div>
-          <LabStatsCards />
           <RegisterTestByStaff onRegistered={loadAll} />
           <FilterTabs options={labFilterOptions} active={labFilter} onChange={setLabFilter} />
           <div className="space-y-3">
