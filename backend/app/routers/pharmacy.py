@@ -30,7 +30,7 @@ from app.database import get_db
 from app.models import (
     PharmacyStock, PharmacyReservation, PharmacyOrderItem, PharmacyReservationStatusHistory,
     Patient, User, UserRole, ReservationStatus, EstablishmentType, Establishment, AuditLog,
-    PrescriptionItem, MedicalDocument, DocumentType,
+    PrescriptionItem, MedicalDocument, DocumentType, DeliveryMode,
 )
 from app.schemas import (
     StockItemCreate, StockItemOut, ReservationCreate, ReservationOut, ReservationItemOut,
@@ -86,6 +86,7 @@ def _to_reservation_out(reservation: PharmacyReservation) -> ReservationOut:
         pharmacist_note=reservation.pharmacist_note, created_at=reservation.created_at,
         total_amount=total_amount,
         prescription_document_id=reservation.prescription_document_id,
+        is_paid=reservation.is_paid, paid_at=reservation.paid_at,
     )
 
 
@@ -489,6 +490,43 @@ def confirm_reservation(reservation_id: str, db: Session = Depends(get_db),
     return _to_reservation_out(reservation)
 
 
+@router.post("/reservations/{reservation_id}/pay", response_model=ReservationOut)
+def pay_reservation(reservation_id: str, db: Session = Depends(get_db),
+                     current_user: User = Depends(require_roles(UserRole.PATIENT))):
+    """
+    NOUVEAU (demande M. Faustin): paiement en ligne d'une commande, requis
+    UNIQUEMENT si livraison (le patient qui retire sur place paie
+    directement a la pharmacie, pas ici). La pharmacie ne doit PAS pouvoir
+    commencer la preparation d'une commande a livrer tant qu'elle n'est
+    pas payee - ce verrou est applique ici ET cote pharmacien (voir
+    update_reservation_status), pas seulement dans l'interface.
+
+    ATTENTION HONNETE: aucune vraie passerelle de paiement (Mobile Money,
+    carte bancaire) n'est branchee ici - cet endpoint enregistre une
+    AUTO-DECLARATION du patient, pas un encaissement reellement verifie
+    par un prestataire tiers. A completer le jour ou un vrai prestataire
+    de paiement est choisi.
+    """
+    patient = db.query(Patient).filter(Patient.user_id == current_user.id).first()
+    reservation = db.query(PharmacyReservation).filter(PharmacyReservation.id == reservation_id).first()
+    if not reservation or not patient or reservation.patient_id != patient.id:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Reservation introuvable")
+    if reservation.delivery_mode != DeliveryMode.DELIVERY:
+        raise HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_ENTITY, detail="Le paiement en ligne n'est requis que pour une livraison")
+    if reservation.status not in (ReservationStatus.CONFIRMED,):
+        raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail="Cette commande doit d'abord etre confirmee avant paiement")
+    if reservation.is_paid:
+        raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail="Cette commande est deja payee")
+
+    reservation.is_paid = True
+    reservation.paid_at = datetime.utcnow()
+    db.add(AuditLog(user_id=current_user.id, establishment_id=reservation.establishment_id,
+                     action="pay_pharmacy_order", details=f"Commande {reservation.id} declaree payee par le patient"))
+    db.commit()
+    db.refresh(reservation)
+    return _to_reservation_out(reservation)
+
+
 @router.post("/reservations/{reservation_id}/reject", response_model=ReservationOut)
 def reject_reservation(reservation_id: str, db: Session = Depends(get_db),
                         current_user: User = Depends(require_roles(UserRole.PATIENT))):
@@ -555,6 +593,20 @@ def update_reservation_status(reservation_id: str, payload: ReservationStatusUpd
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Reservation introuvable")
     if reservation.status not in (ReservationStatus.CONFIRMED, ReservationStatus.PREPARING, ReservationStatus.READY, ReservationStatus.OUT_FOR_DELIVERY):
         raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail="Cette commande doit d'abord etre confirmee par le patient")
+
+    # NOUVEAU (demande M. Faustin): verrou REEL, pas seulement une
+    # indication cote interface - la pharmacie ne peut pas commencer a
+    # preparer une commande a LIVRER tant qu'elle n'est pas payee. Aucune
+    # restriction pour un retrait sur place (paiement direct a la pharmacie).
+    if (
+        reservation.delivery_mode == DeliveryMode.DELIVERY
+        and not reservation.is_paid
+        and payload.status in (ReservationStatus.PREPARING, ReservationStatus.READY, ReservationStatus.OUT_FOR_DELIVERY)
+    ):
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail="Cette commande a livrer doit d'abord etre payee par le patient avant preparation.",
+        )
 
     reservation.status = payload.status
     if payload.estimated_ready_at is not None:

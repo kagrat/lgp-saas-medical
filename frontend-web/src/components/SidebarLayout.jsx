@@ -20,7 +20,8 @@ const ACCENT_HEX = {
   'bg-primary-700': '#0F766E',   // Patient (Teal - catalogue)
   'bg-primary-500': '#14958A',   // Hopital/Clinique (Teal clair)
   'bg-secondary-500': '#2563EB', // Medecin (Bleu - catalogue exact)
-  'bg-secondary-600': '#1D4ED8', // Laboratoire (Bleu sombre)
+  'bg-secondary-600': '#1D4ED8', // (ancienne teinte labo, plus utilisee mais gardee au cas ou)
+  'bg-secondary-900': '#1E3A8A', // Laboratoire (Bleu marine sombre - corrige, nettement distinct du medecin)
   'bg-success-700': '#15803D',   // Pharmacie (Vert, inchange - non mentionne par M. Faustin)
 }
 

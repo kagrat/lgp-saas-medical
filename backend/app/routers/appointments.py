@@ -13,13 +13,13 @@ from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
 
 from app.database import get_db
-from app.models import Appointment, Doctor, Patient, User, UserRole, AppointmentStatus, AuditLog, VitalSigns
+from app.models import Appointment, Doctor, Patient, User, UserRole, AppointmentStatus, AuditLog, VitalSigns, Establishment
 from app.schemas import (
     AppointmentCreate, AppointmentOut, AppointmentSearchRequest, AppointmentSearchResponse, AppointmentReschedule,
-    VitalSignsCreate, VitalSignsOut,
+    VitalSignsCreate, VitalSignsOut, SuggestionSlot,
 )
 from app.deps import require_roles, get_current_user
-from app.services.suggestion_engine import find_appointment_or_suggest
+from app.services.suggestion_engine import find_appointment_or_suggest, _free_slots_for_doctor, _rating_stats
 from app.services.notifications import send_confirmation_email, send_sms
 
 router = APIRouter(prefix="/appointments", tags=["rendez-vous"])
@@ -61,6 +61,46 @@ def search_appointment_slots(payload: AppointmentSearchRequest, db: Session = De
         requested_doctor_id=requested_doctor_id,
     )
     return AppointmentSearchResponse(exact_match_available=exact_match, suggestions=suggestions)
+
+
+@router.get("/available-slots", response_model=list[SuggestionSlot])
+def list_available_slots(doctor_id: str, target_date: str, db: Session = Depends(get_db)):
+    """
+    NOUVEAU (demande M. Faustin): contrairement a /search (qui suggere au
+    plus 6 creneaux, classes par proximite d'une heure preferee, pour
+    plusieurs medecins a la fois), cet endpoint retourne TOUS les creneaux
+    libres d'UN SEUL medecin pour UNE SEULE journee - le systeme connait
+    deja ses horaires de travail et la duree exacte d'une consultation
+    (DoctorAvailability), donc peut afficher precisement ce qui reste
+    disponible au fur et a mesure que des rendez-vous sont pris. Reutilise
+    le meme moteur de calcul (_free_slots_for_doctor) que /search, deja
+    fiable et teste - pas de nouvelle logique, juste sans la limite de 6.
+    """
+    from datetime import datetime as dt
+    doctor = db.query(Doctor).filter(Doctor.id == doctor_id).first()
+    if not doctor:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Medecin introuvable")
+    establishment = db.query(Establishment).filter(Establishment.id == doctor.establishment_id).first()
+    if not establishment:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Etablissement introuvable")
+
+    try:
+        parsed_date = dt.strptime(target_date, "%Y-%m-%d").date()
+    except ValueError:
+        raise HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_ENTITY, detail="Date invalide (format attendu: AAAA-MM-JJ)")
+
+    avg_rating, review_count = _rating_stats(db, doctor.id)
+    free_slots = _free_slots_for_doctor(db, doctor, parsed_date, max_slots=200)
+
+    return [
+        SuggestionSlot(
+            doctor_id=doctor.id, doctor_name=doctor.user.full_name,
+            establishment_id=establishment.id, establishment_name=establishment.name,
+            slot_start=start, slot_end=end, consultation_price=doctor.consultation_price,
+            average_rating=avg_rating, review_count=review_count,
+        )
+        for start, end in free_slots
+    ]
 
 
 @router.post("", response_model=AppointmentOut, status_code=status.HTTP_201_CREATED)

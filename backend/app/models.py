@@ -398,6 +398,15 @@ class PharmacyReservation(Base):
     # l'ordonnance d'origine, pour que le pharmacien puisse la consulter
     # lors de sa verification.
     prescription_document_id = Column(UUID(as_uuid=False), ForeignKey("medical_documents.id"), nullable=True)
+    # NOUVEAU (demande M. Faustin): paiement en ligne obligatoire avant
+    # preparation UNIQUEMENT si livraison (pas si retrait sur place -
+    # le patient paie alors directement a la pharmacie). ATTENTION
+    # HONNETE: aucune vraie passerelle de paiement (Mobile Money, carte)
+    # n'est connectee ici - is_paid est une AUTO-DECLARATION du patient,
+    # pas un encaissement reellement verifie. Pret a etre branche sur un
+    # vrai prestataire de paiement plus tard (voir pharmacy.py::pay_reservation).
+    is_paid = Column(Boolean, default=False)
+    paid_at = Column(DateTime, nullable=True)
 
     items = relationship("PharmacyOrderItem", back_populates="reservation", cascade="all, delete-orphan")
     prescription_document = relationship("MedicalDocument")

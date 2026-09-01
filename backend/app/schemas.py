@@ -335,6 +335,10 @@ class ReservationOut(BaseModel):
     """Somme (confirmed_quantity * confirmed_unit_price) sur toutes les
     lignes - None tant que le pharmacien n'a pas encore tout verifie."""
     prescription_document_id: Optional[str] = None
+    # NOUVEAU (demande M. Faustin): paiement en ligne, obligatoire avant
+    # preparation UNIQUEMENT en cas de livraison (voir pharmacy.py).
+    is_paid: bool = False
+    paid_at: Optional[datetime] = None
 
     model_config = {"from_attributes": True}
 

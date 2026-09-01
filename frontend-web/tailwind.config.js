@@ -29,8 +29,13 @@ export default {
           900: "#0B5850",
         },
         secondary: {
-          500: "#2563EB",  // Secondaire / Bleu (catalogue)
+          500: "#2563EB",  // Secondaire / Bleu (catalogue) - Medecin
           600: "#1D4ED8",
+          // NOUVEAU (correctif demande par M. Faustin: le bleu du labo
+          // ressemblait encore trop a celui du medecin) - vrai bleu marine
+          // sombre, nettement distinct du bleu vif ci-dessus tout en
+          // restant lisible avec du texte blanc.
+          900: "#1E3A8A",  // Laboratoire - bleu marine sombre
         },
         success: {
           50: "#F0FDF4",

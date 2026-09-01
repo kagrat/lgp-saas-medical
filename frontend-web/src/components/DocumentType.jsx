@@ -1,6 +1,6 @@
 const TYPE_LABELS = {
   prescription: 'Ordonnance',
-  lab_result: 'Resultat labo',
+  lab_result: 'Examen labo',
   consultation_note: 'Note de consultation',
   certificate: 'Certificat',
   other: 'Autre',

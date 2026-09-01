@@ -15,6 +15,7 @@ export default function PatientPharmacyOrders() {
   const [error, setError] = useState('')
   const [confirmingOrderId, setConfirmingOrderId] = useState(null)
   const [receivingOrderId, setReceivingOrderId] = useState(null)
+  const [payingOrderId, setPayingOrderId] = useState(null)
 
   useEffect(() => {
     loadOrders()
@@ -84,6 +85,19 @@ export default function PatientPharmacyOrders() {
     }
   }
 
+  async function payOrder(orderId) {
+    setPayingOrderId(orderId)
+    setError('')
+    try {
+      await api.post(`/pharmacy/reservations/${orderId}/pay`)
+      await loadOrders()
+    } catch (err) {
+      setError(getErrorMessage(err, "Impossible d'enregistrer ce paiement."))
+    } finally {
+      setPayingOrderId(null)
+    }
+  }
+
   return (
     <div className="max-w-4xl mx-auto px-6 py-14">
       <h1 className="font-display text-3xl font-semibold text-forest-900 mb-8">Mes commandes pharmacie</h1>
@@ -140,6 +154,27 @@ export default function PatientPharmacyOrders() {
               )}
               {o.pharmacist_note && o.status !== 'awaiting_confirmation' && (
                 <p className="text-sm text-forest-700 italic">Note de la pharmacie: {o.pharmacist_note}</p>
+              )}
+
+              {/* NOUVEAU (demande M. Faustin): paiement en ligne obligatoire
+                  avant preparation, UNIQUEMENT pour une livraison. Un
+                  retrait sur place n'a pas besoin de payer en ligne - le
+                  patient paie directement a la pharmacie. */}
+              {o.delivery_mode === 'delivery' && o.status === 'confirmed' && !o.is_paid && (
+                <div className="mt-3 pt-3 border-t border-forest-100">
+                  <p className="text-sm text-forest-700 mb-2">
+                    Livraison choisie - paiement en ligne requis avant que la pharmacie ne prepare ta commande.
+                  </p>
+                  <button onClick={() => payOrder(o.id)} disabled={payingOrderId === o.id}
+                    className="rounded-full bg-[var(--portal-accent)] text-white px-5 py-1.5 text-sm font-medium hover:brightness-90 transition disabled:opacity-50">
+                    {payingOrderId === o.id ? 'Paiement...' : `Payer votre commande${o.total_amount ? ` (${o.total_amount.toLocaleString('fr-FR')} FCFA)` : ''}`}
+                  </button>
+                </div>
+              )}
+              {o.delivery_mode === 'delivery' && o.is_paid && (
+                <p className="text-sm text-primary-700 font-medium mt-3">
+                  ✓ Payee le {new Date(o.paid_at).toLocaleDateString('fr-FR')}
+                </p>
               )}
 
               {(o.status === 'ready' || o.status === 'out_for_delivery') && (

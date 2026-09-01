@@ -82,11 +82,12 @@ export default function Consultation() {
     setError('')
     setLoading(true)
     try {
-      const { data } = await api.post('/appointments/search', {
-        specialty: form.specialty,
-        establishment_id: selectedEstablishment.id,
-        doctor_id: selectedDoctor.id,
-        preferred_date: preferredDate,
+      // NOUVEAU (demande M. Faustin): tous les creneaux libres de la
+      // journee pour CE medecin precisement, pas une liste plafonnee de
+      // suggestions - le systeme connait deja ses horaires et la duree
+      // d'une consultation, donc peut montrer precisement ce qui reste.
+      const { data } = await api.get('/appointments/available-slots', {
+        params: { doctor_id: selectedDoctor.id, target_date: preferredDate },
       })
       setSlots(data)
     } catch (err) {
@@ -242,23 +243,24 @@ export default function Consultation() {
           </form>
 
           {slots && (
-            slots.suggestions.length === 0 ? (
+            slots.length === 0 ? (
               <p className="text-forest-700">Aucun créneau disponible pour ce médecin a cette date. Essaie une autre date.</p>
             ) : (
-              <div className="grid sm:grid-cols-2 gap-4">
-                {slots.suggestions.map((slot, idx) => (
-                  <div key={idx} className="rounded-xl border border-forest-100 bg-white p-5 flex flex-col gap-2">
-                    <p className="text-sm text-forest-700">
-                      {new Date(slot.slot_start).toLocaleString('fr-FR', { weekday: 'long', day: 'numeric', month: 'long', hour: '2-digit', minute: '2-digit' })}
-                    </p>
+              <div>
+                <p className="text-sm text-forest-700 mb-3">
+                  {slots.length} créneau{slots.length > 1 ? 'x' : ''} disponible{slots.length > 1 ? 's' : ''} - choisis l'heure qui te convient.
+                </p>
+                <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-6 gap-2">
+                  {slots.map((slot, idx) => (
                     <button
+                      key={idx}
                       onClick={() => chooseSlot(slot)}
-                      className="mt-2 rounded-full bg-amber-500 text-forest-900 py-2 font-semibold hover:bg-amber-400 transition"
+                      className="rounded-lg border border-forest-100 bg-white py-2.5 text-sm font-medium text-forest-900 hover:border-primary-500 hover:bg-primary-50 transition"
                     >
-                      Choisir ce créneau
+                      {new Date(slot.slot_start).toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' })}
                     </button>
-                  </div>
-                ))}
+                  ))}
+                </div>
               </div>
             )
           )}

@@ -388,7 +388,7 @@ export default function EstablishmentAdmin() {
       tabs={tabs}
       activeTab={tab}
       onTabChange={(id) => { setTab(id); setError('') }}
-      accentColor={isLab ? 'bg-secondary-600' : isPharmacy ? 'bg-success-700' : 'bg-primary-500'}
+      accentColor={isLab ? 'bg-secondary-900' : isPharmacy ? 'bg-success-700' : 'bg-primary-500'}
       headerRight={<NotificationBell />}
     >
       {error && <p className="text-clay-600 mb-6">{error}</p>}
