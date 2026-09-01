@@ -109,7 +109,7 @@ export default function LabCatalogManager() {
           onChange={(e) => setRefForm({ ...refForm, notes: e.target.value })}
           className="sm:col-span-2 rounded-lg border border-forest-100 px-3 py-2" />
         <button type="submit" disabled={savingRef}
-          className="sm:col-span-2 rounded-full bg-primary-700 text-white py-2.5 font-medium hover:bg-primary-900 transition disabled:opacity-50">
+          className="sm:col-span-2 rounded-full bg-[var(--portal-accent)] text-white py-2.5 font-medium hover:brightness-90 transition disabled:opacity-50">
           {savingRef ? 'Ajout...' : 'Ajouter cette valeur'}
         </button>
       </form>
@@ -145,7 +145,7 @@ export default function LabCatalogManager() {
           onChange={(e) => setEquipForm({ ...equipForm, notes: e.target.value })}
           className="rounded-lg border border-forest-100 px-3 py-2" />
         <button type="submit" disabled={savingEquip}
-          className="sm:col-span-3 rounded-full bg-primary-700 text-white py-2.5 font-medium hover:bg-primary-900 transition disabled:opacity-50">
+          className="sm:col-span-3 rounded-full bg-[var(--portal-accent)] text-white py-2.5 font-medium hover:brightness-90 transition disabled:opacity-50">
           {savingEquip ? 'Ajout...' : "Ajouter cet equipement"}
         </button>
       </form>

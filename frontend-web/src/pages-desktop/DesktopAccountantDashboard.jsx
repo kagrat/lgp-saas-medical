@@ -156,7 +156,7 @@ export default function DesktopAccountantDashboard() {
       tabs={tabs}
       activeTab={tab}
       onTabChange={(id) => { setTab(id); setError('') }}
-      accentColor="bg-primary-700"
+      accentColor="bg-primary-500"
     >
       {error && <p className="text-clay-600 mb-6">{error}</p>}
 
@@ -184,7 +184,7 @@ export default function DesktopAccountantDashboard() {
 
       <div className="flex justify-between items-center mb-4">
         <p className="text-forest-700 text-sm">Factures de l'etablissement.</p>
-        <button onClick={() => setShowCreateForm((v) => !v)} className="rounded-full bg-primary-700 text-white px-5 py-2 text-sm font-medium hover:bg-primary-900 transition">
+        <button onClick={() => setShowCreateForm((v) => !v)} className="rounded-full bg-[var(--portal-accent)] text-white px-5 py-2 text-sm font-medium hover:brightness-90 transition">
           {showCreateForm ? 'Annuler' : 'Nouvelle facture'}
         </button>
       </div>
@@ -195,7 +195,7 @@ export default function DesktopAccountantDashboard() {
           <form onSubmit={searchPatients} className="flex gap-2 mb-3">
             <input value={patientQuery} onChange={(e) => setPatientQuery(e.target.value)} placeholder="Nom du patient..."
               className="flex-1 rounded-lg border border-forest-100 px-3 py-2 text-sm" />
-            <button type="submit" className="rounded-full bg-primary-700 text-white px-4 py-2 text-sm font-medium hover:bg-primary-900 transition">Chercher</button>
+            <button type="submit" className="rounded-full bg-[var(--portal-accent)] text-white px-4 py-2 text-sm font-medium hover:brightness-90 transition">Chercher</button>
           </form>
           {patientResults.length > 0 && (
             <div className="space-y-1 mb-3">
@@ -238,7 +238,7 @@ export default function DesktopAccountantDashboard() {
             rows={2} className="w-full rounded-lg border border-forest-100 px-3 py-2 text-sm mb-3" />
 
           <button type="submit" disabled={creating}
-            className="rounded-full bg-amber-500 text-forest-900 px-5 py-2 text-sm font-semibold hover:bg-amber-400 transition disabled:opacity-50">
+            className="rounded-full bg-[var(--portal-accent)] text-white px-5 py-2 text-sm font-semibold hover:brightness-90 transition disabled:opacity-50">
             {creating ? 'Creation...' : 'Creer la facture'}
           </button>
         </form>
@@ -296,7 +296,7 @@ export default function DesktopAccountantDashboard() {
                       className="rounded-lg border border-forest-100 px-3 py-2 text-sm" />
                   </div>
                   <button onClick={submitPayment} disabled={recordingPayment || !paymentForm.amount}
-                    className="rounded-full bg-primary-700 text-white px-5 py-1.5 text-sm font-medium hover:bg-primary-900 transition disabled:opacity-50">
+                    className="rounded-full bg-[var(--portal-accent)] text-white px-5 py-1.5 text-sm font-medium hover:brightness-90 transition disabled:opacity-50">
                     {recordingPayment ? 'Enregistrement...' : 'Enregistrer le paiement'}
                   </button>
                 </div>

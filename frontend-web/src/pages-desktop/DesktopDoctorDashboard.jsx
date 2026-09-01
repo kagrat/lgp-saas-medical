@@ -198,7 +198,7 @@ export default function DesktopDoctorDashboard() {
       tabs={tabs}
       activeTab={tab}
       onTabChange={(id) => { setTab(id); setError('') }}
-      accentColor="bg-secondary-600"
+      accentColor="bg-secondary-500"
     >
       {error && <p className="text-clay-600 mb-6">{error}</p>}
 
@@ -253,7 +253,7 @@ export default function DesktopDoctorDashboard() {
                       <button
                         onClick={() => markCompleted(a.id)}
                         disabled={completingId === a.id}
-                        className="text-sm rounded-full bg-primary-700 text-white px-4 py-1.5 hover:bg-primary-900 transition disabled:opacity-50"
+                        className="text-sm rounded-full bg-[var(--portal-accent)] text-white px-4 py-1.5 hover:brightness-90 transition disabled:opacity-50"
                       >
                         {completingId === a.id ? 'Mise a jour...' : 'Marquer termine'}
                       </button>
@@ -286,7 +286,7 @@ export default function DesktopDoctorDashboard() {
                       className="rounded-lg border border-forest-100 px-3 py-1.5 text-sm" />
                   </div>
                   <button onClick={() => submitReschedule(a.id)}
-                    className="rounded-full bg-amber-500 text-forest-900 px-4 py-1.5 text-sm font-semibold hover:bg-amber-400 transition">
+                    className="rounded-full bg-[var(--portal-accent)] text-white px-4 py-1.5 text-sm font-semibold hover:brightness-90 transition">
                     Confirmer le report
                   </button>
                 </div>
@@ -345,7 +345,7 @@ export default function DesktopDoctorDashboard() {
                   <button
                     onClick={() => submitDocument(a.id)}
                     disabled={savingDoc || !docForm.title || !docForm.content}
-                    className="rounded-full bg-amber-500 text-forest-900 px-5 py-1.5 text-sm font-semibold hover:bg-amber-400 transition disabled:opacity-50"
+                    className="rounded-full bg-[var(--portal-accent)] text-white px-5 py-1.5 text-sm font-semibold hover:brightness-90 transition disabled:opacity-50"
                   >
                     {savingDoc ? 'Ajout...' : 'Ajouter au dossier du patient'}
                   </button>

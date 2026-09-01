@@ -11,7 +11,7 @@ export default function FilterTabs({ options, active, onChange, counts }) {
           onClick={() => onChange(opt.value)}
           className={`text-sm px-4 py-1.5 rounded-full font-medium transition ${
             active === opt.value
-              ? 'bg-primary-700 text-white'
+              ? 'bg-[var(--portal-accent)] text-white'
               : 'border border-forest-100 text-forest-700 hover:bg-forest-50'
           }`}
         >

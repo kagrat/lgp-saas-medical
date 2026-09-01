@@ -1,16 +1,16 @@
 import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import api, { getErrorMessage } from '../api/client'
-import { StatusBadge, RESERVATION_STEPS, RESERVATION_STATUS_LABELS } from '../components/OrderStatus'
 import { DocumentTypeBadge } from '../components/DocumentType'
-import StatusStepper from '../components/StatusStepper'
 import { downloadDocumentAsPdf } from '../utils/pdf'
 
 /**
  * NOUVEAU (demande M. Faustin): "Mon dossier patient" devient sa propre
- * page du menu - dossier de sante complet + suivi des commandes pharmacie.
- * Les ordonnances et analyses ont maintenant LEUR PROPRE page dediee
- * (voir PatientPrescriptions.jsx et PatientLabResults.jsx) pour un acces
+ * page du menu - dossier de sante complet. Les commandes pharmacie ont
+ * DESORMAIS LEUR PROPRE page dediee "Mes commandes pharmacie" (voir
+ * PatientPharmacyOrders.jsx) - pas assez visible quand c'etait noye ici,
+ * comme signale. Les ordonnances et analyses ont aussi leur propre page
+ * (PatientPrescriptions.jsx et PatientLabResults.jsx) pour un acces
  * rapide, mais restent aussi visibles ici dans la vue d'ensemble complete.
  *
  * NOUVEAU: le patient peut desormais VOIR un document directement (pas
@@ -19,28 +19,13 @@ import { downloadDocumentAsPdf } from '../utils/pdf'
  */
 export default function PatientRecords() {
   const navigate = useNavigate()
-  const [orders, setOrders] = useState([])
-  const [orderHistory, setOrderHistory] = useState({})
-  const [expandedOrderId, setExpandedOrderId] = useState(null)
   const [healthRecords, setHealthRecords] = useState([])
   const [expandedDocId, setExpandedDocId] = useState(null)
   const [error, setError] = useState('')
-  const [confirmingOrderId, setConfirmingOrderId] = useState(null)
-  const [receivingOrderId, setReceivingOrderId] = useState(null)
 
   useEffect(() => {
-    loadOrders()
     loadHealthRecords()
   }, [])
-
-  async function loadOrders() {
-    try {
-      const { data } = await api.get('/pharmacy/reservations/mine')
-      setOrders(data)
-    } catch (err) {
-      // silencieux
-    }
-  }
 
   async function loadHealthRecords() {
     try {
@@ -48,61 +33,6 @@ export default function PatientRecords() {
       setHealthRecords(data)
     } catch (err) {
       // silencieux
-    }
-  }
-
-  async function toggleOrderHistory(reservationId) {
-    if (expandedOrderId === reservationId) {
-      setExpandedOrderId(null)
-      return
-    }
-    setExpandedOrderId(reservationId)
-    if (!orderHistory[reservationId]) {
-      try {
-        const { data } = await api.get(`/pharmacy/reservations/${reservationId}/history`)
-        setOrderHistory((h) => ({ ...h, [reservationId]: data }))
-      } catch (err) {
-        setError("Impossible de charger le suivi de cette commande.")
-      }
-    }
-  }
-
-  async function confirmOrder(orderId) {
-    setConfirmingOrderId(orderId)
-    setError('')
-    try {
-      await api.post(`/pharmacy/reservations/${orderId}/confirm`)
-      await loadOrders()
-    } catch (err) {
-      setError(getErrorMessage(err, "Impossible de confirmer cette commande."))
-    } finally {
-      setConfirmingOrderId(null)
-    }
-  }
-
-  async function rejectOrder(orderId) {
-    setConfirmingOrderId(orderId)
-    setError('')
-    try {
-      await api.post(`/pharmacy/reservations/${orderId}/reject`)
-      await loadOrders()
-    } catch (err) {
-      setError(getErrorMessage(err, "Impossible de refuser cette commande."))
-    } finally {
-      setConfirmingOrderId(null)
-    }
-  }
-
-  async function markOrderReceived(orderId) {
-    setReceivingOrderId(orderId)
-    setError('')
-    try {
-      await api.post(`/pharmacy/reservations/${orderId}/mark-received`)
-      await loadOrders()
-    } catch (err) {
-      setError(getErrorMessage(err, "Impossible de confirmer la réception de cette commande."))
-    } finally {
-      setReceivingOrderId(null)
     }
   }
 
@@ -167,87 +97,8 @@ export default function PatientRecords() {
         </section>
       )}
 
-      {orders.length > 0 && (
-        <section>
-          <h2 className="font-display text-xl font-semibold text-forest-900 mb-4">Mes commandes pharmacie</h2>
-          <div className="space-y-3">
-            {orders.map((o) => (
-              <div key={o.id} className="rounded-xl border border-forest-100 bg-white p-4">
-                <div className="mb-3">
-                  <div className="flex items-center justify-between mb-2">
-                    <div className="space-y-0.5">
-                      {o.items.map((item) => (
-                        <p key={item.id} className="text-forest-900 font-medium">
-                          {item.quantity}x {item.medication_name} <span className="text-xs text-forest-700 font-normal">({item.medication_reference})</span>
-                        </p>
-                      ))}
-                    </div>
-                    <button onClick={() => toggleOrderHistory(o.id)} className="text-xs text-amber-600 hover:underline shrink-0 ml-3">
-                      {expandedOrderId === o.id ? 'Masquer le suivi' : 'Voir le suivi'}
-                    </button>
-                  </div>
-                  <p className="text-sm text-forest-700 mb-3">{o.delivery_mode === 'delivery' ? 'Livraison' : 'Retrait sur place'}</p>
-                  <StatusStepper steps={RESERVATION_STEPS} currentValue={o.status} labels={RESERVATION_STATUS_LABELS} />
 
-                  {o.status === 'awaiting_confirmation' && (
-                    <div className="mt-4 pt-4 border-t border-forest-100 bg-amber-50 -mx-4 px-4 pb-1 rounded-b-xl">
-                      <p className="text-sm font-medium text-forest-900 mb-1">La pharmacie propose :</p>
-                      <div className="text-sm text-forest-700 mb-2">
-                        {o.items.map((item) => (
-                          <p key={item.id}>{item.medication_name}: {item.confirmed_quantity} unite(s) a {item.confirmed_unit_price?.toLocaleString('fr-FR')} FCFA piece</p>
-                        ))}
-                      </div>
-                      {o.total_amount !== null && o.total_amount !== undefined && (
-                        <p className="text-sm text-forest-900 font-medium mb-3">Total: {o.total_amount.toLocaleString('fr-FR')} FCFA</p>
-                      )}
-                      {o.pharmacist_note && <p className="text-sm text-forest-700 italic mb-3">Note: {o.pharmacist_note}</p>}
-                      <div className="flex gap-2 pb-3">
-                        <button onClick={() => confirmOrder(o.id)} disabled={confirmingOrderId === o.id}
-                          className="rounded-full bg-primary-700 text-white px-5 py-1.5 text-sm font-medium hover:bg-primary-900 transition disabled:opacity-50">
-                          {confirmingOrderId === o.id ? '...' : 'Confirmer'}
-                        </button>
-                        <button onClick={() => rejectOrder(o.id)} disabled={confirmingOrderId === o.id}
-                          className="rounded-full border border-clay-500 text-clay-600 px-5 py-1.5 text-sm hover:bg-clay-500 hover:text-white transition disabled:opacity-50">
-                          Refuser
-                        </button>
-                      </div>
-                    </div>
-                  )}
-
-                  {o.estimated_ready_at && (
-                    <p className="text-sm text-forest-700 mt-3">Pret estime le {new Date(o.estimated_ready_at).toLocaleString('fr-FR')}</p>
-                  )}
-                  {o.pharmacist_note && o.status !== 'awaiting_confirmation' && (
-                    <p className="text-sm text-forest-700 italic">Note de la pharmacie: {o.pharmacist_note}</p>
-                  )}
-
-                  {(o.status === 'ready' || o.status === 'out_for_delivery') && (
-                    <div className="mt-3 pt-3 border-t border-forest-100">
-                      <button onClick={() => markOrderReceived(o.id)} disabled={receivingOrderId === o.id}
-                        className="rounded-full bg-primary-700 text-white px-5 py-1.5 text-sm font-medium hover:bg-primary-900 transition disabled:opacity-50">
-                        {receivingOrderId === o.id ? '...' : "J'ai recu ma commande"}
-                      </button>
-                    </div>
-                  )}
-                </div>
-                {expandedOrderId === o.id && orderHistory[o.id] && (
-                  <div className="mt-3 pt-3 border-t border-forest-100 space-y-2">
-                    {orderHistory[o.id].map((h) => (
-                      <div key={h.id} className="flex items-center gap-3 text-sm">
-                        <StatusBadge status={h.status} />
-                        <span className="text-forest-700">{new Date(h.created_at).toLocaleString('fr-FR')}</span>
-                        {h.note && <span className="text-forest-700 italic">- {h.note}</span>}
-                      </div>
-                    ))}
-                  </div>
-                )}
-              </div>
-            ))}
-          </div>
-        </section>
-      )}
-
-      {healthRecords.length === 0 && orders.length === 0 && (
+      {healthRecords.length === 0 && (
         <p className="text-forest-700">Ton dossier est vide pour le moment.</p>
       )}
     </div>

@@ -152,7 +152,7 @@ export default function TeamMembers() {
             placeholder="Nom du departement (ex: Maternite, Cardiologie...)"
             className="flex-1 rounded-lg border border-forest-100 px-3 py-2 text-sm"
           />
-          <button type="submit" disabled={savingDept} className="rounded-full bg-primary-700 text-white px-5 py-2 text-sm font-medium hover:bg-primary-900 transition disabled:opacity-50">
+          <button type="submit" disabled={savingDept} className="rounded-full bg-[var(--portal-accent)] text-white px-5 py-2 text-sm font-medium hover:brightness-90 transition disabled:opacity-50">
             {savingDept ? '...' : 'Creer'}
           </button>
         </form>
@@ -230,7 +230,7 @@ export default function TeamMembers() {
           className="rounded-lg border border-forest-100 px-3 py-2 sm:col-span-2" />
 
         <button type="submit" disabled={saving}
-          className="sm:col-span-2 rounded-full bg-primary-700 text-white py-2.5 font-medium hover:bg-primary-900 transition disabled:opacity-50">
+          className="sm:col-span-2 rounded-full bg-[var(--portal-accent)] text-white py-2.5 font-medium hover:brightness-90 transition disabled:opacity-50">
           {saving ? 'Ajout...' : "Ajouter ce membre de l'equipe"}
         </button>
       </form>
@@ -262,7 +262,7 @@ export default function TeamMembers() {
                   onClick={() => toggleActive(s.id)}
                   disabled={togglingId === s.id}
                   className={`text-sm px-4 py-1.5 rounded-full font-medium transition disabled:opacity-50 ${
-                    s.is_active ? 'border border-clay-500 text-clay-600 hover:bg-clay-500 hover:text-white' : 'bg-primary-700 text-white hover:bg-primary-900'
+                    s.is_active ? 'border border-clay-500 text-clay-600 hover:bg-clay-500 hover:text-white' : 'bg-[var(--portal-accent)] text-white hover:brightness-90'
                   }`}
                 >
                   {togglingId === s.id ? '...' : s.is_active ? 'Desactiver' : 'Reactiver'}
@@ -297,7 +297,7 @@ export default function TeamMembers() {
                   className="rounded-lg border border-forest-100 px-3 py-2 text-sm sm:col-span-2" />
                 <div className="sm:col-span-2 flex gap-2">
                   <button onClick={() => saveProfile(s.id)} disabled={savingProfile}
-                    className="rounded-full bg-primary-700 text-white px-5 py-1.5 text-sm font-medium hover:bg-primary-900 transition disabled:opacity-50">
+                    className="rounded-full bg-[var(--portal-accent)] text-white px-5 py-1.5 text-sm font-medium hover:brightness-90 transition disabled:opacity-50">
                     {savingProfile ? 'Enregistrement...' : 'Enregistrer'}
                   </button>
                   <button onClick={() => setEditingId(null)} className="text-sm text-forest-700 hover:text-forest-900 hover:underline">

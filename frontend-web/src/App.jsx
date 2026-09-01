@@ -12,6 +12,7 @@ import Consultation from './pages/Consultation'
 import PatientHome from './pages/PatientHome'
 import PatientAppointments from './pages/PatientAppointments'
 import PatientRecords from './pages/PatientRecords'
+import PatientPharmacyOrders from './pages/PatientPharmacyOrders'
 import PatientPrescriptions from './pages/PatientPrescriptions'
 import PatientLabResults from './pages/PatientLabResults'
 import MyInvoices from './pages/MyInvoices'
@@ -77,6 +78,7 @@ export default function App() {
         <Route path="/espace-patient" element={<PatientHome />} />
         <Route path="/mes-rendez-vous" element={<PatientAppointments />} />
         <Route path="/mon-dossier" element={<PatientRecords />} />
+        <Route path="/mes-commandes-pharmacie" element={<PatientPharmacyOrders />} />
         <Route path="/mes-ordonnances" element={<PatientPrescriptions />} />
         <Route path="/mes-analyses" element={<PatientLabResults />} />
         <Route path="/mes-factures" element={<MyInvoices />} />

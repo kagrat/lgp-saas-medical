@@ -126,7 +126,7 @@ export default function DesktopSecretaryDashboard() {
       tabs={tabs}
       activeTab={tab}
       onTabChange={(id) => { setTab(id); setError('') }}
-      accentColor="bg-primary-700"
+      accentColor="bg-primary-500"
     >
       {error && <p className="text-clay-600 mb-6">{error}</p>}
 
@@ -166,7 +166,7 @@ export default function DesktopSecretaryDashboard() {
                         <button
                           onClick={() => markCompleted(a.id)}
                           disabled={completingId === a.id}
-                          className="text-sm rounded-full bg-primary-700 text-white px-4 py-1.5 hover:bg-primary-900 transition disabled:opacity-50"
+                          className="text-sm rounded-full bg-[var(--portal-accent)] text-white px-4 py-1.5 hover:brightness-90 transition disabled:opacity-50"
                         >
                           {completingId === a.id ? 'Mise a jour...' : 'Marquer termine'}
                         </button>
@@ -191,7 +191,7 @@ export default function DesktopSecretaryDashboard() {
                         className="rounded-lg border border-forest-100 px-3 py-1.5 text-sm" />
                     </div>
                     <button onClick={() => submitReschedule(a.id)}
-                      className="rounded-full bg-amber-500 text-forest-900 px-4 py-1.5 text-sm font-semibold hover:bg-amber-400 transition">
+                      className="rounded-full bg-[var(--portal-accent)] text-white px-4 py-1.5 text-sm font-semibold hover:brightness-90 transition">
                       Confirmer le report
                     </button>
                   </div>

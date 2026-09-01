@@ -88,7 +88,7 @@ export default function ChatWindow({ fetchUrl, sendUrl, currentSenderRole, title
         />
         <button
           type="submit" disabled={sending || !input.trim()}
-          className="rounded-full bg-amber-500 text-forest-900 px-5 py-2 text-sm font-semibold hover:bg-amber-400 transition disabled:opacity-50"
+          className="rounded-full bg-[var(--portal-accent)] text-white px-5 py-2 text-sm font-semibold hover:brightness-90 transition disabled:opacity-50"
         >
           Envoyer
         </button>

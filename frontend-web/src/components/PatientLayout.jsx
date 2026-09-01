@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { NavLink, Outlet, useNavigate, useLocation } from 'react-router-dom'
-import { Home, Calendar, CalendarPlus, Pill, FlaskConical, Microscope, MessageCircle, Receipt, UserRound, LogOut, Menu, X, FileText, ClipboardList } from 'lucide-react'
+import { Home, Calendar, CalendarPlus, Pill, Package, FlaskConical, Microscope, MessageCircle, Receipt, UserRound, LogOut, Menu, X, FileText, ClipboardList } from 'lucide-react'
 import { clearSession } from '../api/client'
 
 const MENU_ITEMS = [
@@ -11,6 +11,7 @@ const MENU_ITEMS = [
   { to: '/mes-ordonnances', label: 'Mes ordonnances', icon: ClipboardList },
   { to: '/consultation', label: 'Consultation', icon: CalendarPlus },
   { to: '/pharmacie', label: 'Pharmacie', icon: Pill },
+  { to: '/mes-commandes-pharmacie', label: 'Mes commandes pharmacie', icon: Package },
   { to: '/laboratoire', label: 'Laboratoire', icon: Microscope },
   { to: '/messages', label: 'Messages', icon: MessageCircle },
   { to: '/mes-factures', label: 'Mes factures', icon: Receipt },
@@ -42,7 +43,7 @@ export function PatientSidebarChrome({ children }) {
   const currentItem = MENU_ITEMS.find((item) => item.to === location.pathname)
 
   return (
-    <div className="flex h-screen bg-paper overflow-hidden">
+    <div className="flex h-screen bg-paper overflow-hidden" style={{ '--portal-accent': '#0F766E' }}>
       <div className="md:hidden fixed top-0 left-0 right-0 z-30 bg-primary-700 text-white flex items-center justify-between px-4 py-3">
         <button onClick={() => setMobileMenuOpen(true)} aria-label="Ouvrir le menu">
           <Menu className="w-6 h-6" strokeWidth={1.75} />

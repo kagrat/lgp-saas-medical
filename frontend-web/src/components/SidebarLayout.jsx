@@ -12,6 +12,18 @@ import { clearSession } from '../api/client'
 const CLIENT_TYPE = (typeof window !== 'undefined' && window.__LGP_CLIENT_TYPE__) || 'web'
 const LOGOUT_REDIRECT = CLIENT_TYPE === 'desktop' ? '/desktop.html' : '/connexion'
 
+// NOUVEAU (correctif demande par M. Faustin apres une erreur de ma part:
+// j'avais invente une couleur au lieu d'adapter le catalogue existant).
+// Valeurs hexadecimales EXACTES du catalogue fourni, reprises directement
+// de tailwind.config.js - une seule source de verite, jamais devinees.
+const ACCENT_HEX = {
+  'bg-primary-700': '#0F766E',   // Patient (Teal - catalogue)
+  'bg-primary-500': '#14958A',   // Hopital/Clinique (Teal clair)
+  'bg-secondary-500': '#2563EB', // Medecin (Bleu - catalogue exact)
+  'bg-secondary-600': '#1D4ED8', // Laboratoire (Bleu sombre)
+  'bg-success-700': '#15803D',   // Pharmacie (Vert, inchange - non mentionne par M. Faustin)
+}
+
 /**
  * NOUVEAU (refonte visuelle SpeedSante+, demande M. Faustin): remplace le
  * systeme d'onglets horizontaux utilise jusqu'ici par un menu lateral fixe
@@ -20,9 +32,12 @@ const LOGOUT_REDIRECT = CLIENT_TYPE === 'desktop' ? '/desktop.html' : '/connexio
  * (quel onglet est actif, quel contenu s'affiche) reste identique - seule
  * la presentation change, pour limiter le risque de regression.
  *
- * accentColor: classe Tailwind du fond de la barre laterale, alignee sur
- * le code couleur par portail des maquettes (teal pour patient/hopital,
- * bleu pour medecin/laboratoire, vert pour pharmacie).
+ * accentColor: classe Tailwind du fond de la barre laterale. Pose aussi
+ * une variable CSS "--portal-accent" sur le conteneur racine, pour que
+ * TOUT bouton descendant (meme dans un composant partage qui ne sait pas
+ * dans quel portail il s'affiche) puisse utiliser bg-[var(--portal-accent)]
+ * et heriter automatiquement la bonne couleur - demande explicite de M.
+ * Faustin: "les boutons de chaque interface doivent respecter sa couleur".
  *
  * CORRIGE (meme bug mobile que PatientLayout.jsx): en dessous de "md"
  * (768px), le menu se cache et s'ouvre desormais en tiroir via un bouton
@@ -42,6 +57,7 @@ export default function SidebarLayout({
   children,
 }) {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
+  const accentHex = ACCENT_HEX[accentColor] || ACCENT_HEX['bg-primary-700']
 
   function handleLogout() {
     clearSession()
@@ -54,7 +70,7 @@ export default function SidebarLayout({
   }
 
   return (
-    <div className="flex h-screen bg-paper overflow-hidden">
+    <div className="flex h-screen bg-paper overflow-hidden" style={{ '--portal-accent': accentHex }}>
       <div className={`md:hidden fixed top-0 left-0 right-0 z-30 ${accentColor} text-white flex items-center justify-between px-4 py-3`}>
         <button onClick={() => setMobileMenuOpen(true)} aria-label="Ouvrir le menu">
           <Menu className="w-6 h-6" strokeWidth={1.75} />

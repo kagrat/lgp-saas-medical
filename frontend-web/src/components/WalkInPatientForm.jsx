@@ -84,7 +84,7 @@ export default function WalkInPatientForm() {
           onChange={(e) => setForm({ ...form, residence: e.target.value })}
           className="rounded-lg border border-forest-100 px-3 py-2 text-sm sm:col-span-2" />
         <button type="submit" disabled={saving}
-          className="sm:col-span-2 rounded-full bg-forest-700 text-white py-2.5 text-sm font-medium hover:bg-forest-900 transition disabled:opacity-50">
+          className="sm:col-span-2 rounded-full bg-[var(--portal-accent)] text-white py-2.5 text-sm font-medium hover:brightness-90 transition disabled:opacity-50">
           {saving ? 'Creation...' : 'Creer ce patient'}
         </button>
       </form>

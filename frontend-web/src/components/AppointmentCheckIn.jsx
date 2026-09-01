@@ -117,7 +117,7 @@ export default function AppointmentCheckIn() {
                 className="rounded-lg border border-forest-100 px-3 py-2 text-sm" />
             </div>
             <button onClick={submitVitals} disabled={savingVitals}
-              className="rounded-full bg-amber-500 text-forest-900 px-5 py-1.5 text-sm font-semibold hover:bg-amber-400 transition disabled:opacity-50">
+              className="rounded-full bg-[var(--portal-accent)] text-white px-5 py-1.5 text-sm font-semibold hover:brightness-90 transition disabled:opacity-50">
               {savingVitals ? 'Enregistrement...' : 'Enregistrer'}
             </button>
           </div>
@@ -155,7 +155,7 @@ export default function AppointmentCheckIn() {
             <div className="flex gap-2 shrink-0 ml-3">
               {a.status === 'confirmed' && (
                 <button onClick={() => markArrived(a.id)} disabled={arrivingId === a.id}
-                  className="text-sm bg-forest-700 text-white px-4 py-1.5 rounded-full font-medium hover:bg-forest-900 transition disabled:opacity-50">
+                  className="text-sm bg-[var(--portal-accent)] text-white px-4 py-1.5 rounded-full font-medium hover:brightness-90 transition disabled:opacity-50">
                   {arrivingId === a.id ? '...' : 'Marquer arrive'}
                 </button>
               )}

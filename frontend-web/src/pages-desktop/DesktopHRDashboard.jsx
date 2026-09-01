@@ -42,7 +42,7 @@ export default function DesktopHRDashboard() {
       tabs={tabs}
       activeTab={tab}
       onTabChange={(id) => { setTab(id); setError('') }}
-      accentColor="bg-primary-700"
+      accentColor="bg-primary-500"
     >
       {error && <p className="text-clay-600 mb-6">{error}</p>}
 

@@ -105,7 +105,7 @@ export default function MySchedule() {
           <textarea placeholder="Motif (optionnel)" value={form.reason} onChange={(e) => setForm({ ...form, reason: e.target.value })}
             rows={2} className="w-full rounded-lg border border-forest-100 px-3 py-2 text-sm mb-3" />
           <button type="submit" disabled={submitting}
-            className="rounded-full bg-primary-700 text-white px-5 py-2 text-sm font-medium hover:bg-primary-900 transition disabled:opacity-50">
+            className="rounded-full bg-[var(--portal-accent)] text-white px-5 py-2 text-sm font-medium hover:brightness-90 transition disabled:opacity-50">
             {submitting ? 'Envoi...' : 'Envoyer la demande'}
           </button>
         </form>

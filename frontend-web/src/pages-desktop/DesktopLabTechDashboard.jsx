@@ -104,7 +104,7 @@ export default function DesktopLabTechDashboard() {
       tabs={tabs}
       activeTab={tab}
       onTabChange={(id) => { setTab(id); setError('') }}
-      accentColor="bg-amber-600"
+      accentColor="bg-secondary-600"
     >
       {error && <p className="text-clay-600 mb-6">{error}</p>}
 
@@ -155,7 +155,7 @@ export default function DesktopLabTechDashboard() {
                 <button
                   onClick={() => submitLabUpdate(t.id)}
                   disabled={updatingLabId === t.id}
-                  className="rounded-full bg-primary-700 text-white px-5 py-1.5 text-sm font-medium hover:bg-primary-900 transition disabled:opacity-50"
+                  className="rounded-full bg-[var(--portal-accent)] text-white px-5 py-1.5 text-sm font-medium hover:brightness-90 transition disabled:opacity-50"
                 >
                   {updatingLabId === t.id ? 'Mise a jour...' : 'Mettre a jour'}
                 </button>

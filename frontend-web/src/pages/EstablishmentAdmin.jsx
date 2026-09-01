@@ -388,7 +388,7 @@ export default function EstablishmentAdmin() {
       tabs={tabs}
       activeTab={tab}
       onTabChange={(id) => { setTab(id); setError('') }}
-      accentColor={isLab ? 'bg-amber-600' : isPharmacy ? 'bg-success-700' : 'bg-primary-700'}
+      accentColor={isLab ? 'bg-secondary-600' : isPharmacy ? 'bg-success-700' : 'bg-primary-500'}
       headerRight={<NotificationBell />}
     >
       {error && <p className="text-clay-600 mb-6">{error}</p>}
@@ -426,7 +426,7 @@ export default function EstablishmentAdmin() {
             <input required type="number" placeholder="Prix consultation (FCFA)" value={newDoctor.consultation_price}
               onChange={(e) => setNewDoctor({ ...newDoctor, consultation_price: e.target.value })}
               className="rounded-lg border border-forest-100 px-3 py-2" />
-            <button type="submit" className="sm:col-span-2 rounded-full bg-primary-700 text-white py-2.5 font-medium hover:bg-primary-900 transition">
+            <button type="submit" className="sm:col-span-2 rounded-full bg-[var(--portal-accent)] text-white py-2.5 font-medium hover:brightness-90 transition">
               Ajouter ce médecin
             </button>
           </form>
@@ -492,7 +492,7 @@ export default function EstablishmentAdmin() {
                         <button
                           onClick={() => markCompleted(a.id)}
                           disabled={completingId === a.id}
-                          className="text-sm rounded-full bg-primary-700 text-white px-4 py-1.5 hover:bg-primary-900 transition disabled:opacity-50"
+                          className="text-sm rounded-full bg-[var(--portal-accent)] text-white px-4 py-1.5 hover:brightness-90 transition disabled:opacity-50"
                         >
                           {completingId === a.id ? 'Mise a jour...' : 'Marquer termine'}
                         </button>
@@ -525,7 +525,7 @@ export default function EstablishmentAdmin() {
                         className="rounded-lg border border-forest-100 px-3 py-1.5 text-sm" />
                     </div>
                     <button onClick={() => submitReschedule(a.id)}
-                      className="rounded-full bg-amber-500 text-forest-900 px-4 py-1.5 text-sm font-semibold hover:bg-amber-400 transition">
+                      className="rounded-full bg-[var(--portal-accent)] text-white px-4 py-1.5 text-sm font-semibold hover:brightness-90 transition">
                       Confirmer le report
                     </button>
                   </div>
@@ -559,7 +559,7 @@ export default function EstablishmentAdmin() {
                     <button
                       onClick={() => submitDocument(a.id)}
                       disabled={savingDoc || !docForm.title || !docForm.content}
-                      className="rounded-full bg-amber-500 text-forest-900 px-5 py-1.5 text-sm font-semibold hover:bg-amber-400 transition disabled:opacity-50"
+                      className="rounded-full bg-[var(--portal-accent)] text-white px-5 py-1.5 text-sm font-semibold hover:brightness-90 transition disabled:opacity-50"
                     >
                       {savingDoc ? 'Ajout...' : 'Ajouter au dossier du patient'}
                     </button>
@@ -594,7 +594,7 @@ export default function EstablishmentAdmin() {
             <input required type="number" placeholder="Prix unitaire (FCFA)" value={newStock.unit_price}
               onChange={(e) => setNewStock({ ...newStock, unit_price: e.target.value })}
               className="rounded-lg border border-forest-100 px-3 py-2" />
-            <button type="submit" className="rounded-full bg-primary-700 text-white py-2.5 font-medium hover:bg-primary-900 transition">
+            <button type="submit" className="rounded-full bg-[var(--portal-accent)] text-white py-2.5 font-medium hover:brightness-90 transition">
               Ajouter au stock
             </button>
           </form>
@@ -689,7 +689,7 @@ export default function EstablishmentAdmin() {
                     <button
                       onClick={() => submitOrderUpdate(o.id)}
                       disabled={updatingOrderId === o.id}
-                      className="rounded-full bg-primary-700 text-white px-5 py-1.5 text-sm font-medium hover:bg-primary-900 transition disabled:opacity-50"
+                      className="rounded-full bg-[var(--portal-accent)] text-white px-5 py-1.5 text-sm font-medium hover:brightness-90 transition disabled:opacity-50"
                     >
                       {updatingOrderId === o.id ? 'Mise a jour...' : 'Mettre a jour'}
                     </button>
@@ -748,7 +748,7 @@ export default function EstablishmentAdmin() {
                 <button
                   onClick={() => submitLabUpdate(t.id)}
                   disabled={updatingLabId === t.id}
-                  className="rounded-full bg-primary-700 text-white px-5 py-1.5 text-sm font-medium hover:bg-primary-900 transition disabled:opacity-50"
+                  className="rounded-full bg-[var(--portal-accent)] text-white px-5 py-1.5 text-sm font-medium hover:brightness-90 transition disabled:opacity-50"
                 >
                   {updatingLabId === t.id ? 'Mise a jour...' : 'Mettre a jour'}
                 </button>
@@ -891,7 +891,7 @@ function DoctorAvailabilities({ doctorId }) {
             className="w-24 rounded-lg border border-forest-100 px-2 py-1.5 text-sm" />
         </div>
         <button type="submit" disabled={saving}
-          className="rounded-full bg-amber-500 text-forest-900 px-4 py-1.5 text-sm font-semibold hover:bg-amber-400 transition disabled:opacity-50">
+          className="rounded-full bg-[var(--portal-accent)] text-white px-4 py-1.5 text-sm font-semibold hover:brightness-90 transition disabled:opacity-50">
           {saving ? 'Ajout...' : 'Ajouter ce creneau'}
         </button>
       </form>

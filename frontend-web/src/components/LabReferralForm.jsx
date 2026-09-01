@@ -89,7 +89,7 @@ export default function LabReferralForm({ appointmentId, onDone }) {
       {message && <p className="text-forest-900 bg-forest-50 border border-forest-300 rounded-lg p-2 mb-2 text-sm">{message}</p>}
 
       <button onClick={handleSubmit} disabled={submitting}
-        className="rounded-full bg-primary-700 text-white px-5 py-2 text-sm font-medium hover:bg-primary-900 transition disabled:opacity-50">
+        className="rounded-full bg-[var(--portal-accent)] text-white px-5 py-2 text-sm font-medium hover:brightness-90 transition disabled:opacity-50">
         {submitting ? 'Envoi...' : 'Transmettre au laboratoire'}
       </button>
     </div>

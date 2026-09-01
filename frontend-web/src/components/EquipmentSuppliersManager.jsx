@@ -165,7 +165,7 @@ export default function EquipmentSuppliersManager() {
             className="rounded-lg border border-forest-100 px-3 py-2 text-sm" />
         </div>
         <button type="submit" disabled={savingEquip}
-          className="sm:col-span-2 rounded-full bg-primary-700 text-white py-2.5 text-sm font-medium hover:bg-primary-900 transition disabled:opacity-50">
+          className="sm:col-span-2 rounded-full bg-[var(--portal-accent)] text-white py-2.5 text-sm font-medium hover:brightness-90 transition disabled:opacity-50">
           {savingEquip ? 'Ajout...' : 'Ajouter cet equipement'}
         </button>
       </form>
@@ -200,7 +200,7 @@ export default function EquipmentSuppliersManager() {
           onChange={(e) => setSupplierForm({ ...supplierForm, contact_email: e.target.value })}
           className="rounded-lg border border-forest-100 px-3 py-2 text-sm" />
         <button type="submit" disabled={savingSupplier}
-          className="sm:col-span-3 rounded-full bg-primary-700 text-white py-2.5 text-sm font-medium hover:bg-primary-900 transition disabled:opacity-50">
+          className="sm:col-span-3 rounded-full bg-[var(--portal-accent)] text-white py-2.5 text-sm font-medium hover:brightness-90 transition disabled:opacity-50">
           {savingSupplier ? 'Ajout...' : 'Ajouter ce fournisseur'}
         </button>
       </form>
@@ -232,7 +232,7 @@ export default function EquipmentSuppliersManager() {
           onChange={(e) => setPoForm({ ...poForm, quantity: e.target.value })}
           className="rounded-lg border border-forest-100 px-3 py-2 text-sm" />
         <button type="submit" disabled={savingPo}
-          className="sm:col-span-2 rounded-full bg-primary-700 text-white py-2.5 text-sm font-medium hover:bg-primary-900 transition disabled:opacity-50">
+          className="sm:col-span-2 rounded-full bg-[var(--portal-accent)] text-white py-2.5 text-sm font-medium hover:brightness-90 transition disabled:opacity-50">
           {savingPo ? 'Envoi...' : 'Passer la commande'}
         </button>
       </form>
@@ -258,7 +258,7 @@ export default function EquipmentSuppliersManager() {
             </div>
             {po.status === 'pending' && (
               <div className="flex gap-2 mt-3">
-                <button onClick={() => receivePo(po.id)} className="text-sm bg-primary-700 text-white px-4 py-1.5 rounded-full font-medium hover:bg-primary-900 transition">
+                <button onClick={() => receivePo(po.id)} className="text-sm bg-[var(--portal-accent)] text-white px-4 py-1.5 rounded-full font-medium hover:brightness-90 transition">
                   Marquer recu
                 </button>
                 <button onClick={() => cancelPo(po.id)} className="text-sm border border-clay-500 text-clay-600 px-4 py-1.5 rounded-full font-medium hover:bg-clay-500 hover:text-white transition">

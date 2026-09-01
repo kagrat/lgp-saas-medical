@@ -39,7 +39,7 @@ export default function DesktopComingSoonDashboard() {
       tabs={tabs}
       activeTab={tab}
       onTabChange={setTab}
-      accentColor="bg-primary-700"
+      accentColor="bg-primary-500"
     >
       <div className="max-w-xl">
         <p className="text-forest-700">{copy.body}</p>

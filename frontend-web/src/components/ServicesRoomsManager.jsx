@@ -151,7 +151,7 @@ export default function ServicesRoomsManager() {
           onChange={(e) => setServiceForm({ ...serviceForm, description: e.target.value })}
           className="rounded-lg border border-forest-100 px-3 py-2" />
         <button type="submit" disabled={savingService}
-          className="sm:col-span-2 rounded-full bg-primary-700 text-white py-2.5 font-medium hover:bg-primary-900 transition disabled:opacity-50">
+          className="sm:col-span-2 rounded-full bg-[var(--portal-accent)] text-white py-2.5 font-medium hover:brightness-90 transition disabled:opacity-50">
           {savingService ? 'Ajout...' : 'Ajouter ce service'}
         </button>
       </form>
@@ -189,7 +189,7 @@ export default function ServicesRoomsManager() {
           onChange={(e) => setRoomForm({ ...roomForm, capacity: e.target.value })}
           className="rounded-lg border border-forest-100 px-3 py-2" />
         <button type="submit" disabled={savingRoom}
-          className="sm:col-span-2 rounded-full bg-primary-700 text-white py-2.5 font-medium hover:bg-primary-900 transition disabled:opacity-50">
+          className="sm:col-span-2 rounded-full bg-[var(--portal-accent)] text-white py-2.5 font-medium hover:brightness-90 transition disabled:opacity-50">
           {savingRoom ? 'Ajout...' : 'Ajouter cette salle'}
         </button>
       </form>
@@ -236,7 +236,7 @@ export default function ServicesRoomsManager() {
             className="w-32 rounded-lg border border-forest-100 px-3 py-2" />
         </div>
         <button type="submit" disabled={savingInventory}
-          className="sm:col-span-2 rounded-full bg-primary-700 text-white py-2.5 font-medium hover:bg-primary-900 transition disabled:opacity-50">
+          className="sm:col-span-2 rounded-full bg-[var(--portal-accent)] text-white py-2.5 font-medium hover:brightness-90 transition disabled:opacity-50">
           {savingInventory ? 'Ajout...' : 'Ajouter cet article'}
         </button>
       </form>

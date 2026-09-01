@@ -174,7 +174,7 @@ export default function DesktopPharmacistDashboard() {
             <input required type="number" placeholder="Prix unitaire (FCFA)" value={newStock.unit_price}
               onChange={(e) => setNewStock({ ...newStock, unit_price: e.target.value })}
               className="rounded-lg border border-forest-100 px-3 py-2" />
-            <button type="submit" className="rounded-full bg-primary-700 text-white py-2.5 font-medium hover:bg-primary-900 transition">
+            <button type="submit" className="rounded-full bg-[var(--portal-accent)] text-white py-2.5 font-medium hover:brightness-90 transition">
               Ajouter au stock
             </button>
           </form>
@@ -265,7 +265,7 @@ export default function DesktopPharmacistDashboard() {
                     <button
                       onClick={() => submitOrderUpdate(o.id)}
                       disabled={updatingOrderId === o.id}
-                      className="rounded-full bg-primary-700 text-white px-5 py-1.5 text-sm font-medium hover:bg-primary-900 transition disabled:opacity-50"
+                      className="rounded-full bg-[var(--portal-accent)] text-white px-5 py-1.5 text-sm font-medium hover:brightness-90 transition disabled:opacity-50"
                     >
                       {updatingOrderId === o.id ? 'Mise a jour...' : 'Mettre a jour'}
                     </button>

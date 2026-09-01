@@ -27,7 +27,7 @@ export default function DesktopReceptionistDashboard() {
       tabs={tabs}
       activeTab={tab}
       onTabChange={setTab}
-      accentColor="bg-primary-700"
+      accentColor="bg-primary-500"
     >
       {tab === 'arrivees' && <AppointmentCheckIn />}
       {tab === 'nouveau-patient' && <WalkInPatientForm />}
