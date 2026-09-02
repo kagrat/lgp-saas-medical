@@ -210,6 +210,18 @@ class DoctorAbsenceCreate(BaseModel):
         return v
 
 
+class DoctorAbsenceOut(BaseModel):
+    """NOUVEAU: manquait avant - on pouvait creer une absence mais jamais
+    la voir ni la supprimer, contrairement aux disponibilites qui avaient
+    deja les 3 (ajouter/lister/retirer)."""
+    id: str
+    start_date: date
+    end_date: date
+    reason: Optional[str] = None
+
+    model_config = {"from_attributes": True}
+
+
 # ---------- RENDEZ-VOUS ----------
 
 class AppointmentCreate(BaseModel):

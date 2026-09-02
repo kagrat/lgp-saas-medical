@@ -15,7 +15,7 @@ from app.models import (
     DoctorReview, Patient, Appointment, AppointmentStatus, MedicalDocument, PatientRecordShare,
 )
 from app.schemas import (
-    DoctorCreate, DoctorOut, DoctorAvailabilityCreate, DoctorAbsenceCreate,
+    DoctorCreate, DoctorOut, DoctorAvailabilityCreate, DoctorAbsenceCreate, DoctorAbsenceOut,
     DoctorAvailabilityOut, DoctorReviewCreate, DoctorReviewOut, DoctorDetailOut,
     DoctorPatientOut, DoctorPatientDetailOut, DoctorPatientAppointmentOut,
     PatientRecordShareCreate, PatientRecordShareOut, MedicalDocumentOut,
@@ -25,6 +25,28 @@ from app.security import hash_password
 from app.routers.health_records import _to_document_out
 
 router = APIRouter(prefix="/doctors", tags=["medecins"])
+
+
+@router.get("/me", response_model=DoctorOut)
+def get_my_doctor_profile(db: Session = Depends(get_db), current_user: User = Depends(require_roles(UserRole.DOCTOR))):
+    """
+    NOUVEAU (demande M. Faustin: brancher les fonctionnalites deja
+    construites cote serveur mais jamais utilisees). Le medecin a
+    toujours eu le droit cote serveur de gerer sa PROPRE disponibilite
+    et ses absences (meme regle que l'admin d'etablissement), mais son
+    interface ne connaissait jamais son propre doctor_id pour appeler
+    ces endpoints - seul l'admin y avait acces en pratique.
+    """
+    doctor = db.query(Doctor).filter(Doctor.user_id == current_user.id).first()
+    if not doctor:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Profil medecin introuvable")
+    avg_rating, review_count = _rating_stats(db, doctor.id)
+    return DoctorOut(
+        id=doctor.id, full_name=current_user.full_name, phone=current_user.phone,
+        specialty=doctor.specialty, consultation_price=doctor.consultation_price,
+        bio=doctor.bio, photo_url=doctor.photo_url, establishment_id=doctor.establishment_id,
+        is_active=doctor.is_active, average_rating=avg_rating, review_count=review_count,
+    )
 
 
 def _rating_stats(db: Session, doctor_id: str) -> tuple[Optional[float], int]:
@@ -181,6 +203,28 @@ def add_absence(doctor_id: str, payload: DoctorAbsenceCreate, db: Session = Depe
     db.add(absence)
     db.commit()
     return {"message": "Absence enregistree"}
+
+
+@router.get("/{doctor_id}/absences", response_model=list[DoctorAbsenceOut])
+def list_absences(doctor_id: str, db: Session = Depends(get_db),
+                   current_user: User = Depends(require_roles(UserRole.ESTABLISHMENT_ADMIN, UserRole.DOCTOR))):
+    """NOUVEAU: manquait avant - on pouvait creer une absence mais jamais
+    la revoir, contrairement aux disponibilites (meme regle d'acces,
+    memes 3 actions: ajouter/lister/retirer)."""
+    doctor = _get_doctor_in_scope(db, doctor_id, current_user)
+    absences = db.query(DoctorAbsence).filter(DoctorAbsence.doctor_id == doctor.id).order_by(DoctorAbsence.start_date.desc()).all()
+    return absences
+
+
+@router.delete("/{doctor_id}/absences/{absence_id}", status_code=status.HTTP_204_NO_CONTENT)
+def delete_absence(doctor_id: str, absence_id: str, db: Session = Depends(get_db),
+                    current_user: User = Depends(require_roles(UserRole.ESTABLISHMENT_ADMIN, UserRole.DOCTOR))):
+    doctor = _get_doctor_in_scope(db, doctor_id, current_user)
+    absence = db.query(DoctorAbsence).filter(DoctorAbsence.id == absence_id, DoctorAbsence.doctor_id == doctor.id).first()
+    if not absence:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Absence introuvable")
+    db.delete(absence)
+    db.commit()
 
 
 @router.post("/{doctor_id}/reviews", response_model=DoctorReviewOut, status_code=status.HTTP_201_CREATED)

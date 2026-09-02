@@ -21,6 +21,9 @@ export default function EquipmentSuppliersManager() {
 
   const [equipForm, setEquipForm] = useState({ name: '', category: '', department_id: '', status: 'fonctionnel', next_maintenance_date: '' })
   const [savingEquip, setSavingEquip] = useState(false)
+  const [editingEquipmentId, setEditingEquipmentId] = useState(null)
+  const [editEquipForm, setEditEquipForm] = useState({ name: '', category: '', department_id: '', status: 'fonctionnel', next_maintenance_date: '' })
+  const [savingEquipEdit, setSavingEquipEdit] = useState(false)
 
   const [supplierForm, setSupplierForm] = useState({ name: '', contact_phone: '', contact_email: '' })
   const [savingSupplier, setSavingSupplier] = useState(false)
@@ -76,6 +79,42 @@ export default function EquipmentSuppliersManager() {
       await load()
     } catch {
       setError('Suppression impossible.')
+    }
+  }
+
+  function startEditEquipment(eq) {
+    setEditingEquipmentId(eq.id)
+    setEditEquipForm({
+      name: eq.name, category: eq.category || '', department_id: eq.department_id || '',
+      status: eq.status, next_maintenance_date: eq.next_maintenance_date || '',
+    })
+  }
+
+  async function submitEquipmentEdit(e) {
+    e.preventDefault()
+    setSavingEquipEdit(true)
+    setError('')
+    try {
+      await api.patch(`/equipment/${editingEquipmentId}`, {
+        name: editEquipForm.name, category: editEquipForm.category || null,
+        department_id: editEquipForm.department_id || null, status: editEquipForm.status,
+        next_maintenance_date: editEquipForm.next_maintenance_date || null,
+      })
+      setEditingEquipmentId(null)
+      await load()
+    } catch (err) {
+      setError(getErrorMessage(err, "Impossible de modifier cet equipement."))
+    } finally {
+      setSavingEquipEdit(false)
+    }
+  }
+
+  async function deleteSupplier(id) {
+    try {
+      await api.delete(`/suppliers/${id}`)
+      await load()
+    } catch (err) {
+      setError(getErrorMessage(err, 'Suppression impossible (peut-etre lie a un bon de commande existant).'))
     }
   }
 
@@ -172,6 +211,42 @@ export default function EquipmentSuppliersManager() {
       <div className="space-y-2 mb-8">
         {equipment.length === 0 && <p className="text-forest-700 text-sm">Aucun equipement enregistre.</p>}
         {equipment.map((eq) => (
+          editingEquipmentId === eq.id ? (
+            <form key={eq.id} onSubmit={submitEquipmentEdit} className="grid sm:grid-cols-2 gap-3 bg-white border border-primary-500 rounded-xl p-4">
+              <input required placeholder="Nom" value={editEquipForm.name}
+                onChange={(e) => setEditEquipForm({ ...editEquipForm, name: e.target.value })}
+                className="rounded-lg border border-forest-100 px-3 py-2 text-sm" />
+              <input placeholder="Categorie (optionnel)" value={editEquipForm.category}
+                onChange={(e) => setEditEquipForm({ ...editEquipForm, category: e.target.value })}
+                className="rounded-lg border border-forest-100 px-3 py-2 text-sm" />
+              <select value={editEquipForm.department_id} onChange={(e) => setEditEquipForm({ ...editEquipForm, department_id: e.target.value })}
+                className="rounded-lg border border-forest-100 px-3 py-2 text-sm bg-white">
+                <option value="">Departement (optionnel)</option>
+                {departments.map((d) => <option key={d.id} value={d.id}>{d.name}</option>)}
+              </select>
+              <select value={editEquipForm.status} onChange={(e) => setEditEquipForm({ ...editEquipForm, status: e.target.value })}
+                className="rounded-lg border border-forest-100 px-3 py-2 text-sm bg-white">
+                <option value="fonctionnel">Fonctionnel</option>
+                <option value="maintenance">En maintenance</option>
+                <option value="hors_service">Hors service</option>
+              </select>
+              <div className="sm:col-span-2">
+                <label className="block text-xs text-forest-700 mb-1">Prochaine maintenance preventive (optionnel)</label>
+                <input type="date" value={editEquipForm.next_maintenance_date}
+                  onChange={(e) => setEditEquipForm({ ...editEquipForm, next_maintenance_date: e.target.value })}
+                  className="rounded-lg border border-forest-100 px-3 py-2 text-sm" />
+              </div>
+              <div className="sm:col-span-2 flex gap-2">
+                <button type="submit" disabled={savingEquipEdit}
+                  className="rounded-full bg-[var(--portal-accent)] text-white px-5 py-1.5 text-sm font-medium hover:brightness-90 transition disabled:opacity-50">
+                  {savingEquipEdit ? 'Enregistrement...' : 'Enregistrer'}
+                </button>
+                <button type="button" onClick={() => setEditingEquipmentId(null)} className="text-sm text-forest-700 hover:underline">
+                  Annuler
+                </button>
+              </div>
+            </form>
+          ) : (
           <div key={eq.id} className={`rounded-xl border p-4 flex justify-between items-center ${eq.maintenance_due ? 'border-clay-300 bg-clay-500/5' : 'border-forest-100 bg-white'}`}>
             <div>
               <p className="text-forest-900 font-medium">
@@ -183,8 +258,12 @@ export default function EquipmentSuppliersManager() {
                 {eq.next_maintenance_date && ` - prochaine maintenance: ${new Date(eq.next_maintenance_date).toLocaleDateString('fr-FR')}`}
               </p>
             </div>
-            <button onClick={() => deleteEquipment(eq.id)} className="text-sm text-clay-600 hover:underline">Supprimer</button>
+            <div className="flex gap-3 shrink-0 ml-3">
+              <button onClick={() => startEditEquipment(eq)} className="text-sm text-primary-700 hover:underline">Modifier</button>
+              <button onClick={() => deleteEquipment(eq.id)} className="text-sm text-clay-600 hover:underline">Supprimer</button>
+            </div>
           </div>
+          )
         ))}
       </div>
 
@@ -207,8 +286,11 @@ export default function EquipmentSuppliersManager() {
       <div className="flex flex-wrap gap-2 mb-8">
         {suppliers.length === 0 && <p className="text-forest-700 text-sm">Aucun fournisseur enregistre.</p>}
         {suppliers.map((s) => (
-          <span key={s.id} className="text-sm bg-forest-50 text-forest-900 px-3 py-1.5 rounded-full">
+          <span key={s.id} className="text-sm bg-forest-50 text-forest-900 px-3 py-1.5 rounded-full flex items-center gap-2">
             {s.name}{s.contact_phone ? ` - ${s.contact_phone}` : ''}
+            <button onClick={() => deleteSupplier(s.id)} className="text-clay-600 hover:text-clay-500 font-bold" aria-label="Supprimer ce fournisseur">
+              x
+            </button>
           </span>
         ))}
       </div>

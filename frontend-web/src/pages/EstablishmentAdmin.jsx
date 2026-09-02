@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { BarChart, Stethoscope, Calendar, Pill, Package, FlaskConical, Users, MessageSquare, Building2, Clock, Clipboard, FileBarChart, Wrench } from 'lucide-react'
+import { BarChart, Stethoscope, Calendar, Pill, Package, FlaskConical, Users, MessageSquare, Building2, Clock, Clipboard, FileBarChart, Wrench, Receipt } from 'lucide-react'
 import api, { getErrorMessage } from '../api/client'
 import { SPECIALTIES, DAYS_OF_WEEK } from '../constants'
 import StarRating from '../components/StarRating'
@@ -18,9 +18,11 @@ import ServicesRoomsManager from '../components/ServicesRoomsManager'
 import LabCatalogManager from '../components/LabCatalogManager'
 import PharmacyStatsCards from '../components/PharmacyStatsCards'
 import LabReferralForm from '../components/LabReferralForm'
+import DoctorAvailabilityManager from '../components/DoctorAvailabilityManager'
 import ReservationReviewForm from '../components/ReservationReviewForm'
 import NotificationBell from '../components/NotificationBell'
 import ReportsManager from '../components/ReportsManager'
+import InvoiceManager from '../components/InvoiceManager'
 import EquipmentSuppliersManager from '../components/EquipmentSuppliersManager'
 import SidebarLayout from '../components/SidebarLayout'
 
@@ -371,6 +373,11 @@ export default function EstablishmentAdmin() {
     // NOUVEAU (reporting avance): disponible pour TOUS les types
     // d'etablissement, la facturation et le journal d'audit n'ayant aucune
     // restriction de type cote serveur (une pharmacie facture aussi).
+    // NOUVEAU (demande M. Faustin: brancher les fonctionnalites deja
+    // construites cote serveur): l'admin d'etablissement a toujours eu le
+    // droit de gerer la facturation (meme regle que le comptable), mais
+    // n'avait aucune interface pour le faire avant ce correctif.
+    { id: 'billing', label: 'Facturation', icon: Receipt },
     { id: 'reports', label: 'Rapports', icon: FileBarChart },
     // NOUVEAU (equipement + fournisseurs, dernier chantier du cahier des
     // charges): meme raisonnement, disponible partout.
@@ -468,7 +475,7 @@ export default function EstablishmentAdmin() {
                     {expandedDoctorId === d.id ? 'Fermer' : 'Gerer les disponibilites'}
                   </button>
                 </div>
-                {expandedDoctorId === d.id && <DoctorAvailabilities doctorId={d.id} />}
+                {expandedDoctorId === d.id && <DoctorAvailabilityManager doctorId={d.id} />}
               </div>
             ))}
           </div>
@@ -862,115 +869,12 @@ export default function EstablishmentAdmin() {
 
       {tab === 'catalog' && isLab && <LabCatalogManager />}
 
+      {tab === 'billing' && <InvoiceManager />}
+
       {tab === 'reports' && <ReportsManager />}
 
       {tab === 'equipment' && <EquipmentSuppliersManager />}
     </SidebarLayout>
-  )
-}
-
-function DoctorAvailabilities({ doctorId }) {
-  const [availabilities, setAvailabilities] = useState([])
-  const [error, setError] = useState('')
-  const [form, setForm] = useState({ day_of_week: 0, start_time: '09:00', end_time: '12:00', slot_duration_minutes: 30 })
-  const [saving, setSaving] = useState(false)
-
-  useEffect(() => {
-    load()
-  }, [doctorId])
-
-  async function load() {
-    try {
-      const { data } = await api.get(`/doctors/${doctorId}/availabilities`)
-      setAvailabilities(data)
-    } catch (err) {
-      setError('Impossible de charger les disponibilités.')
-    }
-  }
-
-  async function handleAdd(e) {
-    e.preventDefault()
-    setError('')
-    setSaving(true)
-    try {
-      await api.post(`/doctors/${doctorId}/availabilities`, {
-        day_of_week: Number(form.day_of_week),
-        start_time: form.start_time,
-        end_time: form.end_time,
-        slot_duration_minutes: Number(form.slot_duration_minutes),
-      })
-      await load()
-    } catch (err) {
-      setError(getErrorMessage(err, "Impossible d'ajouter ce créneau. Vérifie que l'heure de fin est bien apres l'heure de debut."))
-    } finally {
-      setSaving(false)
-    }
-  }
-
-  async function handleDelete(availabilityId) {
-    try {
-      await api.delete(`/doctors/${doctorId}/availabilities/${availabilityId}`)
-      await load()
-    } catch (err) {
-      setError('Suppression impossible.')
-    }
-  }
-
-  return (
-    <div className="mt-4 pt-4 border-t border-forest-100">
-      <p className="text-sm font-medium text-forest-900 mb-3">
-        Disponibilités hebdomadaires (se repetent chaque semaine)
-      </p>
-
-      <form onSubmit={handleAdd} className="flex flex-wrap gap-2 items-end mb-4">
-        <div>
-          <label className="block text-xs text-forest-700 mb-1">Jour</label>
-          <select value={form.day_of_week} onChange={(e) => setForm({ ...form, day_of_week: e.target.value })}
-            className="rounded-lg border border-forest-100 px-2 py-1.5 text-sm bg-white">
-            {DAYS_OF_WEEK.map((d) => <option key={d.value} value={d.value}>{d.label}</option>)}
-          </select>
-        </div>
-        <div>
-          <label className="block text-xs text-forest-700 mb-1">De</label>
-          <input type="time" value={form.start_time} onChange={(e) => setForm({ ...form, start_time: e.target.value })}
-            className="rounded-lg border border-forest-100 px-2 py-1.5 text-sm" />
-        </div>
-        <div>
-          <label className="block text-xs text-forest-700 mb-1">A</label>
-          <input type="time" value={form.end_time} onChange={(e) => setForm({ ...form, end_time: e.target.value })}
-            className="rounded-lg border border-forest-100 px-2 py-1.5 text-sm" />
-        </div>
-        <div>
-          <label className="block text-xs text-forest-700 mb-1">Duree/RDV (min)</label>
-          <input type="number" min="5" step="5" value={form.slot_duration_minutes}
-            onChange={(e) => setForm({ ...form, slot_duration_minutes: e.target.value })}
-            className="w-24 rounded-lg border border-forest-100 px-2 py-1.5 text-sm" />
-        </div>
-        <button type="submit" disabled={saving}
-          className="rounded-full bg-[var(--portal-accent)] text-white px-4 py-1.5 text-sm font-semibold hover:brightness-90 transition disabled:opacity-50">
-          {saving ? 'Ajout...' : 'Ajouter ce creneau'}
-        </button>
-      </form>
-
-      {error && <p className="text-clay-600 text-sm mb-3">{error}</p>}
-
-      {availabilities.length === 0 ? (
-        <p className="text-sm text-forest-700">Aucune disponibilité enregistrée pour ce médecin.</p>
-      ) : (
-        <div className="flex flex-wrap gap-2">
-          {availabilities.map((a) => (
-            <div key={a.id} className="flex items-center gap-2 rounded-full bg-forest-50 px-3 py-1.5 text-sm text-forest-900">
-              <span>
-                {DAYS_OF_WEEK.find((d) => d.value === a.day_of_week)?.label} {a.start_time.slice(0, 5)}-{a.end_time.slice(0, 5)}
-              </span>
-              <button onClick={() => handleDelete(a.id)} className="text-clay-600 hover:text-clay-500 font-bold" aria-label="Supprimer ce créneau">
-                x
-              </button>
-            </div>
-          ))}
-        </div>
-      )}
-    </div>
   )
 }
 

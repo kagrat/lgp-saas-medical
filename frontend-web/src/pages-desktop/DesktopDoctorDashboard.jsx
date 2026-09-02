@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { Calendar, Users, BedDouble, Clock, MessageSquare } from 'lucide-react'
+import { Calendar, Users, BedDouble, Clock, MessageSquare, CalendarCheck } from 'lucide-react'
 import api, { getErrorMessage } from '../api/client'
 import { AppointmentStatusBadge } from '../components/AppointmentStatusUI'
 import { DOCUMENT_TYPES, DOCUMENT_TYPE_LABELS } from '../components/DocumentType'
@@ -9,10 +9,12 @@ import Hospitalizations from '../components/Hospitalizations'
 import PrescriptionItemsEditor from '../components/PrescriptionItemsEditor'
 import MySchedule from '../components/MySchedule'
 import LabReferralForm from '../components/LabReferralForm'
+import DoctorAvailabilityManager from '../components/DoctorAvailabilityManager'
 import SidebarLayout from '../components/SidebarLayout'
 
 export default function DesktopDoctorDashboard() {
   const [establishment, setEstablishment] = useState(null)
+  const [myDoctorId, setMyDoctorId] = useState(null)
   const [tab, setTab] = useState('appointments')
   const [appointments, setAppointments] = useState([])
   const [conversations, setConversations] = useState([])
@@ -36,6 +38,7 @@ export default function DesktopDoctorDashboard() {
 
   useEffect(() => {
     loadEstablishment()
+    loadMyDoctorProfile()
   }, [])
 
   useEffect(() => {
@@ -52,6 +55,15 @@ export default function DesktopDoctorDashboard() {
       setEstablishment(data)
     } catch (err) {
       setError(getErrorMessage(err, "Impossible de charger les informations de l'établissement."))
+    }
+  }
+
+  async function loadMyDoctorProfile() {
+    try {
+      const { data } = await api.get('/doctors/me')
+      setMyDoctorId(data.id)
+    } catch (err) {
+      setError(getErrorMessage(err, 'Impossible de charger ton profil médecin.'))
     }
   }
 
@@ -184,6 +196,7 @@ export default function DesktopDoctorDashboard() {
     { id: 'appointments', label: 'Mes rendez-vous', icon: Calendar },
     { id: 'patients', label: 'Patients', icon: Users },
     { id: 'hospitalizations', label: 'Hospitalisations', icon: BedDouble },
+    { id: 'availability', label: 'Ma disponibilité', icon: CalendarCheck },
     { id: 'schedule', label: 'Mon planning', icon: Clock },
     { id: 'messages', label: 'Messages', icon: MessageSquare },
   ]
@@ -361,6 +374,10 @@ export default function DesktopDoctorDashboard() {
       {tab === 'patients' && <MyPatients />}
 
       {tab === 'hospitalizations' && <Hospitalizations />}
+
+      {tab === 'availability' && (
+        myDoctorId ? <DoctorAvailabilityManager doctorId={myDoctorId} /> : <p className="text-forest-700">Chargement...</p>
+      )}
 
       {tab === 'schedule' && <MySchedule />}
 
