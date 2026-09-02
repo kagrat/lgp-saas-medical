@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react'
 import { BarChart, Pill, Package, MessageSquare, Clock } from 'lucide-react'
 import api, { getErrorMessage } from '../api/client'
 import PharmacyStatsCards from '../components/PharmacyStatsCards'
-import { RESERVATION_STATUSES, RESERVATION_STATUS_LABELS, RESERVATION_STEPS, STAFF_UPDATABLE_STATUSES, STAFF_ACTIONABLE_STATUSES } from '../components/OrderStatus'
+import { RESERVATION_STATUSES, RESERVATION_STATUS_LABELS, RESERVATION_STEPS, STAFF_UPDATABLE_STATUSES, STAFF_ACTIONABLE_STATUSES, StatusBadge } from '../components/OrderStatus'
 import FilterTabs from '../components/FilterTabs'
 import StatusStepper from '../components/StatusStepper'
 import ReservationReviewForm from '../components/ReservationReviewForm'
@@ -21,6 +21,8 @@ export default function DesktopPharmacistDashboard() {
   const [error, setError] = useState('')
   const [updatingOrderId, setUpdatingOrderId] = useState(null)
   const [orderUpdateForm, setOrderUpdateForm] = useState({})
+  const [expandedOrderId, setExpandedOrderId] = useState(null)
+  const [orderHistory, setOrderHistory] = useState({})
   const [newStock, setNewStock] = useState({ reference: '', medication_name: '', category: '', quantity: '', alert_threshold: 10, unit_price: '' })
 
   useEffect(() => {
@@ -74,6 +76,22 @@ export default function DesktopPharmacistDashboard() {
       setOrderUpdateForm(initialOrderForms)
     } catch (err) {
       setError(getErrorMessage(err, 'Impossible de charger les commandes.'))
+    }
+  }
+
+  async function toggleOrderHistory(reservationId) {
+    if (expandedOrderId === reservationId) {
+      setExpandedOrderId(null)
+      return
+    }
+    setExpandedOrderId(reservationId)
+    if (!orderHistory[reservationId]) {
+      try {
+        const { data } = await api.get(`/pharmacy/reservations/${reservationId}/history`)
+        setOrderHistory((h) => ({ ...h, [reservationId]: data }))
+      } catch (err) {
+        setError("Impossible de charger le suivi de cette commande.")
+      }
     }
   }
 
@@ -200,6 +218,39 @@ export default function DesktopPharmacistDashboard() {
           <div className="space-y-3">
             {filteredOrders.length === 0 && <p className="text-forest-700">Aucune commande dans cette catégorie.</p>}
             {filteredOrders.map((o) => (
+              o.status === 'delivered' ? (
+                // NOUVEAU (demande M. Faustin, appliquee aussi cote
+                // pharmacien pour coherence): une commande deja livree n'a
+                // plus besoin du parcours detaille en 7 etapes - juste une
+                // ligne compacte, avec le detail complet disponible via
+                // "Voir le suivi".
+                <div key={o.id} className="rounded-xl border border-forest-100 bg-white p-4">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <p className="text-forest-900 font-medium">
+                        {o.items.map((item) => item.medication_name).join(', ')}
+                      </p>
+                      <p className="text-sm text-forest-700 mt-0.5">
+                        Livree - {o.delivery_mode === 'delivery' ? 'Livraison' : 'Retrait sur place'}
+                      </p>
+                    </div>
+                    <button onClick={() => toggleOrderHistory(o.id)} className="text-xs text-amber-600 hover:underline shrink-0 ml-3">
+                      {expandedOrderId === o.id ? 'Masquer le suivi' : 'Voir le suivi'}
+                    </button>
+                  </div>
+                  {expandedOrderId === o.id && orderHistory[o.id] && (
+                    <div className="mt-3 pt-3 border-t border-forest-100 space-y-2">
+                      {orderHistory[o.id].map((h) => (
+                        <div key={h.id} className="flex items-center gap-3 text-sm">
+                          <StatusBadge status={h.status} />
+                          <span className="text-forest-700">{new Date(h.created_at).toLocaleString('fr-FR')}</span>
+                          {h.note && <span className="text-forest-700 italic">- {h.note}</span>}
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              ) : (
               <div key={o.id} className="rounded-xl border border-forest-100 bg-white p-4">
                 <div className="mb-3">
                   {o.prescription_document_id && (
@@ -272,6 +323,7 @@ export default function DesktopPharmacistDashboard() {
                   </div>
                 )}
               </div>
+              )
             ))}
           </div>
         </div>

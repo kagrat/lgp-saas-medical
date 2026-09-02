@@ -107,6 +107,40 @@ export default function PatientPharmacyOrders() {
 
       <div className="space-y-3">
         {orders.map((o) => (
+          o.status === 'delivered' ? (
+            // NOUVEAU (demande M. Faustin): une commande deja livree n'a
+            // plus besoin du parcours detaille en 7 etapes, qui n'a plus
+            // d'utilite une fois terminee - juste une ligne compacte, avec
+            // le detail complet disponible via "Voir le suivi" si besoin.
+            // Meme logique que l'historique de commandes d'un site
+            // e-commerce classique.
+            <div key={o.id} className="rounded-xl border border-forest-100 bg-white p-4">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-forest-900 font-medium">
+                    {o.items.map((item) => item.medication_name).join(', ')}
+                  </p>
+                  <p className="text-sm text-forest-700 mt-0.5">
+                    Livree - {o.delivery_mode === 'delivery' ? 'Livraison' : 'Retrait sur place'}
+                  </p>
+                </div>
+                <button onClick={() => toggleOrderHistory(o.id)} className="text-xs text-amber-600 hover:underline shrink-0 ml-3">
+                  {expandedOrderId === o.id ? 'Masquer le suivi' : 'Voir le suivi'}
+                </button>
+              </div>
+              {expandedOrderId === o.id && orderHistory[o.id] && (
+                <div className="mt-3 pt-3 border-t border-forest-100 space-y-2">
+                  {orderHistory[o.id].map((h) => (
+                    <div key={h.id} className="flex items-center gap-3 text-sm">
+                      <StatusBadge status={h.status} />
+                      <span className="text-forest-700">{new Date(h.created_at).toLocaleString('fr-FR')}</span>
+                      {h.note && <span className="text-forest-700 italic">- {h.note}</span>}
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          ) : (
           <div key={o.id} className="rounded-xl border border-forest-100 bg-white p-4">
             <div className="mb-3">
               <div className="flex items-center justify-between mb-2">
@@ -198,6 +232,7 @@ export default function PatientPharmacyOrders() {
               </div>
             )}
           </div>
+          )
         ))}
       </div>
     </div>
