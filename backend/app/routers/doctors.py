@@ -12,13 +12,14 @@ from sqlalchemy.orm import Session
 from app.database import get_db
 from app.models import (
     Doctor, User, UserRole, DoctorAvailability, DoctorAbsence, Establishment,
-    DoctorReview, Patient, Appointment, AppointmentStatus, MedicalDocument, PatientRecordShare,
+    DoctorReview, Patient, Appointment, AppointmentStatus, MedicalDocument, PatientRecordShare, ClinicalFlag,
 )
 from app.schemas import (
     DoctorCreate, DoctorOut, DoctorAvailabilityCreate, DoctorAbsenceCreate, DoctorAbsenceOut,
     DoctorAvailabilityOut, DoctorReviewCreate, DoctorReviewOut, DoctorDetailOut,
     DoctorPatientOut, DoctorPatientDetailOut, DoctorPatientAppointmentOut,
     PatientRecordShareCreate, PatientRecordShareOut, MedicalDocumentOut,
+    ClinicalFlagCreate, ClinicalFlagOut,
 )
 from app.deps import require_roles, get_current_user
 from app.security import hash_password
@@ -435,14 +436,72 @@ def my_patient_detail(patient_id: str, db: Session = Depends(get_db),
         .all() if appointment_ids else []
     )
 
+    # NOUVEAU (demande M. Faustin: elements cliniques). Visibles quel que
+    # soit le mode d'acces (patient traite ou dossier partage) - seule
+    # l'AJOUT/RETRAIT reste reserve au medecin traitant (can_add_document),
+    # meme regle que pour les documents.
+    clinical_flags = (
+        db.query(ClinicalFlag)
+        .filter(ClinicalFlag.patient_id == patient_id)
+        .order_by(ClinicalFlag.created_at.desc())
+        .all()
+    )
+
     return DoctorPatientDetailOut(
         id=patient.id, full_name=patient.user.full_name, dossier_number=patient.dossier_number,
         phone=patient.user.phone, date_of_birth=patient.date_of_birth,
         appointments=[DoctorPatientAppointmentOut(id=a.id, scheduled_at=a.scheduled_at) for a in source_appointments],
         documents=[_to_document_out(d) for d in documents],
+        clinical_flags=[ClinicalFlagOut(id=f.id, flag_type=f.flag_type, label=f.label, created_at=f.created_at) for f in clinical_flags],
         can_add_document=can_add_document,
         viewed_via_share_from=viewed_via_share_from,
     )
+
+
+@router.post("/patients/{patient_id}/clinical-flags", response_model=ClinicalFlagOut, status_code=status.HTTP_201_CREATED)
+def add_clinical_flag(patient_id: str, payload: ClinicalFlagCreate, db: Session = Depends(get_db),
+                       current_user: User = Depends(require_roles(UserRole.DOCTOR))):
+    """NOUVEAU (demande M. Faustin): reserve au medecin TRAITANT (meme
+    regle que l'ajout de documents) - un confrere avec un dossier partage
+    peut VOIR les elements cliniques mais pas en ajouter."""
+    doctor = _current_doctor(db, current_user)
+    patient = db.query(Patient).filter(Patient.id == patient_id).first()
+    if not patient:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Patient introuvable")
+
+    has_treated = db.query(Appointment).filter(
+        Appointment.doctor_id == doctor.id, Appointment.patient_id == patient_id,
+        Appointment.status == AppointmentStatus.COMPLETED,
+    ).first()
+    if not has_treated:
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Ce patient ne fait pas partie de tes patients")
+
+    flag = ClinicalFlag(
+        id=str(uuid.uuid4()), patient_id=patient_id, flag_type=payload.flag_type,
+        label=payload.label, created_by_user_id=current_user.id,
+    )
+    db.add(flag)
+    db.commit()
+    db.refresh(flag)
+    return ClinicalFlagOut(id=flag.id, flag_type=flag.flag_type, label=flag.label, created_at=flag.created_at)
+
+
+@router.delete("/patients/{patient_id}/clinical-flags/{flag_id}", status_code=status.HTTP_204_NO_CONTENT)
+def remove_clinical_flag(patient_id: str, flag_id: str, db: Session = Depends(get_db),
+                          current_user: User = Depends(require_roles(UserRole.DOCTOR))):
+    doctor = _current_doctor(db, current_user)
+    has_treated = db.query(Appointment).filter(
+        Appointment.doctor_id == doctor.id, Appointment.patient_id == patient_id,
+        Appointment.status == AppointmentStatus.COMPLETED,
+    ).first()
+    if not has_treated:
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Ce patient ne fait pas partie de tes patients")
+
+    flag = db.query(ClinicalFlag).filter(ClinicalFlag.id == flag_id, ClinicalFlag.patient_id == patient_id).first()
+    if not flag:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Element clinique introuvable")
+    db.delete(flag)
+    db.commit()
 
 
 # ---------- ENVOYER LE DOSSIER A UN CONFRERE (nouveau, demande M. Faustin) ----------

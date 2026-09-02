@@ -16,7 +16,7 @@ from app.database import get_db
 from app.models import (
     Patient, User, UserRole, Appointment, PharmacyReservation, LabTestRequest, Dependent, EstablishmentType, AuditLog,
 )
-from app.schemas import PatientDirectoryOut, DependentCreate, DependentOut, WalkInPatientCreate, WalkInPatientOut
+from app.schemas import PatientDirectoryOut, DependentCreate, DependentOut, WalkInPatientCreate, WalkInPatientOut, CompleteRegistrationRequest
 from app.deps import require_roles, require_establishment_types
 from app.security import hash_password
 
@@ -80,6 +80,47 @@ def create_walk_in_patient(payload: WalkInPatientCreate, db: Session = Depends(g
         id=patient.id, dossier_number=dossier_number, full_name=user.full_name,
         phone=user.phone, has_real_email=real_email_provided,
     )
+
+
+@router.patch("/{patient_id}/email", response_model=WalkInPatientOut)
+def complete_registration(patient_id: str, payload: CompleteRegistrationRequest, db: Session = Depends(get_db),
+                           current_user: User = Depends(require_roles(
+                               UserRole.RECEPTIONIST, UserRole.SECRETARY, UserRole.ESTABLISHMENT_ADMIN))):
+    """
+    NOUVEAU (demande M. Faustin): "completer mon inscription" - un patient
+    cree en presentiel sans email (voir create_walk_in_patient) ne peut
+    pas se connecter tant qu'il n'a pas de VRAI email. Une fois le
+    personnel d'accueil l'ajoute ici, le patient peut utiliser "mot de
+    passe oublie" pour choisir lui-meme son mot de passe et acceder a la
+    plateforme - reutilise ce mecanisme deja construit et teste plutot
+    que d'en batir un nouveau.
+
+    Protection: refuse d'ecraser un VRAI email deja en place (evite
+    qu'un membre du personnel change par erreur l'email d'un patient qui
+    utilise deja normalement son compte).
+    """
+    patient = db.query(Patient).filter(Patient.id == patient_id).first()
+    if not patient:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Patient introuvable")
+
+    user = db.query(User).filter(User.id == patient.user_id).first()
+    if not user.email.endswith("@sans-email.speedsante.local"):
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail="Ce patient a deja un vrai email enregistre - impossible de l'ecraser depuis cet ecran.",
+        )
+
+    new_email = payload.email.lower()
+    existing = db.query(User).filter(User.email == new_email, User.id != user.id).first()
+    if existing:
+        raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail="Un compte existe deja avec cet email")
+
+    user.email = new_email
+    db.add(AuditLog(user_id=current_user.id, establishment_id=current_user.establishment_id,
+                     action="complete_patient_registration", details=f"Email ajoute pour le patient {patient.dossier_number}"))
+    db.commit()
+
+    return WalkInPatientOut(id=patient.id, dossier_number=patient.dossier_number, full_name=user.full_name, phone=user.phone, has_real_email=True)
 
 
 @router.get("/establishment", response_model=list[PatientDirectoryOut],

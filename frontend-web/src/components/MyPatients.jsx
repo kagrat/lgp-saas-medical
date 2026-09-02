@@ -27,6 +27,9 @@ export default function MyPatients() {
   const [detail, setDetail] = useState(null)
   const [loadingDetail, setLoadingDetail] = useState(false)
   const [panelTab, setPanelTab] = useState('consultation')
+  const [newFlagType, setNewFlagType] = useState('other')
+  const [newFlagLabel, setNewFlagLabel] = useState('')
+  const [savingFlag, setSavingFlag] = useState(false)
 
   const [docForm, setDocForm] = useState({ appointment_id: '', document_type: 'consultation_note', title: '', content: '' })
   const [prescriptionItems, setPrescriptionItems] = useState([])
@@ -91,6 +94,32 @@ export default function MyPatients() {
       setError(getErrorMessage(err, 'Impossible de charger la fiche de ce patient.'))
     } finally {
       setLoadingDetail(false)
+    }
+  }
+
+  async function addClinicalFlag() {
+    if (!newFlagLabel.trim()) return
+    setSavingFlag(true)
+    setError('')
+    try {
+      await api.post(`/doctors/patients/${selectedId}/clinical-flags`, { flag_type: newFlagType, label: newFlagLabel })
+      setNewFlagLabel('')
+      const { data } = await api.get(`/doctors/me/patients/${selectedId}`)
+      setDetail(data)
+    } catch (err) {
+      setError(getErrorMessage(err, "Impossible d'ajouter cet element clinique."))
+    } finally {
+      setSavingFlag(false)
+    }
+  }
+
+  async function removeClinicalFlag(flagId) {
+    try {
+      await api.delete(`/doctors/patients/${selectedId}/clinical-flags/${flagId}`)
+      const { data } = await api.get(`/doctors/me/patients/${selectedId}`)
+      setDetail(data)
+    } catch (err) {
+      setError(getErrorMessage(err, 'Suppression impossible.'))
     }
   }
 
@@ -249,6 +278,46 @@ export default function MyPatients() {
 
                 {panelTab === 'consultation' && (
                   <div>
+                    {/* NOUVEAU (demande M. Faustin, comme sur la maquette de
+                        reference): elements cliniques - visibles par tout
+                        medecin ayant acces au dossier, mais seul le medecin
+                        traitant peut en ajouter/retirer. */}
+                    <div className="mb-4">
+                      <p className="text-sm font-medium text-forest-900 mb-2">Éléments cliniques</p>
+                      <div className="flex flex-wrap gap-2 mb-2">
+                        {detail.clinical_flags.length === 0 && (
+                          <p className="text-sm text-forest-700">Aucun element clinique renseigne.</p>
+                        )}
+                        {detail.clinical_flags.map((f) => (
+                          <span key={f.id} className="inline-flex items-center gap-1.5 text-sm bg-forest-50 text-forest-900 px-3 py-1 rounded-full">
+                            {f.label}
+                            {detail.can_add_document && (
+                              <button onClick={() => removeClinicalFlag(f.id)} className="text-clay-600 hover:text-clay-500 font-bold" aria-label="Retirer">
+                                x
+                              </button>
+                            )}
+                          </span>
+                        ))}
+                      </div>
+                      {detail.can_add_document && (
+                        <div className="flex gap-2">
+                          <select value={newFlagType} onChange={(e) => setNewFlagType(e.target.value)}
+                            className="rounded-lg border border-forest-100 px-2 py-1.5 text-sm bg-white">
+                            <option value="allergy">Allergie</option>
+                            <option value="antecedent">Antecedent</option>
+                            <option value="other">Autre</option>
+                          </select>
+                          <input placeholder="Ex: Penicilline, Diabete type 2..." value={newFlagLabel}
+                            onChange={(e) => setNewFlagLabel(e.target.value)}
+                            className="flex-1 rounded-lg border border-forest-100 px-3 py-1.5 text-sm" />
+                          <button onClick={addClinicalFlag} disabled={savingFlag || !newFlagLabel.trim()}
+                            className="rounded-full bg-[var(--portal-accent)] text-white px-4 py-1.5 text-sm font-medium hover:brightness-90 transition disabled:opacity-50">
+                            {savingFlag ? '...' : '+ Ajouter'}
+                          </button>
+                        </div>
+                      )}
+                    </div>
+
                     {detail.can_add_document ? (
                       <div className="bg-forest-50 rounded-lg p-4 mb-4">
                         <p className="text-sm font-medium text-forest-900 mb-2">Notes de consultation / Ordonnance</p>

@@ -37,6 +37,15 @@ class WalkInPatientCreate(BaseModel):
     residence: Optional[str] = Field(default=None, max_length=200)
 
 
+class CompleteRegistrationRequest(BaseModel):
+    """NOUVEAU (demande M. Faustin): permet au personnel d'accueil
+    d'ajouter un VRAI email a un patient cree sans email au depart
+    (WalkInPatientCreate) - une fois ceci fait, le patient peut utiliser
+    "mot de passe oublie" pour choisir lui-meme son mot de passe et
+    commencer a utiliser la plateforme."""
+    email: EmailStr
+
+
 class WalkInPatientOut(BaseModel):
     id: str
     dossier_number: str
@@ -735,6 +744,20 @@ class DoctorPatientAppointmentOut(BaseModel):
     scheduled_at: datetime
 
 
+class ClinicalFlagCreate(BaseModel):
+    flag_type: str = Field(default="other")
+    label: str = Field(min_length=1, max_length=200)
+
+
+class ClinicalFlagOut(BaseModel):
+    id: str
+    flag_type: str
+    label: str
+    created_at: datetime
+
+    model_config = {"from_attributes": True}
+
+
 class DoctorPatientDetailOut(BaseModel):
     """NOUVEAU: fiche patient vue par un medecin - ses propres rendez-vous
     termines avec ce patient + les documents associes. can_add_document
@@ -748,6 +771,7 @@ class DoctorPatientDetailOut(BaseModel):
     date_of_birth: Optional[date] = None
     appointments: list[DoctorPatientAppointmentOut]
     documents: list[MedicalDocumentOut]
+    clinical_flags: list[ClinicalFlagOut] = []
     can_add_document: bool
     viewed_via_share_from: Optional[str] = None
 

@@ -5,6 +5,7 @@ import { AppointmentStatusBadge } from '../components/AppointmentStatusUI'
 import FilterTabs from '../components/FilterTabs'
 import PatientDirectory from '../components/PatientDirectory'
 import WalkInPatientForm from '../components/WalkInPatientForm'
+import CompleteRegistrationForm from '../components/CompleteRegistrationForm'
 import MySchedule from '../components/MySchedule'
 import SidebarLayout from '../components/SidebarLayout'
 
@@ -204,7 +205,12 @@ export default function DesktopSecretaryDashboard() {
 
       {tab === 'patients' && <PatientDirectory />}
 
-      {tab === 'nouveau-patient' && <WalkInPatientForm />}
+      {tab === 'nouveau-patient' && (
+        <div className="space-y-6">
+          <WalkInPatientForm />
+          <CompleteRegistrationForm />
+        </div>
+      )}
 
       {tab === 'schedule' && <MySchedule />}
     </SidebarLayout>

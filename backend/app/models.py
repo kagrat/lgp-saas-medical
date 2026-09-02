@@ -545,6 +545,34 @@ class PrescriptionItem(Base):
     document = relationship("MedicalDocument", back_populates="prescription_items")
 
 
+class ClinicalFlagType(str, enum.Enum):
+    ALLERGY = "allergy"
+    ANTECEDENT = "antecedent"
+    OTHER = "other"
+
+
+class ClinicalFlag(Base):
+    """
+    NOUVEAU (demande M. Faustin: "elements cliniques" visibles sur la
+    fiche patient du medecin, comme sur la maquette de reference -
+    allergies, antecedents, etc, sous forme de courtes etiquettes
+    ajoutables/retirables). Rattache au PATIENT (pas a un rendez-vous
+    precis) car une allergie ou un antecedent reste vrai dans le temps,
+    quel que soit l'etablissement consulte ensuite.
+    """
+    __tablename__ = "clinical_flags"
+
+    id = Column(UUID(as_uuid=False), primary_key=True, default=gen_uuid)
+    patient_id = Column(UUID(as_uuid=False), ForeignKey("patients.id"), nullable=False)
+    flag_type = Column(Enum(ClinicalFlagType), nullable=False, default=ClinicalFlagType.OTHER)
+    label = Column(String(200), nullable=False)
+    created_by_user_id = Column(UUID(as_uuid=False), ForeignKey("users.id"), nullable=False)
+    created_at = Column(DateTime, default=datetime.utcnow)
+
+    patient = relationship("Patient")
+    created_by = relationship("User")
+
+
 class PatientRecordShare(Base):
     """
     NOUVEAU - permet a un medecin d'envoyer le dossier d'UN DE SES PATIENTS
