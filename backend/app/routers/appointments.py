@@ -16,7 +16,7 @@ from app.database import get_db
 from app.models import Appointment, Doctor, Patient, User, UserRole, AppointmentStatus, AuditLog, VitalSigns, Establishment
 from app.schemas import (
     AppointmentCreate, AppointmentOut, AppointmentSearchRequest, AppointmentSearchResponse, AppointmentReschedule,
-    VitalSignsCreate, VitalSignsOut, SuggestionSlot,
+    VitalSignsCreate, VitalSignsOut, SuggestionSlot, AppointmentBookForPatient,
 )
 from app.deps import require_roles, get_current_user
 from app.services.suggestion_engine import find_appointment_or_suggest, _free_slots_for_doctor, _rating_stats
@@ -166,7 +166,73 @@ def create_appointment(payload: AppointmentCreate, db: Session = Depends(get_db)
     return _to_appointment_out(appointment)
 
 
-@router.get("/mine", response_model=list[AppointmentOut])
+@router.post("/book-for-patient", response_model=AppointmentOut, status_code=status.HTTP_201_CREATED)
+def book_appointment_for_patient(payload: AppointmentBookForPatient, db: Session = Depends(get_db),
+                                  current_user: User = Depends(require_roles(
+                                      UserRole.RECEPTIONIST, UserRole.SECRETARY, UserRole.ESTABLISHMENT_ADMIN))):
+    """
+    NOUVEAU (demande M. Faustin): meme scenario que le patient qui choisit
+    lui-meme son medecin avant de trouver un etablissement, mais cote
+    reception - "de quoi souffre le patient" (specialite) determine vers
+    quel medecin le rediriger, exactement comme /appointments (POST) mais
+    pour un patient PRESENT PHYSIQUEMENT plutot que connecte lui-meme.
+    """
+    doctor = db.query(Doctor).filter(Doctor.id == payload.doctor_id, Doctor.is_active == True).first()
+    if not doctor:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Medecin introuvable")
+
+    patient = db.query(Patient).filter(Patient.id == payload.patient_id).first()
+    if not patient:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Patient introuvable")
+
+    conflict = (
+        db.query(Appointment)
+        .filter(
+            Appointment.doctor_id == doctor.id,
+            Appointment.status == AppointmentStatus.CONFIRMED,
+            Appointment.scheduled_at == payload.scheduled_at,
+        )
+        .first()
+    )
+    if conflict:
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail="Ce creneau vient d'etre pris. Merci de choisir un autre creneau suggere.",
+        )
+
+    appointment = Appointment(
+        id=str(uuid.uuid4()),
+        establishment_id=doctor.establishment_id,
+        doctor_id=doctor.id,
+        patient_id=patient.id,
+        scheduled_at=payload.scheduled_at,
+        duration_minutes=payload.duration_minutes,
+        notes=payload.notes,
+    )
+    db.add(appointment)
+    db.add(AuditLog(user_id=current_user.id, establishment_id=doctor.establishment_id,
+                     action="book_appointment_for_patient", details=f"RDV cree par le personnel pour patient {patient.dossier_number}"))
+    db.commit()
+    db.refresh(appointment)
+
+    # NOUVEAU: la confirmation part au VRAI patient (pas au personnel qui
+    # a fait la reservation) - meme logique best-effort que create_appointment.
+    confirmation_text = (
+        f"Rendez-vous confirme avec {doctor.user.full_name} "
+        f"le {appointment.scheduled_at.strftime('%d/%m/%Y a %H:%M')}."
+    )
+    patient_user = patient.user
+    try:
+        send_confirmation_email(patient_user.email, "Rendez-vous confirme", confirmation_text)
+    except Exception:
+        pass
+    if patient_user.phone:
+        try:
+            send_sms(patient_user.phone, confirmation_text)
+        except Exception:
+            pass
+
+    return _to_appointment_out(appointment)
 def my_appointments(db: Session = Depends(get_db),
                      current_user: User = Depends(require_roles(UserRole.PATIENT))):
     patient = db.query(Patient).filter(Patient.user_id == current_user.id).first()

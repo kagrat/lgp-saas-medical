@@ -71,6 +71,7 @@ def _to_reservation_out(reservation: PharmacyReservation) -> ReservationOut:
             quantity=item.quantity,
             confirmed_quantity=item.confirmed_quantity,
             confirmed_unit_price=item.confirmed_unit_price,
+            stock_status=item.stock_status,
         )
         for item in reservation.items
     ]
@@ -428,6 +429,7 @@ def review_reservation(reservation_id: str, payload: ReservationReview, db: Sess
             )
         item.confirmed_quantity = line.confirmed_quantity
         item.confirmed_unit_price = line.confirmed_unit_price
+        item.stock_status = line.stock_status
 
     reservation.pharmacist_note = payload.note
     reservation.status = ReservationStatus.AWAITING_CONFIRMATION

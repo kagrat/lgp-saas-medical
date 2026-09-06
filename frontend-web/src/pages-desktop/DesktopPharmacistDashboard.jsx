@@ -144,9 +144,19 @@ export default function DesktopPharmacistDashboard() {
     }
   }
 
+  // NOUVEAU (demande M. Faustin): compteurs reels - "pending" (en attente
+  // de verification par le pharmacien, la plus urgente/bloquante) affiche
+  // un point/badge directement sur le menu, et chaque filtre montre son
+  // propre compte (en attente ET confirmee, comme demande).
+  const pendingCount = orders.filter((o) => o.status === 'pending').length
+  const orderCounts = RESERVATION_STATUSES.reduce((acc, s) => {
+    acc[s] = orders.filter((o) => o.status === s).length
+    return acc
+  }, { all: orders.length })
+
   const tabs = [
     { id: 'pharmacy', label: 'Pharmacie', icon: Pill },
-    { id: 'orders', label: 'Commandes', icon: Package },
+    { id: 'orders', label: 'Commandes', icon: Package, badge: pendingCount },
     { id: 'messages', label: 'Messages', icon: MessageSquare },
     { id: 'schedule', label: 'Mon planning', icon: Clock },
     // NOUVEAU (demande M. Faustin): Statistiques en derniere position.
@@ -214,7 +224,7 @@ export default function DesktopPharmacistDashboard() {
 
       {tab === 'orders' && (
         <div>
-          <FilterTabs options={orderFilterOptions} active={orderFilter} onChange={setOrderFilter} />
+          <FilterTabs options={orderFilterOptions} active={orderFilter} onChange={setOrderFilter} counts={orderCounts} />
           <div className="space-y-3">
             {filteredOrders.length === 0 && <p className="text-forest-700">Aucune commande dans cette catégorie.</p>}
             {filteredOrders.map((o) => (

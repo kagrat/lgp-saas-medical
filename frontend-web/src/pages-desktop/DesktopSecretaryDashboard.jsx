@@ -1,11 +1,12 @@
 import { useEffect, useState } from 'react'
-import { Calendar, Users, Clock, UserPlus } from 'lucide-react'
+import { Calendar, Users, Clock, UserPlus, CalendarPlus } from 'lucide-react'
 import api, { getErrorMessage } from '../api/client'
 import { AppointmentStatusBadge } from '../components/AppointmentStatusUI'
 import FilterTabs from '../components/FilterTabs'
 import PatientDirectory from '../components/PatientDirectory'
 import WalkInPatientForm from '../components/WalkInPatientForm'
 import CompleteRegistrationForm from '../components/CompleteRegistrationForm'
+import ReceptionBookAppointment from '../components/ReceptionBookAppointment'
 import MySchedule from '../components/MySchedule'
 import SidebarLayout from '../components/SidebarLayout'
 
@@ -107,6 +108,7 @@ export default function DesktopSecretaryDashboard() {
     { id: 'appointments', label: 'Rendez-vous', icon: Calendar },
     { id: 'patients', label: 'Patients', icon: Users },
     { id: 'nouveau-patient', label: 'Nouveau patient', icon: UserPlus },
+    { id: 'prendre-rendez-vous', label: 'Prendre rendez-vous', icon: CalendarPlus },
     { id: 'schedule', label: 'Mon planning', icon: Clock },
   ]
 
@@ -211,6 +213,8 @@ export default function DesktopSecretaryDashboard() {
           <CompleteRegistrationForm />
         </div>
       )}
+
+      {tab === 'prendre-rendez-vous' && <ReceptionBookAppointment />}
 
       {tab === 'schedule' && <MySchedule />}
     </SidebarLayout>

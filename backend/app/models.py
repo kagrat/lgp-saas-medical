@@ -427,6 +427,11 @@ class PharmacyOrderItem(Base):
     quantity = Column(Integer, nullable=False, default=1)
     confirmed_quantity = Column(Integer, nullable=True)
     confirmed_unit_price = Column(Float, nullable=True)
+    # NOUVEAU (demande M. Faustin): motif structure de disponibilite,
+    # choisi dans une liste deroulante plutot que devine via
+    # confirmed_quantity=0 - le patient voit un motif clair, pas juste
+    # "0 unite" sans explication.
+    stock_status = Column(String(30), nullable=True, default="disponible")
 
     reservation = relationship("PharmacyReservation", back_populates="items")
     medication = relationship("PharmacyStock", back_populates="order_items")

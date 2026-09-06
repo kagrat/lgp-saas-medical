@@ -163,7 +163,12 @@ export default function PatientPharmacyOrders() {
                   <p className="text-sm font-medium text-forest-900 mb-1">La pharmacie propose :</p>
                   <div className="text-sm text-forest-700 mb-2">
                     {o.items.map((item) => (
-                      <p key={item.id}>{item.medication_name}: {item.confirmed_quantity} unite(s) a {item.confirmed_unit_price?.toLocaleString('fr-FR')} FCFA piece</p>
+                      <p key={item.id}>
+                        {item.medication_name}: {item.confirmed_quantity} unite(s) a {item.confirmed_unit_price?.toLocaleString('fr-FR')} FCFA piece
+                        {item.stock_status === 'rupture_totale' && <span className="text-clay-600 font-medium"> - Rupture totale</span>}
+                        {item.stock_status === 'rupture_temporaire' && <span className="text-amber-600 font-medium"> - Rupture temporaire</span>}
+                        {item.stock_status === 'disponible_partiel' && <span className="text-amber-600 font-medium"> - Disponible partiellement</span>}
+                      </p>
                     ))}
                   </div>
                   {o.total_amount !== null && o.total_amount !== undefined && (

@@ -13,6 +13,10 @@ export default function ReservationReviewForm({ reservation, onDone }) {
       item_id: item.id,
       confirmed_quantity: item.quantity,
       confirmed_unit_price: '',
+      // NOUVEAU (demande M. Faustin): liste deroulante structuree au lieu
+      // de deviner une rupture via une quantite confirmee a 0 - plus clair
+      // pour le patient ET plus facile a filtrer/analyser plus tard.
+      stock_status: 'disponible',
     }))
   )
   const [note, setNote] = useState('')
@@ -20,7 +24,14 @@ export default function ReservationReviewForm({ reservation, onDone }) {
   const [submitting, setSubmitting] = useState(false)
 
   function updateLine(itemId, field, value) {
-    setLines((ls) => ls.map((l) => (l.item_id === itemId ? { ...l, [field]: value } : l)))
+    setLines((ls) => ls.map((l) => {
+      if (l.item_id !== itemId) return l
+      const updated = { ...l, [field]: value }
+      // Si rupture totale choisie, la quantite confirmee tombe a 0
+      // automatiquement - coherent avec ce que verra le patient.
+      if (field === 'stock_status' && value === 'rupture_totale') updated.confirmed_quantity = 0
+      return updated
+    }))
   }
 
   async function handleSubmit(e) {
@@ -33,6 +44,7 @@ export default function ReservationReviewForm({ reservation, onDone }) {
           item_id: l.item_id,
           confirmed_quantity: Number(l.confirmed_quantity),
           confirmed_unit_price: Number(l.confirmed_unit_price),
+          stock_status: l.stock_status,
         })),
         note: note || null,
       })
@@ -57,12 +69,23 @@ export default function ReservationReviewForm({ reservation, onDone }) {
               <p className="text-sm text-forest-900 font-medium mb-2">
                 {item.medication_name} <span className="text-xs text-forest-700 font-normal">({item.medication_reference}) - demande: {item.quantity}</span>
               </p>
+              <div className="mb-2">
+                <label className="block text-xs text-forest-700 mb-1">Disponibilité</label>
+                <select value={line.stock_status} onChange={(e) => updateLine(item.id, 'stock_status', e.target.value)}
+                  className="w-full rounded-lg border border-forest-100 px-3 py-1.5 text-sm bg-white">
+                  <option value="disponible">Disponible (quantite demandee)</option>
+                  <option value="disponible_partiel">Disponible partiellement</option>
+                  <option value="rupture_temporaire">Rupture temporaire (bientot reapprovisionne)</option>
+                  <option value="rupture_totale">Rupture totale</option>
+                </select>
+              </div>
               <div className="grid sm:grid-cols-2 gap-2">
                 <div>
                   <label className="block text-xs text-forest-700 mb-1">Quantite confirmée</label>
                   <input type="number" min="0" required value={line.confirmed_quantity}
+                    disabled={line.stock_status === 'rupture_totale'}
                     onChange={(e) => updateLine(item.id, 'confirmed_quantity', e.target.value)}
-                    className="w-full rounded-lg border border-forest-100 px-3 py-1.5 text-sm bg-white" />
+                    className="w-full rounded-lg border border-forest-100 px-3 py-1.5 text-sm bg-white disabled:bg-forest-50 disabled:text-forest-500" />
                 </div>
                 <div>
                   <label className="block text-xs text-forest-700 mb-1">Prix unitaire confirmé (FCFA)</label>

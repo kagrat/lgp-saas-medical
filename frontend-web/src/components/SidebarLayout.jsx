@@ -112,7 +112,15 @@ export default function SidebarLayout({
               }`}
             >
               {t.icon && <t.icon className="w-4.5 h-4.5 shrink-0" strokeWidth={1.75} />}
-              {t.label}
+              <span className="flex-1">{t.label}</span>
+              {/* NOUVEAU (demande M. Faustin): point/compteur reel sur un
+                  element de menu, pour signaler un nombre d'elements a
+                  traiter (ex: commandes en attente de verification). */}
+              {t.badge > 0 && (
+                <span className="bg-amber-500 text-forest-900 text-xs font-semibold rounded-full min-w-[1.25rem] h-5 flex items-center justify-center px-1.5">
+                  {t.badge}
+                </span>
+              )}
             </button>
           ))}
         </nav>

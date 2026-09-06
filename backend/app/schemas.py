@@ -247,6 +247,26 @@ class AppointmentCreate(BaseModel):
         return v
 
 
+class AppointmentBookForPatient(BaseModel):
+    """NOUVEAU (demande M. Faustin): meme parcours que le patient
+    (specialite -> etablissement -> medecin -> creneau precis), mais pour
+    la reception qui reserve POUR un patient present physiquement -
+    necessite de preciser QUEL patient, contrairement a AppointmentCreate
+    ou le patient est toujours current_user lui-meme."""
+    patient_id: str
+    doctor_id: str
+    scheduled_at: datetime
+    duration_minutes: int = Field(default=30, ge=5, le=240)
+    notes: Optional[str] = None
+
+    @field_validator("scheduled_at")
+    @classmethod
+    def must_be_future(cls, v: datetime) -> datetime:
+        if v < datetime.utcnow():
+            raise ValueError("Impossible de prendre un rendez-vous dans le passe")
+        return v
+
+
 class AppointmentOut(BaseModel):
     id: str
     establishment_id: str
@@ -338,6 +358,7 @@ class ReservationItemOut(BaseModel):
     quantity: int
     confirmed_quantity: Optional[int] = None
     confirmed_unit_price: Optional[float] = None
+    stock_status: Optional[str] = None
 
     model_config = {"from_attributes": True}
 
@@ -1339,6 +1360,17 @@ class ReservationItemReview(BaseModel):
     item_id: str
     confirmed_quantity: int = Field(ge=0)
     confirmed_unit_price: float = Field(ge=0)
+    # NOUVEAU (demande M. Faustin): motif structure, choisi dans une liste
+    # deroulante par le pharmacien plutot que devine via confirmed_quantity.
+    stock_status: str = Field(default="disponible")
+
+    @field_validator("stock_status")
+    @classmethod
+    def valid_stock_status(cls, v: str) -> str:
+        allowed = {"disponible", "disponible_partiel", "rupture_temporaire", "rupture_totale"}
+        if v not in allowed:
+            raise ValueError(f"Motif de stock invalide. Valeurs acceptees: {', '.join(sorted(allowed))}")
+        return v
 
 
 class ReservationReview(BaseModel):

@@ -344,7 +344,7 @@ export default function EstablishmentAdmin() {
     : isPharmacy
     ? [
         { id: 'pharmacy', label: 'Pharmacie', icon: Pill },
-        { id: 'orders', label: 'Commandes', icon: Package },
+        { id: 'orders', label: 'Commandes', icon: Package, badge: orders.filter((o) => o.status === 'pending').length },
       ]
     : [
         // Pharmacie/Commandes retires ici (demande M. Faustin): un hopital
@@ -401,6 +401,10 @@ export default function EstablishmentAdmin() {
 
   const orderFilterOptions = [{ value: 'all', label: 'Tous' }, ...RESERVATION_STATUSES.map((s) => ({ value: s, label: RESERVATION_STATUS_LABELS[s] }))]
   const filteredOrders = orderFilter === 'all' ? orders : orders.filter((o) => o.status === orderFilter)
+  const orderCounts = RESERVATION_STATUSES.reduce((acc, s) => {
+    acc[s] = orders.filter((o) => o.status === s).length
+    return acc
+  }, { all: orders.length })
 
   const labFilterOptions = [{ value: 'all', label: 'Tous' }, ...LAB_STATUSES.map((s) => ({ value: s, label: LAB_STATUS_LABELS[s] }))]
   const filteredLabTests = labFilter === 'all' ? labTests : labTests.filter((t) => t.status === labFilter)
@@ -640,7 +644,7 @@ export default function EstablishmentAdmin() {
 
       {tab === 'orders' && !isLab && (
         <div>
-          <FilterTabs options={orderFilterOptions} active={orderFilter} onChange={setOrderFilter} />
+          <FilterTabs options={orderFilterOptions} active={orderFilter} onChange={setOrderFilter} counts={orderCounts} />
           <div className="space-y-3">
             {filteredOrders.length === 0 && <p className="text-forest-700">Aucune commande dans cette catégorie.</p>}
             {filteredOrders.map((o) => (
