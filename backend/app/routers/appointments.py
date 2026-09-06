@@ -13,10 +13,10 @@ from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
 
 from app.database import get_db
-from app.models import Appointment, Doctor, Patient, User, UserRole, AppointmentStatus, AuditLog, VitalSigns, Establishment
+from app.models import Appointment, Doctor, Patient, User, UserRole, AppointmentStatus, AuditLog, VitalSigns, Establishment, DoctorAvailability
 from app.schemas import (
     AppointmentCreate, AppointmentOut, AppointmentSearchRequest, AppointmentSearchResponse, AppointmentReschedule,
-    VitalSignsCreate, VitalSignsOut, SuggestionSlot, AppointmentBookForPatient,
+    VitalSignsCreate, VitalSignsOut, SuggestionSlot, AppointmentBookForPatient, AvailableSlotsResponse,
 )
 from app.deps import require_roles, get_current_user
 from app.services.suggestion_engine import find_appointment_or_suggest, _free_slots_for_doctor, _rating_stats
@@ -63,7 +63,7 @@ def search_appointment_slots(payload: AppointmentSearchRequest, db: Session = De
     return AppointmentSearchResponse(exact_match_available=exact_match, suggestions=suggestions)
 
 
-@router.get("/available-slots", response_model=list[SuggestionSlot])
+@router.get("/available-slots", response_model=AvailableSlotsResponse)
 def list_available_slots(doctor_id: str, target_date: str, db: Session = Depends(get_db)):
     """
     NOUVEAU (demande M. Faustin): contrairement a /search (qui suggere au
@@ -75,6 +75,11 @@ def list_available_slots(doctor_id: str, target_date: str, db: Session = Depends
     disponible au fur et a mesure que des rendez-vous sont pris. Reutilise
     le meme moteur de calcul (_free_slots_for_doctor) que /search, deja
     fiable et teste - pas de nouvelle logique, juste sans la limite de 6.
+
+    CORRIGE (demande M. Faustin, "aucune disponibilite ne s'affiche"):
+    signale desormais explicitement si ce medecin n'a AUCUN horaire
+    hebdomadaire configure du tout, plutot que de renvoyer une liste vide
+    identique a "complet ce jour-la" - source de confusion reelle.
     """
     from datetime import datetime as dt
     doctor = db.query(Doctor).filter(Doctor.id == doctor_id).first()
@@ -89,10 +94,12 @@ def list_available_slots(doctor_id: str, target_date: str, db: Session = Depends
     except ValueError:
         raise HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_ENTITY, detail="Date invalide (format attendu: AAAA-MM-JJ)")
 
+    has_availability_configured = db.query(DoctorAvailability).filter(DoctorAvailability.doctor_id == doctor.id).first() is not None
+
     avg_rating, review_count = _rating_stats(db, doctor.id)
     free_slots = _free_slots_for_doctor(db, doctor, parsed_date, max_slots=200)
 
-    return [
+    slots = [
         SuggestionSlot(
             doctor_id=doctor.id, doctor_name=doctor.user.full_name,
             establishment_id=establishment.id, establishment_name=establishment.name,
@@ -101,6 +108,7 @@ def list_available_slots(doctor_id: str, target_date: str, db: Session = Depends
         )
         for start, end in free_slots
     ]
+    return AvailableSlotsResponse(slots=slots, has_availability_configured=has_availability_configured)
 
 
 @router.post("", response_model=AppointmentOut, status_code=status.HTTP_201_CREATED)

@@ -32,6 +32,7 @@ export default function ReceptionBookAppointment() {
 
   const [preferredDate, setPreferredDate] = useState(new Date().toISOString().slice(0, 10))
   const [slots, setSlots] = useState(null)
+  const [hasAvailabilityConfigured, setHasAvailabilityConfigured] = useState(true)
   const [confirmation, setConfirmation] = useState(null)
 
   const [error, setError] = useState('')
@@ -92,7 +93,8 @@ export default function ReceptionBookAppointment() {
       const { data } = await api.get('/appointments/available-slots', {
         params: { doctor_id: selectedDoctor.id, target_date: preferredDate },
       })
-      setSlots(data)
+      setSlots(data.slots)
+      setHasAvailabilityConfigured(data.has_availability_configured)
     } catch (err) {
       setError(getErrorMessage(err, 'La verification des disponibilites a echoue.'))
     } finally {
@@ -220,7 +222,11 @@ export default function ReceptionBookAppointment() {
 
           {slots && (
             slots.length === 0 ? (
-              <p className="text-forest-700 text-sm">Aucun créneau disponible a cette date.</p>
+              hasAvailabilityConfigured ? (
+                <p className="text-forest-700 text-sm">Aucun créneau disponible a cette date.</p>
+              ) : (
+                <p className="text-clay-600 text-sm">Ce médecin n'a pas encore renseigné ses horaires de disponibilité.</p>
+              )
             ) : (
               <div className="grid grid-cols-4 sm:grid-cols-6 gap-2 mb-3">
                 {slots.map((slot, idx) => (

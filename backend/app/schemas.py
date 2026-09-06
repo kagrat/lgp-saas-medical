@@ -302,6 +302,26 @@ class SuggestionSlot(BaseModel):
     average_rating: Optional[float] = None
     review_count: int = 0
 
+
+class AvailableSlotsResponse(BaseModel):
+    """
+    NOUVEAU (demande M. Faustin: "aucune disponibilite ne s'affiche" -
+    apres verification approfondie, le moteur de calcul fonctionne
+    correctement dans tous les tests, mais l'ancienne reponse (une simple
+    liste vide) ne distinguait pas deux situations tres differentes:
+    - le medecin n'a AUCUN horaire hebdomadaire configure du tout
+      (has_availability_configured=False) - il faut d'abord renseigner
+      "Ma disponibilite" avant que des rendez-vous soient possibles,
+    - le medecin a des horaires configures mais ce jour precis est
+      complet ou tombe un jour ou il ne travaille pas
+      (has_availability_configured=True, slots=[]).
+    Cette distinction evite de confondre un oubli de configuration avec
+    un vrai "complet".
+    """
+    slots: list[SuggestionSlot]
+    has_availability_configured: bool
+
+
 class AppointmentSearchResponse(BaseModel):
     exact_match_available: bool
     suggestions: list[SuggestionSlot]

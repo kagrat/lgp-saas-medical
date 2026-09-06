@@ -26,6 +26,7 @@ export default function Consultation() {
   const [selectedDoctor, setSelectedDoctor] = useState(null)
   const [preferredDate, setPreferredDate] = useState('')
   const [slots, setSlots] = useState(null)
+  const [hasAvailabilityConfigured, setHasAvailabilityConfigured] = useState(true)
   const [pendingSlot, setPendingSlot] = useState(null)
   const [confirmation, setConfirmation] = useState(null)
   const [error, setError] = useState('')
@@ -89,7 +90,8 @@ export default function Consultation() {
       const { data } = await api.get('/appointments/available-slots', {
         params: { doctor_id: selectedDoctor.id, target_date: preferredDate },
       })
-      setSlots(data)
+      setSlots(data.slots)
+      setHasAvailabilityConfigured(data.has_availability_configured)
     } catch (err) {
       setError(getErrorMessage(err, "La vérification des disponibilités a échoué."))
     } finally {
@@ -244,7 +246,15 @@ export default function Consultation() {
 
           {slots && (
             slots.length === 0 ? (
-              <p className="text-forest-700">Aucun créneau disponible pour ce médecin a cette date. Essaie une autre date.</p>
+              // NOUVEAU (demande M. Faustin, "aucune disponibilite ne
+              // s'affiche"): distingue clairement les deux causes reelles
+              // possibles, plutot qu'un message unique qui ne dit pas
+              // pourquoi.
+              hasAvailabilityConfigured ? (
+                <p className="text-forest-700">Aucun créneau disponible pour ce médecin a cette date. Essaie une autre date.</p>
+              ) : (
+                <p className="text-clay-600">Ce médecin n'a pas encore renseigné ses horaires de disponibilité - contacte l'établissement directement pour ce rendez-vous.</p>
+              )
             ) : (
               <div>
                 <p className="text-sm text-forest-700 mb-3">
