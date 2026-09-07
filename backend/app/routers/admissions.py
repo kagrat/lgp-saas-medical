@@ -262,6 +262,21 @@ def discharge_admission(admission_id: str, payload: AdmissionDischarge, db: Sess
     admission.status = "discharged"
     admission.actual_discharge_date = datetime.utcnow()
     admission.discharge_summary = payload.discharge_summary
+
+    # CORRIGE (lacune identifiee lors d'un audit complet): le compte-rendu
+    # de sortie n'apparaissait JAMAIS dans le dossier de sante du patient -
+    # stocke uniquement sur Admission.discharge_summary, invisible cote
+    # patient. Cree desormais aussi un vrai MedicalDocument, qui remonte
+    # automatiquement dans /health-records/mine comme tout le reste.
+    if payload.discharge_summary:
+        doctor = _current_doctor(db, current_user)
+        db.add(MedicalDocument(
+            id=str(uuid.uuid4()), admission_id=admission.id, patient_id=admission.patient_id,
+            doctor_id=doctor.id, author_user_id=current_user.id, establishment_id=current_user.establishment_id,
+            document_type=DocumentType.DISCHARGE_SUMMARY, title="Compte-rendu de sortie d'hospitalisation",
+            content=payload.discharge_summary,
+        ))
+
     # Libere la chambre automatiquement - coherent avec le calcul
     # d'occupation en temps reel de RoomOut (jamais de champ stocke a
     # desynchroniser).

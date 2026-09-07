@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import api, { getErrorMessage } from '../api/client'
-import { DocumentTypeBadge, DOCUMENT_TYPES, DOCUMENT_TYPE_LABELS } from './DocumentType'
+import { DocumentTypeBadge, SELECTABLE_DOCUMENT_TYPES, DOCUMENT_TYPE_LABELS } from './DocumentType'
 import PrescriptionItemsEditor from './PrescriptionItemsEditor'
 import { downloadDocumentAsPdf } from '../utils/pdf'
 
@@ -337,7 +337,7 @@ export default function MyPatients() {
                             onChange={(e) => setDocForm({ ...docForm, document_type: e.target.value })}
                             className="rounded-lg border border-forest-100 px-3 py-2 text-sm bg-white"
                           >
-                            {DOCUMENT_TYPES.map((t) => <option key={t} value={t}>{DOCUMENT_TYPE_LABELS[t]}</option>)}
+                            {SELECTABLE_DOCUMENT_TYPES.map((t) => <option key={t} value={t}>{DOCUMENT_TYPE_LABELS[t]}</option>)}
                           </select>
                         </div>
                         {docForm.document_type === 'prescription' && (

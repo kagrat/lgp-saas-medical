@@ -486,6 +486,11 @@ class DocumentType(str, enum.Enum):
     # NOUVEAU (hospitalisation, demande confirmee par M. Faustin):
     DAILY_PROGRESS_NOTE = "daily_progress_note"   # tournee medicale quotidienne
     NURSING_NOTE = "nursing_note"                  # note de soins infirmiers
+    # NOUVEAU (lacune identifiee lors d'un audit complet: le compte-rendu
+    # de sortie d'hospitalisation etait bien enregistre mais n'apparaissait
+    # JAMAIS dans le dossier de sante du patient - stocke uniquement sur
+    # Admission.discharge_summary, jamais reflete comme MedicalDocument).
+    DISCHARGE_SUMMARY = "discharge_summary"
 
 
 class MedicalDocument(Base):

@@ -4,7 +4,7 @@ import api, { getErrorMessage } from '../api/client'
 import { SPECIALTIES, DAYS_OF_WEEK } from '../constants'
 import StarRating from '../components/StarRating'
 import { StatusBadge, RESERVATION_STATUSES, RESERVATION_STATUS_LABELS, RESERVATION_STEPS, STAFF_UPDATABLE_STATUSES, STAFF_ACTIONABLE_STATUSES } from '../components/OrderStatus'
-import { DOCUMENT_TYPES, DOCUMENT_TYPE_LABELS } from '../components/DocumentType'
+import { SELECTABLE_DOCUMENT_TYPES, DOCUMENT_TYPE_LABELS } from '../components/DocumentType'
 import { LAB_STATUSES, LAB_STATUS_LABELS, LAB_STEPS } from '../components/LabStatus'
 import { AppointmentStatusBadge, APPOINTMENT_STATUS_LABELS } from '../components/AppointmentStatusUI'
 import ChatWindow from '../components/ChatWindow'
@@ -569,7 +569,7 @@ export default function EstablishmentAdmin() {
                         onChange={(e) => setDocForm({ ...docForm, document_type: e.target.value })}
                         className="rounded-lg border border-forest-100 px-3 py-2 text-sm bg-white"
                       >
-                        {DOCUMENT_TYPES.map((t) => <option key={t} value={t}>{DOCUMENT_TYPE_LABELS[t]}</option>)}
+                        {SELECTABLE_DOCUMENT_TYPES.map((t) => <option key={t} value={t}>{DOCUMENT_TYPE_LABELS[t]}</option>)}
                       </select>
                       <input
                         placeholder="Titre (ex: Ordonnance du 21 mai)"

@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react'
 import { Calendar, Users, BedDouble, Clock, MessageSquare, CalendarCheck } from 'lucide-react'
 import api, { getErrorMessage } from '../api/client'
 import { AppointmentStatusBadge } from '../components/AppointmentStatusUI'
-import { DOCUMENT_TYPES, DOCUMENT_TYPE_LABELS } from '../components/DocumentType'
+import { SELECTABLE_DOCUMENT_TYPES, DOCUMENT_TYPE_LABELS } from '../components/DocumentType'
 import ChatWindow from '../components/ChatWindow'
 import MyPatients from '../components/MyPatients'
 import Hospitalizations from '../components/Hospitalizations'
@@ -336,7 +336,7 @@ export default function DesktopDoctorDashboard() {
                       onChange={(e) => setDocForm({ ...docForm, document_type: e.target.value })}
                       className="rounded-lg border border-forest-100 px-3 py-2 text-sm bg-white"
                     >
-                      {DOCUMENT_TYPES.map((t) => <option key={t} value={t}>{DOCUMENT_TYPE_LABELS[t]}</option>)}
+                      {SELECTABLE_DOCUMENT_TYPES.map((t) => <option key={t} value={t}>{DOCUMENT_TYPE_LABELS[t]}</option>)}
                     </select>
                     <input
                       placeholder="Titre (ex: Ordonnance du 21 mai)"
