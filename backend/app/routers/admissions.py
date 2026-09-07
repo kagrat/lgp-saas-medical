@@ -194,6 +194,32 @@ def add_progress_note(admission_id: str, payload: ProgressNoteCreate, db: Sessio
     return _to_document_out(document)
 
 
+@router.post("/{admission_id}/nursing-note", status_code=status.HTTP_201_CREATED)
+def add_nursing_note(admission_id: str, payload: ProgressNoteCreate, db: Session = Depends(get_db),
+                      current_user: User = Depends(require_roles(UserRole.NURSE))):
+    """
+    NOUVEAU (lacune identifiee lors d'un audit complet: "NURSING_NOTE"
+    existait deja comme type de document possible, mais AUCUN endpoint ne
+    permettait a un infirmier d'en creer un reellement - seul le medecin
+    pouvait ecrire une note pour un patient hospitalise. Dans un hopital
+    reel, le dossier de soins infirmiers (surveillance, soins prodigues,
+    observations entre les visites medicales) est un document distinct et
+    obligatoire, tenu par l'infirmier lui-meme - pas une simple copie du
+    dossier medical du medecin.
+    """
+    admission = _get_admission_in_scope(db, admission_id, current_user)
+
+    document = MedicalDocument(
+        id=str(uuid.uuid4()), admission_id=admission.id, patient_id=admission.patient_id,
+        doctor_id=None, author_user_id=current_user.id, establishment_id=current_user.establishment_id,
+        document_type=DocumentType.NURSING_NOTE, title=payload.title, content=payload.content,
+    )
+    db.add(document)
+    db.commit()
+    db.refresh(document)
+    return _to_document_out(document)
+
+
 @router.post("/{admission_id}/transfer", response_model=AdmissionOut)
 def transfer_admission(admission_id: str, payload: AdmissionTransferCreate, db: Session = Depends(get_db),
                         current_user: User = Depends(require_roles(UserRole.DOCTOR))):

@@ -50,7 +50,12 @@ def create_maintenance_alert(db: Session, establishment_id: str, equipment_name:
 @router.get("/establishment", response_model=list[NotificationOut])
 def list_notifications(unread_only: bool = False, db: Session = Depends(get_db),
                         current_user: User = Depends(require_roles(
-                            UserRole.ESTABLISHMENT_ADMIN, UserRole.HR_MANAGER, UserRole.ACCOUNTANT))):
+                            UserRole.ESTABLISHMENT_ADMIN, UserRole.HR_MANAGER, UserRole.ACCOUNTANT,
+                            # CORRIGE (lacune identifiee lors d'un audit complet): le
+                            # pharmacien ne pouvait jamais voir les alertes de stock bas
+                            # generees sur SA PROPRE pharmacie - seul l'admin les voyait,
+                            # alors que c'est le pharmacien qui doit reellement agir dessus.
+                            UserRole.PHARMACIST))):
     """Notifications de l'etablissement - visibles par l'admin et les roles
     de gestion (pas de ciblage individuel pour l'instant, tout le monde
     dans ces roles voit les memes alertes)."""
@@ -64,7 +69,7 @@ def list_notifications(unread_only: bool = False, db: Session = Depends(get_db),
 @router.patch("/{notification_id}/read", response_model=NotificationOut)
 def mark_read(notification_id: str, db: Session = Depends(get_db),
               current_user: User = Depends(require_roles(
-                  UserRole.ESTABLISHMENT_ADMIN, UserRole.HR_MANAGER, UserRole.ACCOUNTANT))):
+                  UserRole.ESTABLISHMENT_ADMIN, UserRole.HR_MANAGER, UserRole.ACCOUNTANT, UserRole.PHARMACIST))):
     notification = db.query(Notification).filter(
         Notification.id == notification_id, Notification.establishment_id == current_user.establishment_id
     ).first()
@@ -79,7 +84,7 @@ def mark_read(notification_id: str, db: Session = Depends(get_db),
 @router.post("/read-all", status_code=204)
 def mark_all_read(db: Session = Depends(get_db),
                    current_user: User = Depends(require_roles(
-                       UserRole.ESTABLISHMENT_ADMIN, UserRole.HR_MANAGER, UserRole.ACCOUNTANT))):
+                       UserRole.ESTABLISHMENT_ADMIN, UserRole.HR_MANAGER, UserRole.ACCOUNTANT, UserRole.PHARMACIST))):
     db.query(Notification).filter(
         Notification.establishment_id == current_user.establishment_id, Notification.is_read == False
     ).update({"is_read": True})

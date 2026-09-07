@@ -9,6 +9,7 @@ import ReservationReviewForm from '../components/ReservationReviewForm'
 import ChatWindow from '../components/ChatWindow'
 import MySchedule from '../components/MySchedule'
 import SidebarLayout from '../components/SidebarLayout'
+import NotificationBell from '../components/NotificationBell'
 
 export default function DesktopPharmacistDashboard() {
   const [establishment, setEstablishment] = useState(null)
@@ -176,6 +177,7 @@ export default function DesktopPharmacistDashboard() {
       activeTab={tab}
       onTabChange={(id) => { setTab(id); setError('') }}
       accentColor="bg-success-700"
+      headerRight={<NotificationBell />}
     >
       {error && <p className="text-clay-600 mb-6">{error}</p>}
 

@@ -22,6 +22,14 @@ export default function DesktopNurseDashboard() {
   const [savingVitals, setSavingVitals] = useState(false)
   const [vitalsMessage, setVitalsMessage] = useState('')
 
+  // NOUVEAU (lacune identifiee lors d'un audit complet): le type de
+  // document "note infirmiere" existait deja mais aucune interface ne
+  // permettait d'en creer un - dossier de soins distinct du dossier
+  // medical du medecin, comme dans un vrai hopital.
+  const [noteForm, setNoteForm] = useState({ title: '', content: '' })
+  const [savingNote, setSavingNote] = useState(false)
+  const [noteMessage, setNoteMessage] = useState('')
+
   useEffect(() => {
     load()
   }, [])
@@ -42,6 +50,8 @@ export default function DesktopNurseDashboard() {
     setLoadingDetail(true)
     setVitalsMessage('')
     setVitalsForm({ temperature_celsius: '', blood_pressure: '', pulse_bpm: '', respiratory_rate: '', notes: '' })
+    setNoteForm({ title: '', content: '' })
+    setNoteMessage('')
     try {
       const { data } = await api.get(`/admissions/${id}`)
       setDetail(data)
@@ -72,6 +82,24 @@ export default function DesktopNurseDashboard() {
       setError(getErrorMessage(err, "Impossible d'enregistrer les constantes."))
     } finally {
       setSavingVitals(false)
+    }
+  }
+
+  async function submitNursingNote() {
+    if (!noteForm.title || !noteForm.content) return
+    setSavingNote(true)
+    setNoteMessage('')
+    setError('')
+    try {
+      await api.post(`/admissions/${selectedId}/nursing-note`, noteForm)
+      setNoteMessage('Note de soins ajoutee au dossier.')
+      setNoteForm({ title: '', content: '' })
+      const { data } = await api.get(`/admissions/${selectedId}`)
+      setDetail(data)
+    } catch (err) {
+      setError(getErrorMessage(err, "Impossible d'ajouter cette note."))
+    } finally {
+      setSavingNote(false)
     }
   }
 
@@ -145,7 +173,7 @@ export default function DesktopNurseDashboard() {
 
               <p className="text-sm font-medium text-forest-900 mb-2">Historique des constantes</p>
               {detail.vital_signs.length === 0 && <p className="text-sm text-forest-700 mb-3">Aucune constante relevee pour le moment.</p>}
-              <div className="space-y-2">
+              <div className="space-y-2 mb-4">
                 {detail.vital_signs.map((v) => (
                   <div key={v.id} className="bg-white rounded-lg p-3 text-sm">
                     <p className="text-forest-700">
@@ -158,6 +186,41 @@ export default function DesktopNurseDashboard() {
                       {v.respiratory_rate !== null && `FR: ${v.respiratory_rate}`}
                     </p>
                     {v.notes && <p className="text-forest-700 italic">{v.notes}</p>}
+                  </div>
+                ))}
+              </div>
+
+              {/* NOUVEAU (lacune identifiee lors d'un audit complet):
+                  dossier de soins infirmiers, distinct du dossier medical
+                  du medecin - pratique universelle dans un vrai hopital. */}
+              <div className="bg-white rounded-lg p-4 mb-4">
+                <p className="text-sm font-medium text-forest-900 mb-2">Ajouter une note de soins</p>
+                {noteMessage && <p className="text-forest-900 bg-forest-50 border border-forest-300 rounded-lg p-2 mb-3 text-sm">{noteMessage}</p>}
+                <input placeholder="Titre (ex: Soins du matin)" value={noteForm.title}
+                  onChange={(e) => setNoteForm({ ...noteForm, title: e.target.value })}
+                  className="w-full rounded-lg border border-forest-100 px-3 py-2 text-sm mb-2" />
+                <textarea placeholder="Observations, soins prodigues, etat du patient..." value={noteForm.content}
+                  onChange={(e) => setNoteForm({ ...noteForm, content: e.target.value })}
+                  rows={3} className="w-full rounded-lg border border-forest-100 px-3 py-2 text-sm mb-3" />
+                <button onClick={submitNursingNote} disabled={savingNote || !noteForm.title || !noteForm.content}
+                  className="rounded-full bg-[var(--portal-accent)] text-white px-5 py-1.5 text-sm font-semibold hover:brightness-90 transition disabled:opacity-50">
+                  {savingNote ? 'Enregistrement...' : 'Ajouter au dossier de soins'}
+                </button>
+              </div>
+
+              <p className="text-sm font-medium text-forest-900 mb-2">Dossier (notes medicales et de soins)</p>
+              {detail.documents.length === 0 && <p className="text-sm text-forest-700">Aucune note pour le moment.</p>}
+              <div className="space-y-2">
+                {detail.documents.map((d) => (
+                  <div key={d.id} className="bg-white rounded-lg p-3 text-sm">
+                    <div className="flex justify-between items-start mb-1">
+                      <p className="text-forest-900 font-medium">{d.title}</p>
+                      <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${d.document_type === 'nursing_note' ? 'bg-primary-500/10 text-primary-700' : 'bg-secondary-500/10 text-secondary-600'}`}>
+                        {d.document_type === 'nursing_note' ? 'Note de soins' : 'Note medicale'}
+                      </span>
+                    </div>
+                    <p className="text-xs text-forest-700 mb-1">{d.doctor_name} - {new Date(d.created_at).toLocaleString('fr-FR')}</p>
+                    <p className="text-forest-700">{d.content}</p>
                   </div>
                 ))}
               </div>
