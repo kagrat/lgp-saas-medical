@@ -7,6 +7,7 @@ export default function LabReferralForm({ appointmentId, onDone }) {
   const [selectedLabId, setSelectedLabId] = useState('')
   const [testName, setTestName] = useState('')
   const [sampleType, setSampleType] = useState('')
+  const [priority, setPriority] = useState('routine')
   const [error, setError] = useState('')
   const [message, setMessage] = useState('')
   const [searching, setSearching] = useState(false)
@@ -41,10 +42,12 @@ export default function LabReferralForm({ appointmentId, onDone }) {
         lab_establishment_id: selectedLabId,
         test_name: testName,
         sample_type: sampleType || null,
+        priority,
       })
       setMessage('Analyse transmise au laboratoire. Le patient la voit deja dans son suivi.')
       setTestName('')
       setSampleType('')
+      setPriority('routine')
       if (onDone) onDone()
     } catch (err) {
       setError(getErrorMessage(err, "Impossible de transmettre cette analyse."))
@@ -78,11 +81,16 @@ export default function LabReferralForm({ appointmentId, onDone }) {
         </select>
       )}
 
-      <div className="grid sm:grid-cols-2 gap-2 mb-3">
+      <div className="grid sm:grid-cols-3 gap-2 mb-3">
         <input placeholder="Nom de l'analyse" value={testName} onChange={(e) => setTestName(e.target.value)}
           className="rounded-lg border border-forest-100 px-3 py-2 text-sm" />
         <input placeholder="Type de prelevement (optionnel)" value={sampleType} onChange={(e) => setSampleType(e.target.value)}
           className="rounded-lg border border-forest-100 px-3 py-2 text-sm" />
+        <select value={priority} onChange={(e) => setPriority(e.target.value)}
+          className={`rounded-lg border px-3 py-2 text-sm bg-white ${priority === 'urgent' ? 'border-clay-500 text-clay-600 font-medium' : 'border-forest-100'}`}>
+          <option value="routine">Routine</option>
+          <option value="urgent">Urgent</option>
+        </select>
       </div>
 
       {error && <p className="text-clay-600 text-sm mb-2">{error}</p>}

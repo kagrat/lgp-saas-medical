@@ -30,6 +30,13 @@ export default function DesktopNurseDashboard() {
   const [savingNote, setSavingNote] = useState(false)
   const [noteMessage, setNoteMessage] = useState('')
 
+  // NOUVEAU (lacune identifiee lors d'un audit complet): aucun suivi
+  // d'administration des medicaments n'existait pour un patient
+  // hospitalise - pratique quasi universelle en milieu hospitalier reel.
+  const [medForm, setMedForm] = useState({ medication_name: '', dosage: '', status: 'given', notes: '' })
+  const [savingMed, setSavingMed] = useState(false)
+  const [medMessage, setMedMessage] = useState('')
+
   useEffect(() => {
     load()
   }, [])
@@ -52,6 +59,8 @@ export default function DesktopNurseDashboard() {
     setVitalsForm({ temperature_celsius: '', blood_pressure: '', pulse_bpm: '', respiratory_rate: '', notes: '' })
     setNoteForm({ title: '', content: '' })
     setNoteMessage('')
+    setMedForm({ medication_name: '', dosage: '', status: 'given', notes: '' })
+    setMedMessage('')
     try {
       const { data } = await api.get(`/admissions/${id}`)
       setDetail(data)
@@ -100,6 +109,24 @@ export default function DesktopNurseDashboard() {
       setError(getErrorMessage(err, "Impossible d'ajouter cette note."))
     } finally {
       setSavingNote(false)
+    }
+  }
+
+  async function submitMedication() {
+    if (!medForm.medication_name) return
+    setSavingMed(true)
+    setMedMessage('')
+    setError('')
+    try {
+      await api.post(`/admissions/${selectedId}/medications`, medForm)
+      setMedMessage('Administration enregistree.')
+      setMedForm({ medication_name: '', dosage: '', status: 'given', notes: '' })
+      const { data } = await api.get(`/admissions/${selectedId}`)
+      setDetail(data)
+    } catch (err) {
+      setError(getErrorMessage(err, "Impossible d'enregistrer cette administration."))
+    } finally {
+      setSavingMed(false)
     }
   }
 
@@ -186,6 +213,52 @@ export default function DesktopNurseDashboard() {
                       {v.respiratory_rate !== null && `FR: ${v.respiratory_rate}`}
                     </p>
                     {v.notes && <p className="text-forest-700 italic">{v.notes}</p>}
+                  </div>
+                ))}
+              </div>
+
+              {/* NOUVEAU (lacune identifiee lors d'un audit complet):
+                  suivi d'administration des medicaments (MAR) - pratique
+                  quasi universelle en milieu hospitalier reel, absente
+                  jusqu'ici. */}
+              <div className="bg-white rounded-lg p-4 mb-4">
+                <p className="text-sm font-medium text-forest-900 mb-2">Administrer un medicament</p>
+                {medMessage && <p className="text-forest-900 bg-forest-50 border border-forest-300 rounded-lg p-2 mb-3 text-sm">{medMessage}</p>}
+                <div className="grid sm:grid-cols-2 gap-2 mb-2">
+                  <input placeholder="Nom du medicament" value={medForm.medication_name}
+                    onChange={(e) => setMedForm({ ...medForm, medication_name: e.target.value })}
+                    className="rounded-lg border border-forest-100 px-3 py-2 text-sm" />
+                  <input placeholder="Dose (ex: 1g, 500mg)" value={medForm.dosage}
+                    onChange={(e) => setMedForm({ ...medForm, dosage: e.target.value })}
+                    className="rounded-lg border border-forest-100 px-3 py-2 text-sm" />
+                </div>
+                <select value={medForm.status} onChange={(e) => setMedForm({ ...medForm, status: e.target.value })}
+                  className="w-full rounded-lg border border-forest-100 px-3 py-2 text-sm bg-white mb-2">
+                  <option value="given">Administre</option>
+                  <option value="held">Dose retenue (a la demande du medecin)</option>
+                  <option value="refused">Refuse par le patient</option>
+                </select>
+                <input placeholder="Notes (optionnel)" value={medForm.notes}
+                  onChange={(e) => setMedForm({ ...medForm, notes: e.target.value })}
+                  className="w-full rounded-lg border border-forest-100 px-3 py-2 text-sm mb-3" />
+                <button onClick={submitMedication} disabled={savingMed || !medForm.medication_name}
+                  className="rounded-full bg-[var(--portal-accent)] text-white px-5 py-1.5 text-sm font-semibold hover:brightness-90 transition disabled:opacity-50">
+                  {savingMed ? 'Enregistrement...' : 'Enregistrer'}
+                </button>
+              </div>
+
+              <p className="text-sm font-medium text-forest-900 mb-2">Historique des medicaments</p>
+              {detail.medication_administrations.length === 0 && <p className="text-sm text-forest-700 mb-4">Aucun medicament administre pour le moment.</p>}
+              <div className="space-y-2 mb-4">
+                {detail.medication_administrations.map((m) => (
+                  <div key={m.id} className={`rounded-lg p-3 text-sm ${m.status !== 'given' ? 'bg-clay-500/5 border border-clay-300' : 'bg-white'}`}>
+                    <p className="text-forest-900 font-medium">
+                      {m.medication_name}{m.dosage && ` - ${m.dosage}`}
+                      {m.status === 'held' && <span className="ml-2 text-xs px-2 py-0.5 rounded-full bg-clay-500/10 text-clay-600 font-medium">Dose retenue</span>}
+                      {m.status === 'refused' && <span className="ml-2 text-xs px-2 py-0.5 rounded-full bg-clay-500/10 text-clay-600 font-medium">Refuse</span>}
+                    </p>
+                    <p className="text-forest-700">{new Date(m.administered_at).toLocaleString('fr-FR')} - {m.administered_by_name}</p>
+                    {m.notes && <p className="text-forest-700 italic">{m.notes}</p>}
                   </div>
                 ))}
               </div>

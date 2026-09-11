@@ -16,7 +16,10 @@ from app.database import get_db
 from app.models import (
     Patient, User, UserRole, Appointment, PharmacyReservation, LabTestRequest, Dependent, EstablishmentType, AuditLog,
 )
-from app.schemas import PatientDirectoryOut, DependentCreate, DependentOut, WalkInPatientCreate, WalkInPatientOut, CompleteRegistrationRequest
+from app.schemas import (
+    PatientDirectoryOut, DependentCreate, DependentOut, WalkInPatientCreate, WalkInPatientOut,
+    CompleteRegistrationRequest, EmergencyContactUpdate, MyPatientProfileOut,
+)
 from app.deps import require_roles, require_establishment_types
 from app.security import hash_password
 
@@ -167,6 +170,9 @@ def establishment_patient_directory(search: Optional[str] = None, db: Session = 
             id=patient.id, full_name=patient.user.full_name, email=patient.user.email,
             phone=patient.user.phone, dossier_number=patient.dossier_number,
             last_visit=last_appointment.scheduled_at if last_appointment else None,
+            emergency_contact_name=patient.emergency_contact_name,
+            emergency_contact_relation=patient.emergency_contact_relation,
+            emergency_contact_phone=patient.emergency_contact_phone,
         ))
 
     results.sort(key=lambda p: p.full_name)
@@ -213,3 +219,39 @@ def delete_dependent(dependent_id: str, db: Session = Depends(get_db),
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Proche introuvable")
     db.delete(dependent)
     db.commit()
+
+
+@router.get("/me", response_model=MyPatientProfileOut)
+def my_patient_profile(db: Session = Depends(get_db),
+                        current_user: User = Depends(require_roles(UserRole.PATIENT))):
+    """NOUVEAU (demande explicite de M. Faustin): permet au patient de
+    voir - et donc de completer - son propre contact d'urgence."""
+    patient = db.query(Patient).filter(Patient.user_id == current_user.id).first()
+    if not patient:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Profil patient introuvable")
+    return patient
+
+
+@router.patch("/me/emergency-contact", response_model=MyPatientProfileOut)
+def update_emergency_contact(payload: EmergencyContactUpdate, db: Session = Depends(get_db),
+                              current_user: User = Depends(require_roles(UserRole.PATIENT))):
+    """
+    NOUVEAU (demande explicite de M. Faustin): personne a contacter en cas
+    d'urgence - AVEC un vrai numero de telephone, contrairement au champ
+    existant ("Dependents") qui ne demandait pas de numero et n'etait de
+    toute facon pas concu pour cet usage (il sert a declarer des membres
+    de la famille geres par ce compte, pas un contact d'urgence).
+    """
+    patient = db.query(Patient).filter(Patient.user_id == current_user.id).first()
+    if not patient:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Profil patient introuvable")
+
+    if payload.emergency_contact_name is not None:
+        patient.emergency_contact_name = payload.emergency_contact_name
+    if payload.emergency_contact_relation is not None:
+        patient.emergency_contact_relation = payload.emergency_contact_relation
+    if payload.emergency_contact_phone is not None:
+        patient.emergency_contact_phone = payload.emergency_contact_phone
+    db.commit()
+    db.refresh(patient)
+    return patient

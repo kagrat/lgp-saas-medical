@@ -241,6 +241,9 @@ def book_appointment_for_patient(payload: AppointmentBookForPatient, db: Session
             pass
 
     return _to_appointment_out(appointment)
+
+
+@router.get("/mine", response_model=list[AppointmentOut])
 def my_appointments(db: Session = Depends(get_db),
                      current_user: User = Depends(require_roles(UserRole.PATIENT))):
     patient = db.query(Patient).filter(Patient.user_id == current_user.id).first()

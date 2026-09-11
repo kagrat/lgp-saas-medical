@@ -536,6 +536,35 @@ class VitalSignsOut(BaseModel):
     notes: Optional[str] = None
 
 
+class MedicationAdministrationCreate(BaseModel):
+    """NOUVEAU (lacune identifiee lors d'un audit complet): l'infirmier
+    trace chaque medicament reellement donne - pas seulement ce qui a ete
+    prescrit sur le papier."""
+    medication_name: str = Field(min_length=1, max_length=200)
+    dosage: Optional[str] = Field(default=None, max_length=100)
+    status: str = Field(default="given")
+    notes: Optional[str] = Field(default=None, max_length=500)
+
+    @field_validator("status")
+    @classmethod
+    def valid_status(cls, v: str) -> str:
+        if v not in ("given", "held", "refused"):
+            raise ValueError("Statut invalide - valeurs acceptees: given, held, refused")
+        return v
+
+
+class MedicationAdministrationOut(BaseModel):
+    id: str
+    medication_name: str
+    dosage: Optional[str] = None
+    administered_by_name: str
+    administered_at: datetime
+    status: str
+    notes: Optional[str] = None
+
+    model_config = {"from_attributes": True}
+
+
 class AdmissionCreate(BaseModel):
     patient_id: str
     department_id: Optional[str] = None
@@ -584,6 +613,7 @@ class AdmissionOut(BaseModel):
     vital_signs: list[VitalSignsOut] = []
     transfers: list[AdmissionTransferOut] = []
     documents: list[MedicalDocumentOut] = []
+    medication_administrations: list[MedicationAdministrationOut] = []
 
 
 class AdmissionSummaryOut(BaseModel):
@@ -810,6 +840,9 @@ class DoctorPatientDetailOut(BaseModel):
     dossier_number: str
     phone: Optional[str] = None
     date_of_birth: Optional[date] = None
+    emergency_contact_name: Optional[str] = None
+    emergency_contact_relation: Optional[str] = None
+    emergency_contact_phone: Optional[str] = None
     appointments: list[DoctorPatientAppointmentOut]
     documents: list[MedicalDocumentOut]
     clinical_flags: list[ClinicalFlagOut] = []
@@ -855,6 +888,7 @@ class LabTestRequestOut(BaseModel):
     test_name: str
     sample_type: Optional[str] = None
     status: LabTestStatus
+    priority: str = "routine"
     scheduled_sample_at: Optional[datetime] = None
     sample_collected_at: Optional[datetime] = None
     results_text: Optional[str] = None
@@ -1033,6 +1067,27 @@ class AuditLogOut(BaseModel):
     details: Optional[str] = None
     created_at: datetime   
 
+class EmergencyContactUpdate(BaseModel):
+    """NOUVEAU (demande explicite de M. Faustin): personne a contacter en
+    cas d'urgence, avec un vrai numero de telephone - distinct de
+    "Dependents" qui declare des membres de la famille, pas un contact
+    d'urgence."""
+    emergency_contact_name: Optional[str] = Field(default=None, max_length=200)
+    emergency_contact_relation: Optional[str] = Field(default=None, max_length=100)
+    emergency_contact_phone: Optional[str] = Field(default=None, max_length=30)
+
+
+class MyPatientProfileOut(BaseModel):
+    id: str
+    dossier_number: str
+    date_of_birth: Optional[date] = None
+    emergency_contact_name: Optional[str] = None
+    emergency_contact_relation: Optional[str] = None
+    emergency_contact_phone: Optional[str] = None
+
+    model_config = {"from_attributes": True}
+
+
 class PatientDirectoryOut(BaseModel):
     id: str
     full_name: str
@@ -1040,6 +1095,12 @@ class PatientDirectoryOut(BaseModel):
     phone: Optional[str] = None
     dossier_number: str
     last_visit: Optional[datetime] = None
+    # NOUVEAU (demande explicite de M. Faustin): visible par le personnel
+    # qui consulte la fiche du patient, pour pouvoir appeler en cas de
+    # besoin reel.
+    emergency_contact_name: Optional[str] = None
+    emergency_contact_relation: Optional[str] = None
+    emergency_contact_phone: Optional[str] = None
 
 
 class DependentCreate(BaseModel):
@@ -1102,6 +1163,18 @@ class OpeningHoursOut(BaseModel):
 class LabTestItemInput(BaseModel):
     test_name: str = Field(min_length=2, max_length=200)
     sample_type: Optional[str] = None
+    # NOUVEAU (lacune identifiee lors d'un audit complet): priorite
+    # decidee par le personnel medical (labo ou medecin), jamais par le
+    # patient lui-meme - sinon n'importe qui pourrait se dire "urgent"
+    # pour passer devant les autres, ce qui viderait la triage de son sens.
+    priority: str = Field(default="routine")
+
+    @field_validator("priority")
+    @classmethod
+    def valid_priority(cls, v: str) -> str:
+        if v not in ("routine", "urgent"):
+            raise ValueError("Priorite invalide - valeurs acceptees: routine, urgent")
+        return v
 
 
 class LabTestRegisterByStaff(BaseModel):
@@ -1374,6 +1447,14 @@ class LabReferralCreate(BaseModel):
     lab_establishment_id: str
     test_name: str = Field(min_length=2, max_length=200)
     sample_type: Optional[str] = None
+    priority: str = Field(default="routine")
+
+    @field_validator("priority")
+    @classmethod
+    def valid_priority(cls, v: str) -> str:
+        if v not in ("routine", "urgent"):
+            raise ValueError("Priorite invalide - valeurs acceptees: routine, urgent")
+        return v
 
 class ReservationItemReview(BaseModel):
     """NOUVEAU: verification d'une ligne precise (par son id de ligne)."""

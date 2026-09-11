@@ -47,7 +47,7 @@ export function RegisterTestByStaff({ onRegistered }) {
   // meme patient, ajoutees/retirees avant un seul envoi groupe - utile
   // pour un patient present sur place qui commande plusieurs analyses
   // a la fois (ex: glycemie + cholesterol + creatinine).
-  const [tests, setTests] = useState([{ test_name: '', sample_type: '' }])
+  const [tests, setTests] = useState([{ test_name: '', sample_type: '', priority: 'routine' }])
   const [error, setError] = useState('')
   const [message, setMessage] = useState('')
   const [saving, setSaving] = useState(false)
@@ -68,7 +68,7 @@ export function RegisterTestByStaff({ onRegistered }) {
   }
 
   function addTestRow() {
-    setTests((rows) => [...rows, { test_name: '', sample_type: '' }])
+    setTests((rows) => [...rows, { test_name: '', sample_type: '', priority: 'routine' }])
   }
 
   function removeTestRow(idx) {
@@ -88,10 +88,10 @@ export function RegisterTestByStaff({ onRegistered }) {
     try {
       const { data } = await api.post('/lab/tests/register', {
         patient_id: selectedPatientId,
-        tests: validTests.map((t) => ({ test_name: t.test_name, sample_type: t.sample_type || null })),
+        tests: validTests.map((t) => ({ test_name: t.test_name, sample_type: t.sample_type || null, priority: t.priority || 'routine' })),
       })
       setMessage(`${data.length} analyse${data.length > 1 ? 's' : ''} enregistree${data.length > 1 ? 's' : ''} - prelevement marque comme effectue.`)
-      setTests([{ test_name: '', sample_type: '' }])
+      setTests([{ test_name: '', sample_type: '', priority: 'routine' }])
       if (onRegistered) onRegistered()
     } catch (err) {
       setError(getErrorMessage(err, "Impossible d'enregistrer ces analyses."))
@@ -128,13 +128,18 @@ export function RegisterTestByStaff({ onRegistered }) {
       <p className="text-xs text-forest-700 mb-2">Analyses a enregistrer</p>
       <div className="space-y-2 mb-2">
         {tests.map((t, idx) => (
-          <div key={idx} className="grid sm:grid-cols-[1fr_1fr_auto] gap-2 items-center">
+          <div key={idx} className="grid sm:grid-cols-[1fr_1fr_auto_auto] gap-2 items-center">
             <input placeholder="Nom de l'analyse" value={t.test_name}
               onChange={(e) => updateTest(idx, 'test_name', e.target.value)}
               className="rounded-lg border border-forest-100 px-3 py-2 text-sm" />
             <input placeholder="Type de prelevement (optionnel)" value={t.sample_type}
               onChange={(e) => updateTest(idx, 'sample_type', e.target.value)}
               className="rounded-lg border border-forest-100 px-3 py-2 text-sm" />
+            <select value={t.priority} onChange={(e) => updateTest(idx, 'priority', e.target.value)}
+              className={`rounded-lg border px-3 py-2 text-sm bg-white ${t.priority === 'urgent' ? 'border-clay-500 text-clay-600 font-medium' : 'border-forest-100'}`}>
+              <option value="routine">Routine</option>
+              <option value="urgent">Urgent</option>
+            </select>
             {tests.length > 1 && (
               <button type="button" onClick={() => removeTestRow(idx)} className="text-xs text-clay-600 hover:underline">
                 Retirer

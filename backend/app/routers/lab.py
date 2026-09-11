@@ -13,6 +13,7 @@ from datetime import datetime
 from typing import Optional
 
 from fastapi import APIRouter, Depends, HTTPException, status
+from sqlalchemy import case
 from sqlalchemy.orm import Session
 
 from app.database import get_db
@@ -46,6 +47,7 @@ def _to_lab_test_out(request: LabTestRequest, db: Session) -> LabTestRequestOut:
         test_name=request.test_name,
         sample_type=request.sample_type,
         status=request.status,
+        priority=request.priority,
         scheduled_sample_at=request.scheduled_sample_at,
         sample_collected_at=request.sample_collected_at,
         results_text=request.results_text,
@@ -114,7 +116,7 @@ def register_test_by_staff(payload: LabTestRegisterByStaff, db: Session = Depend
     for item in payload.tests:
         lab_test = LabTestRequest(
             id=str(uuid.uuid4()), establishment_id=current_user.establishment_id, patient_id=patient.id,
-            test_name=item.test_name, sample_type=item.sample_type,
+            test_name=item.test_name, sample_type=item.sample_type, priority=item.priority,
             status=LabTestStatus.SAMPLE_COLLECTED,
             sample_collected_at=datetime.utcnow(),
         )
@@ -161,7 +163,7 @@ def refer_test_to_lab(payload: LabReferralCreate, db: Session = Depends(get_db),
 
     lab_test = LabTestRequest(
         id=str(uuid.uuid4()), establishment_id=lab.id, patient_id=appointment.patient_id,
-        test_name=payload.test_name, sample_type=payload.sample_type,
+        test_name=payload.test_name, sample_type=payload.sample_type, priority=payload.priority,
         referred_by_establishment_id=current_user.establishment_id,
         referred_by_doctor_id=referring_doctor_id,
     )
@@ -190,10 +192,21 @@ def my_lab_tests(db: Session = Depends(get_db),
 def establishment_lab_tests(db: Session = Depends(get_db),
                              current_user: User = Depends(require_roles(
                                  UserRole.ESTABLISHMENT_ADMIN, UserRole.LAB_TECHNICIAN))):
+    """
+    CORRIGE (lacune identifiee lors d'un audit complet): le champ priorite
+    existait desormais, mais la liste restait triee uniquement par date de
+    creation - une analyse urgente arrivee apres 10 analyses de routine se
+    serait retrouvee derriere elles, rendant la priorite purement
+    cosmetique. Les analyses urgentes remontent maintenant TOUJOURS en
+    tete de liste, peu importe quand elles ont ete creees.
+    """
     tests = (
         db.query(LabTestRequest)
         .filter(LabTestRequest.establishment_id == current_user.establishment_id)
-        .order_by(LabTestRequest.created_at.desc())
+        .order_by(
+            case((LabTestRequest.priority == "urgent", 0), else_=1),
+            LabTestRequest.created_at.asc(),
+        )
         .all()
     )
     return [_to_lab_test_out(t, db) for t in tests]

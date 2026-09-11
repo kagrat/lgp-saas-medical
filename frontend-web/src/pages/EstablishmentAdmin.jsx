@@ -776,9 +776,14 @@ export default function EstablishmentAdmin() {
           <div className="space-y-3">
             {filteredLabTests.length === 0 && <p className="text-forest-700">Aucune analyse dans cette catégorie.</p>}
             {filteredLabTests.map((t) => (
-              <div key={t.id} className="rounded-xl border border-forest-100 bg-white p-4">
+              <div key={t.id} className={`rounded-xl border p-4 ${t.priority === 'urgent' ? 'border-clay-500 bg-clay-500/5' : 'border-forest-100 bg-white'}`}>
                 <div className="mb-3">
-                  <p className="text-forest-900 font-medium">{t.test_name}</p>
+                  <p className="text-forest-900 font-medium">
+                    {t.test_name}
+                    {t.priority === 'urgent' && (
+                      <span className="ml-2 text-xs px-2 py-0.5 rounded-full bg-clay-600 text-white font-semibold">URGENT</span>
+                    )}
+                  </p>
                   {t.referred_by_establishment_name && (
                     <p className="text-xs text-amber-600">
                       Orientee par {t.referred_by_doctor_name || 'un medecin'} - {t.referred_by_establishment_name}

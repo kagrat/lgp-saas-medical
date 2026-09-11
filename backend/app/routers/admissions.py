@@ -17,11 +17,12 @@ from sqlalchemy.orm import Session
 from app.database import get_db
 from app.models import (
     Admission, VitalSigns, AdmissionTransfer, MedicalDocument, DocumentType,
-    Patient, Doctor, Department, Room, User, UserRole, AuditLog,
+    Patient, Doctor, Department, Room, User, UserRole, AuditLog, MedicationAdministration,
 )
 from app.schemas import (
     AdmissionCreate, AdmissionOut, AdmissionSummaryOut, AdmissionTransferCreate,
     AdmissionTransferOut, AdmissionDischarge, VitalSignsCreate, VitalSignsOut, ProgressNoteCreate,
+    MedicationAdministrationCreate, MedicationAdministrationOut,
 )
 from app.deps import require_roles
 from app.routers.health_records import _to_document_out
@@ -62,6 +63,15 @@ def _to_full_out(db: Session, admission: Admission) -> AdmissionOut:
         .order_by(MedicalDocument.created_at.desc())
         .all()
     )
+    # NOUVEAU (lacune identifiee lors d'un audit complet: aucun suivi
+    # d'administration des medicaments n'existait pour un patient
+    # hospitalise).
+    medications = (
+        db.query(MedicationAdministration)
+        .filter(MedicationAdministration.admission_id == admission.id)
+        .order_by(MedicationAdministration.administered_at.desc())
+        .all()
+    )
     return AdmissionOut(
         id=admission.id, patient_id=admission.patient_id,
         patient_name=admission.patient.user.full_name, dossier_number=admission.patient.dossier_number,
@@ -90,6 +100,13 @@ def _to_full_out(db: Session, admission: Admission) -> AdmissionOut:
             ) for t in admission.transfers
         ],
         documents=[_to_document_out(d) for d in documents],
+        medication_administrations=[
+            MedicationAdministrationOut(
+                id=m.id, medication_name=m.medication_name, dosage=m.dosage,
+                administered_by_name=m.administered_by.full_name if m.administered_by else "Inconnu",
+                administered_at=m.administered_at, status=m.status, notes=m.notes,
+            ) for m in medications
+        ],
     )
 
 
@@ -218,6 +235,38 @@ def add_nursing_note(admission_id: str, payload: ProgressNoteCreate, db: Session
     db.commit()
     db.refresh(document)
     return _to_document_out(document)
+
+
+@router.post("/{admission_id}/medications", response_model=MedicationAdministrationOut, status_code=status.HTTP_201_CREATED)
+def record_medication_administration(admission_id: str, payload: MedicationAdministrationCreate, db: Session = Depends(get_db),
+                                      current_user: User = Depends(require_roles(UserRole.NURSE))):
+    """
+    NOUVEAU (lacune identifiee lors d'un audit complet: aucun suivi
+    d'administration des medicaments n'existait pour un patient
+    hospitalise - pratique quasi universelle en milieu hospitalier reel
+    (le "MAR", Medication Administration Record). L'infirmier trace ici
+    CHAQUE medicament reellement donne, pas seulement ce qui a ete
+    prescrit sur le papier - y compris une dose omise ou refusee
+    (status="held"/"refused"), information cliniquement importante.
+    """
+    admission = _get_admission_in_scope(db, admission_id, current_user)
+
+    administration = MedicationAdministration(
+        id=str(uuid.uuid4()), admission_id=admission.id,
+        medication_name=payload.medication_name, dosage=payload.dosage,
+        administered_by_user_id=current_user.id, status=payload.status, notes=payload.notes,
+    )
+    db.add(administration)
+    db.add(AuditLog(user_id=current_user.id, establishment_id=current_user.establishment_id,
+                     action="record_medication_administration",
+                     details=f"{payload.medication_name} - {payload.status} pour {admission.patient.user.full_name}"))
+    db.commit()
+    db.refresh(administration)
+    return MedicationAdministrationOut(
+        id=administration.id, medication_name=administration.medication_name, dosage=administration.dosage,
+        administered_by_name=current_user.full_name, administered_at=administration.administered_at,
+        status=administration.status, notes=administration.notes,
+    )
 
 
 @router.post("/{admission_id}/transfer", response_model=AdmissionOut)

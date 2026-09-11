@@ -182,6 +182,33 @@ class VitalSigns(Base):
     recorded_by = relationship("User")
 
 
+class MedicationAdministration(Base):
+    """
+    NOUVEAU (lacune identifiee lors d'un audit complet: aucun suivi
+    d'administration des medicaments n'existait pour un patient hospitalise
+    - pratique quasi universelle en milieu hospitalier reel, le "MAR"
+    (Medication Administration Record): l'infirmier trace CHAQUE
+    medicament reellement donne, a quelle heure, avec quelle dose - pas
+    seulement ce que le medecin a prescrit sur le papier. Rattache a
+    l'admission (pas a une ligne de prescription precise): un infirmier
+    peut aussi administrer un traitement ponctuel (PRN) non ecrit a
+    l'avance, ou noter qu'une dose a ete omise/refusee.
+    """
+    __tablename__ = "medication_administrations"
+
+    id = Column(UUID(as_uuid=False), primary_key=True, default=gen_uuid)
+    admission_id = Column(UUID(as_uuid=False), ForeignKey("admissions.id"), nullable=False)
+    medication_name = Column(String(200), nullable=False)
+    dosage = Column(String(100), nullable=True)
+    administered_by_user_id = Column(UUID(as_uuid=False), ForeignKey("users.id"), nullable=False)
+    administered_at = Column(DateTime, default=datetime.utcnow)
+    status = Column(String(20), nullable=False, default="given")  # "given", "held", "refused"
+    notes = Column(Text, nullable=True)
+
+    admission = relationship("Admission")
+    administered_by = relationship("User")
+
+
 class AdmissionTransfer(Base):
     """NOUVEAU: trace chaque changement de service/chambre pendant une
     hospitalisation (ex: urgences -> chirurgie -> suivi post-operatoire)."""
@@ -333,6 +360,14 @@ class Patient(Base):
     user_id = Column(UUID(as_uuid=False), ForeignKey("users.id"), nullable=False, unique=True)
     dossier_number = Column(String(50), unique=True, nullable=False)  # numero unique
     date_of_birth = Column(Date)
+    # NOUVEAU (demande explicite de M. Faustin): personne a contacter en
+    # cas d'urgence - distinct de "Dependents" (qui declare des membres
+    # de la famille geres par ce compte, pas un contact d'urgence).
+    # L'ancien champ ne demandait meme pas de numero de telephone, rendant
+    # le contact inutilisable en situation reelle d'urgence.
+    emergency_contact_name = Column(String(200), nullable=True)
+    emergency_contact_relation = Column(String(100), nullable=True)
+    emergency_contact_phone = Column(String(30), nullable=True)
 
     user = relationship("User")
     appointments = relationship("Appointment", back_populates="patient")
@@ -635,6 +670,11 @@ class LabTestRequest(Base):
     created_at = Column(DateTime, default=datetime.utcnow)
     referred_by_establishment_id = Column(UUID(as_uuid=False), ForeignKey("establishments.id"), nullable=True)
     referred_by_doctor_id = Column(UUID(as_uuid=False), ForeignKey("doctors.id"), nullable=True)
+    # NOUVEAU (lacune identifiee lors d'un audit complet: aucune distinction
+    # entre une analyse urgente et une analyse de routine, alors que c'est
+    # une pratique universelle en laboratoire reel - un prelevement "STAT"
+    # doit etre traite avant les autres, pas dans l'ordre d'arrivee).
+    priority = Column(String(20), nullable=False, default="routine")
 
     establishment = relationship("Establishment", foreign_keys=[establishment_id])
     patient = relationship("Patient")

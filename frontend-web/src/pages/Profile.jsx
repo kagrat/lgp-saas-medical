@@ -16,11 +16,23 @@ export default function Profile() {
   const [dependents, setDependents] = useState([])
   const [dependentForm, setDependentForm] = useState({ full_name: '', relation_type: '', date_of_birth: '' })
   const [savingDependent, setSavingDependent] = useState(false)
+
+  // NOUVEAU (demande explicite de M. Faustin: contact d'urgence AVEC
+  // numero de telephone - distinct de "Dependents" ci-dessus, qui sert a
+  // declarer des membres de la famille geres par ce compte, pas un
+  // contact a appeler en cas d'urgence).
+  const [emergencyContact, setEmergencyContact] = useState({ emergency_contact_name: '', emergency_contact_relation: '', emergency_contact_phone: '' })
+  const [savingEmergencyContact, setSavingEmergencyContact] = useState(false)
+  const [emergencyContactMessage, setEmergencyContactMessage] = useState('')
+
   const role = getRole()
 
   useEffect(() => {
     load()
-    if (role === 'patient') loadDependents()
+    if (role === 'patient') {
+      loadDependents()
+      loadEmergencyContact()
+    }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
@@ -46,6 +58,34 @@ export default function Profile() {
       setDependents(data)
     } catch (err) {
       // silencieux
+    }
+  }
+
+  async function loadEmergencyContact() {
+    try {
+      const { data } = await api.get('/patients/me')
+      setEmergencyContact({
+        emergency_contact_name: data.emergency_contact_name || '',
+        emergency_contact_relation: data.emergency_contact_relation || '',
+        emergency_contact_phone: data.emergency_contact_phone || '',
+      })
+    } catch (err) {
+      // silencieux
+    }
+  }
+
+  async function submitEmergencyContact(e) {
+    e.preventDefault()
+    setSavingEmergencyContact(true)
+    setEmergencyContactMessage('')
+    setError('')
+    try {
+      await api.patch('/patients/me/emergency-contact', emergencyContact)
+      setEmergencyContactMessage('Contact d\'urgence enregistre.')
+    } catch (err) {
+      setError(getErrorMessage(err, "Impossible d'enregistrer le contact d'urgence."))
+    } finally {
+      setSavingEmergencyContact(false)
     }
   }
 
@@ -189,6 +229,29 @@ export default function Profile() {
           </button>
         </form>
       </section>
+
+      {role === 'patient' && (
+        <section className="mb-10">
+          <h2 className="font-display text-xl font-semibold text-forest-900 mb-1">Personne à contacter en cas d'urgence</h2>
+          <p className="text-sm text-forest-700 mb-4">Visible par le personnel médical qui te suit, pour pouvoir l'appeler si besoin.</p>
+          {emergencyContactMessage && <p className="text-forest-900 bg-forest-50 border border-forest-300 rounded-lg p-3 mb-3 text-sm">{emergencyContactMessage}</p>}
+          <form onSubmit={submitEmergencyContact} className="grid sm:grid-cols-3 gap-3 bg-white border border-forest-100 rounded-xl p-5">
+            <input placeholder="Nom complet" value={emergencyContact.emergency_contact_name}
+              onChange={(e) => setEmergencyContact({ ...emergencyContact, emergency_contact_name: e.target.value })}
+              className="rounded-lg border border-forest-100 px-3 py-2" />
+            <input placeholder="Relation (ex: Soeur, Époux)" value={emergencyContact.emergency_contact_relation}
+              onChange={(e) => setEmergencyContact({ ...emergencyContact, emergency_contact_relation: e.target.value })}
+              className="rounded-lg border border-forest-100 px-3 py-2" />
+            <input type="tel" placeholder="Numéro de téléphone" value={emergencyContact.emergency_contact_phone}
+              onChange={(e) => setEmergencyContact({ ...emergencyContact, emergency_contact_phone: e.target.value })}
+              className="rounded-lg border border-forest-100 px-3 py-2" />
+            <button type="submit" disabled={savingEmergencyContact}
+              className="sm:col-span-3 rounded-full bg-primary-700 text-white py-2.5 font-medium hover:bg-primary-900 transition disabled:opacity-50 justify-self-start px-6">
+              {savingEmergencyContact ? 'Enregistrement...' : 'Enregistrer'}
+            </button>
+          </form>
+        </section>
+      )}
 
       {role === 'patient' && (
         <section className="mb-10">

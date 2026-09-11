@@ -247,6 +247,14 @@ export default function MyPatients() {
                       Dossier {detail.dossier_number}
                     </p>
                     {detail.phone && <p className="text-sm text-forest-700">Tél. : {detail.phone}</p>}
+                    {detail.emergency_contact_name && (
+                      <p className="text-sm text-clay-600 font-medium mt-1">
+                        Urgence : {detail.emergency_contact_name} ({detail.emergency_contact_relation})
+                        {detail.emergency_contact_phone && (
+                          <> - <a href={`tel:${detail.emergency_contact_phone}`} className="underline">{detail.emergency_contact_phone}</a></>
+                        )}
+                      </p>
+                    )}
                     {detail.viewed_via_share_from && (
                       <p className="text-xs text-amber-600 font-medium mt-1">
                         Dossier consulte en lecture seule - partage par {detail.viewed_via_share_from}
