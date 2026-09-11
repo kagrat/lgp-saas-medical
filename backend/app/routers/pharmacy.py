@@ -19,7 +19,7 @@ Nouveau flux:
    qui refuse desormais PENDING/CONFIRMED/AWAITING_CONFIRMATION.
 """
 import uuid
-from datetime import datetime
+from datetime import datetime, timedelta
 from typing import Optional
 
 from fastapi import APIRouter, Depends, HTTPException, status
@@ -30,12 +30,13 @@ from app.database import get_db
 from app.models import (
     PharmacyStock, PharmacyReservation, PharmacyOrderItem, PharmacyReservationStatusHistory,
     Patient, User, UserRole, ReservationStatus, EstablishmentType, Establishment, AuditLog,
-    PrescriptionItem, MedicalDocument, DocumentType, DeliveryMode,
+    PrescriptionItem, MedicalDocument, DocumentType, DeliveryMode, PharmacyStockBatch, OpeningHours,
 )
 from app.schemas import (
     StockItemCreate, StockItemOut, ReservationCreate, ReservationOut, ReservationItemOut,
     ReservationStatusUpdate, ReservationHistoryOut, PharmacyStatsOut, ReservationReview,
     PharmacySearchResult, PrescriptionMatchOut, PharmacyOrderSummaryOut,
+    PharmacyBatchCreate, PharmacyBatchOut, PharmacyReportOut, PharmacyDailyRevenueOut,
 )
 from app.deps import require_roles, require_establishment_types
 from app.services.geo import resolve_city_coordinates, haversine_km
@@ -59,10 +60,43 @@ def _to_stock_out(item: PharmacyStock) -> StockItemOut:
         id=item.id, reference=item.reference, medication_name=item.medication_name, category=item.category,
         quantity=item.quantity, alert_threshold=item.alert_threshold, unit_price=item.unit_price,
         establishment_id=item.establishment_id, is_low_stock=item.quantity <= item.alert_threshold,
+        unit_of_sale=item.unit_of_sale, dci=item.dci, units_per_box=item.units_per_box,
+        form=item.form, dosage=item.dosage, manufacturer=item.manufacturer,
     )
 
 
-def _to_reservation_out(reservation: PharmacyReservation) -> ReservationOut:
+# NOUVEAU (demande explicite de M. Faustin: Inventaire, partie 3 - le
+# statut doit "alterner automatiquement" - jamais saisi a la main, pour
+# eviter qu'un statut affiche devienne faux avec le temps (ex: un lot
+# marque "disponible" qui a en realite expire la semaine suivante, faute
+# de mise a jour manuelle).
+PHARMACY_EXPIRY_WARNING_DAYS = 60
+
+
+def _to_batch_out(batch: PharmacyStockBatch, stock_item: PharmacyStock) -> PharmacyBatchOut:
+    today = datetime.utcnow().date()
+    days_to_expiry = (batch.expiration_date - today).days
+
+    if days_to_expiry < 0:
+        # Un lot deja expire n'est de toute facon plus vendable - on le
+        # signale comme "expire_bientot" (etat le plus proche du danger
+        # deja defini) plutot que d'introduire un 4e etat non demande.
+        computed_status = "expire_bientot"
+    elif days_to_expiry <= PHARMACY_EXPIRY_WARNING_DAYS:
+        computed_status = "expire_bientot"
+    elif stock_item.quantity <= stock_item.alert_threshold:
+        computed_status = "stock_faible"
+    else:
+        computed_status = "disponible"
+
+    return PharmacyBatchOut(
+        id=batch.id, stock_item_id=stock_item.id, medication_name=stock_item.medication_name,
+        lot_number=batch.lot_number, received_at=batch.received_at, quantity_received=batch.quantity_received,
+        expiration_date=batch.expiration_date, unit_price=stock_item.unit_price, status=computed_status,
+    )
+
+
+def _to_reservation_out(reservation: PharmacyReservation, db: Session) -> ReservationOut:
     items = [
         ReservationItemOut(
             id=item.id, medication_id=item.medication_id,
@@ -79,6 +113,11 @@ def _to_reservation_out(reservation: PharmacyReservation) -> ReservationOut:
     if all(i.confirmed_quantity is not None and i.confirmed_unit_price is not None for i in items) and items:
         total_amount = sum(i.confirmed_quantity * i.confirmed_unit_price for i in items)
 
+    # NOUVEAU (demande explicite de M. Faustin: liste des commandes
+    # restructuree - nom du patient, telephone et un numero de commande
+    # lisible, visibles directement sans ouvrir chaque commande).
+    patient = db.query(Patient).filter(Patient.id == reservation.patient_id).first()
+
     return ReservationOut(
         id=reservation.id, establishment_id=reservation.establishment_id,
         patient_id=reservation.patient_id, items=items,
@@ -87,6 +126,9 @@ def _to_reservation_out(reservation: PharmacyReservation) -> ReservationOut:
         pharmacist_note=reservation.pharmacist_note, created_at=reservation.created_at,
         total_amount=total_amount,
         prescription_document_id=reservation.prescription_document_id,
+        order_number=f"CMD-{reservation.id[:8].upper()}",
+        patient_name=patient.user.full_name if patient else "Inconnu",
+        patient_phone=patient.user.phone if patient else None,
         is_paid=reservation.is_paid, paid_at=reservation.paid_at,
     )
 
@@ -106,11 +148,75 @@ def add_stock_item(payload: StockItemCreate, db: Session = Depends(get_db),
         id=str(uuid.uuid4()), establishment_id=current_user.establishment_id,
         reference=payload.reference, medication_name=payload.medication_name, category=payload.category,
         quantity=payload.quantity, alert_threshold=payload.alert_threshold, unit_price=payload.unit_price,
+        unit_of_sale=payload.unit_of_sale, dci=payload.dci, units_per_box=payload.units_per_box,
+        form=payload.form, dosage=payload.dosage, manufacturer=payload.manufacturer,
     )
     db.add(item)
+    db.add(AuditLog(user_id=current_user.id, establishment_id=current_user.establishment_id,
+                     action="create_pharmacy_product", details=f"Produit cree: {item.medication_name} ({item.reference})"))
     db.commit()
     db.refresh(item)
     return _to_stock_out(item)
+
+
+@router.post("/stock/batches", response_model=PharmacyBatchOut, status_code=status.HTTP_201_CREATED, dependencies=[_PHARMACY_ONLY])
+def add_stock_batch(payload: PharmacyBatchCreate, db: Session = Depends(get_db),
+                     current_user: User = Depends(require_roles(UserRole.ESTABLISHMENT_ADMIN, UserRole.PHARMACIST))):
+    """
+    NOUVEAU (demande explicite de M. Faustin: Inventaire, partie 2 -
+    enregistrer un lot recu pour un produit deja cree en partie 1).
+
+    SECURITE: verifie explicitement que le produit vise appartient bien a
+    L'ETABLISSEMENT DE L'UTILISATEUR CONNECTE - sans ce controle, un
+    pharmacien malveillant aurait pu injecter un lot (et donc modifier la
+    quantite en stock) sur le produit d'un AUTRE etablissement, simplement
+    en devinant/enumerant des identifiants.
+    """
+    stock_item = db.query(PharmacyStock).filter(
+        PharmacyStock.id == payload.stock_item_id, PharmacyStock.establishment_id == current_user.establishment_id,
+    ).first()
+    if not stock_item:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Produit introuvable dans ton etablissement")
+
+    batch = PharmacyStockBatch(
+        id=str(uuid.uuid4()), stock_item_id=stock_item.id, lot_number=payload.lot_number,
+        received_at=payload.received_at, quantity_received=payload.quantity_received,
+        expiration_date=payload.expiration_date, created_by_user_id=current_user.id,
+    )
+    db.add(batch)
+    # Synchronise la quantite agregee (source de verite pour la vente,
+    # deja utilisee par tout le flux de commande existant) - le nouveau
+    # lot recu s'ajoute au stock disponible.
+    stock_item.quantity += payload.quantity_received
+    db.add(AuditLog(user_id=current_user.id, establishment_id=current_user.establishment_id,
+                     action="add_pharmacy_batch",
+                     details=f"Lot {payload.lot_number} recu pour {stock_item.medication_name}: +{payload.quantity_received} unites"))
+    db.commit()
+    db.refresh(batch)
+
+    return _to_batch_out(batch, stock_item)
+
+
+@router.get("/stock/batches", response_model=list[PharmacyBatchOut], dependencies=[_PHARMACY_ONLY])
+def list_stock_batches(db: Session = Depends(get_db),
+                        current_user: User = Depends(require_roles(UserRole.ESTABLISHMENT_ADMIN, UserRole.PHARMACIST))):
+    """
+    NOUVEAU (demande explicite de M. Faustin: Inventaire, partie 3 -
+    consultation du stock: lot, expiration, nombre en stock, prix de
+    vente, et etat calcule automatiquement).
+
+    SECURITE: la jointure filtre explicitement sur l'etablissement de
+    l'utilisateur connecte - sans cela, un pharmacien aurait pu voir les
+    lots de N'IMPORTE QUEL AUTRE etablissement.
+    """
+    batches = (
+        db.query(PharmacyStockBatch)
+        .join(PharmacyStock, PharmacyStock.id == PharmacyStockBatch.stock_item_id)
+        .filter(PharmacyStock.establishment_id == current_user.establishment_id)
+        .order_by(PharmacyStockBatch.expiration_date.asc())
+        .all()
+    )
+    return [_to_batch_out(b, b.stock_item) for b in batches]
 
 
 @router.get("/stock", response_model=list[StockItemOut], dependencies=[_PHARMACY_ONLY])
@@ -155,18 +261,42 @@ def search_pharmacies(name: Optional[str] = None, city: Optional[str] = None, db
     if name:
         query = query.filter(Establishment.name.ilike(f"%{name}%"))
 
+    establishments = query.limit(100).all()
+
+    # NOUVEAU (demande explicite de M. Faustin: statut ouvert/ferme visible
+    # directement pendant la recherche). Une seule requete groupee pour
+    # toutes les pharmacies du jour, plutot qu'un appel par pharmacie.
+    now = datetime.utcnow()
+    today_weekday = now.weekday()
+    now_time = now.time()
+    establishment_ids = [e.id for e in establishments]
+    todays_hours = (
+        db.query(OpeningHours)
+        .filter(OpeningHours.establishment_id.in_(establishment_ids), OpeningHours.day_of_week == today_weekday)
+        .all()
+        if establishment_ids else []
+    )
+    hours_by_establishment = {h.establishment_id: h for h in todays_hours}
+
     results: list[PharmacySearchResult] = []
-    for establishment in query.limit(100).all():
+    for establishment in establishments:
         distance_km = None
         if reference_coords and establishment.latitude is not None and establishment.longitude is not None:
             distance_km = haversine_km(
                 reference_coords[0], reference_coords[1],
                 establishment.latitude, establishment.longitude,
             )
+        today_entry = hours_by_establishment.get(establishment.id)
+        is_open_now = None
+        today_hours_display = None
+        if today_entry:
+            today_hours_display = f"{today_entry.open_time.strftime('%H:%M')}-{today_entry.close_time.strftime('%H:%M')}"
+            is_open_now = today_entry.open_time <= now_time <= today_entry.close_time
         results.append(PharmacySearchResult(
             id=establishment.id, name=establishment.name, city=establishment.city,
             address=establishment.address,
             distance_km=round(distance_km, 1) if distance_km is not None else None,
+            is_open_now=is_open_now, today_hours=today_hours_display,
         ))
 
     results.sort(key=lambda r: (r.distance_km if r.distance_km is not None else float("inf"), r.name))
@@ -335,7 +465,7 @@ def my_reservations(db: Session = Depends(get_db),
         .order_by(PharmacyReservation.created_at.desc())
         .all()
     )
-    return [_to_reservation_out(r) for r in reservations]
+    return [_to_reservation_out(r, db) for r in reservations]
 
 
 @router.get("/reservations/establishment", response_model=list[ReservationOut], dependencies=[_PHARMACY_ONLY])
@@ -348,7 +478,7 @@ def establishment_reservations(db: Session = Depends(get_db),
         .order_by(PharmacyReservation.created_at.desc())
         .all()
     )
-    return [_to_reservation_out(r) for r in reservations]
+    return [_to_reservation_out(r, db) for r in reservations]
 
 
 @router.get("/reservations/{reservation_id}/history", response_model=list[ReservationHistoryOut])
@@ -452,7 +582,7 @@ def create_reservation(payload: ReservationCreate, db: Session = Depends(get_db)
                      action="create_reservation", details="Demande: " + ", ".join(details_parts)))
     db.commit()
     db.refresh(reservation)
-    return _to_reservation_out(reservation)
+    return _to_reservation_out(reservation, db)
 
 
 @router.patch("/reservations/{reservation_id}/review", response_model=ReservationOut, dependencies=[_PHARMACY_ONLY])
@@ -496,7 +626,7 @@ def review_reservation(reservation_id: str, payload: ReservationReview, db: Sess
     ))
     db.commit()
     db.refresh(reservation)
-    return _to_reservation_out(reservation)
+    return _to_reservation_out(reservation, db)
 
 
 @router.post("/reservations/{reservation_id}/confirm", response_model=ReservationOut)
@@ -545,7 +675,7 @@ def confirm_reservation(reservation_id: str, db: Session = Depends(get_db),
     ))
     db.commit()
     db.refresh(reservation)
-    return _to_reservation_out(reservation)
+    return _to_reservation_out(reservation, db)
 
 
 @router.post("/reservations/{reservation_id}/pay", response_model=ReservationOut)
@@ -582,7 +712,7 @@ def pay_reservation(reservation_id: str, db: Session = Depends(get_db),
                      action="pay_pharmacy_order", details=f"Commande {reservation.id} declaree payee par le patient"))
     db.commit()
     db.refresh(reservation)
-    return _to_reservation_out(reservation)
+    return _to_reservation_out(reservation, db)
 
 
 @router.post("/reservations/{reservation_id}/reject", response_model=ReservationOut)
@@ -603,7 +733,7 @@ def reject_reservation(reservation_id: str, db: Session = Depends(get_db),
     ))
     db.commit()
     db.refresh(reservation)
-    return _to_reservation_out(reservation)
+    return _to_reservation_out(reservation, db)
 
 
 @router.post("/reservations/{reservation_id}/mark-received", response_model=ReservationOut)
@@ -628,7 +758,7 @@ def mark_received(reservation_id: str, db: Session = Depends(get_db),
     ))
     db.commit()
     db.refresh(reservation)
-    return _to_reservation_out(reservation)
+    return _to_reservation_out(reservation, db)
 
 
 @router.patch("/reservations/{reservation_id}/status", response_model=ReservationOut, dependencies=[_PHARMACY_ONLY])
@@ -678,4 +808,57 @@ def update_reservation_status(reservation_id: str, payload: ReservationStatusUpd
     ))
     db.commit()
     db.refresh(reservation)
-    return _to_reservation_out(reservation)
+    return _to_reservation_out(reservation, db)
+
+
+@router.get("/reports", response_model=PharmacyReportOut, dependencies=[_PHARMACY_ONLY])
+def pharmacy_reports(db: Session = Depends(get_db),
+                      current_user: User = Depends(require_roles(UserRole.ESTABLISHMENT_ADMIN, UserRole.PHARMACIST))):
+    """
+    NOUVEAU (demande explicite de M. Faustin: "au niveau de rapport, est-ce
+    qu'on peut mettre autre chose la?"). Le rapport generique "revenu par
+    departement" affiche jusqu'ici a une pharmacie n'avait aucun sens
+    (pas de departements medicaux dans une pharmacie) - remplace ici par
+    un rapport reellement utile: chiffre d'affaires des 30 derniers jours,
+    et lots proches de la peremption (directement lie au nouveau systeme
+    d'Inventaire).
+    """
+    establishment_id = current_user.establishment_id
+
+    thirty_days_ago = (datetime.utcnow() - timedelta(days=30)).date()
+    delivered_orders = (
+        db.query(PharmacyReservation)
+        .filter(
+            PharmacyReservation.establishment_id == establishment_id,
+            PharmacyReservation.status == ReservationStatus.DELIVERED,
+            PharmacyReservation.created_at >= thirty_days_ago,
+        )
+        .all()
+    )
+    revenue_by_day: dict = {}
+    for order in delivered_orders:
+        items = db.query(PharmacyOrderItem).filter(PharmacyOrderItem.reservation_id == order.id).all()
+        if items and all(i.confirmed_quantity is not None and i.confirmed_unit_price is not None for i in items):
+            day = order.created_at.date()
+            revenue_by_day[day] = revenue_by_day.get(day, 0.0) + sum(i.confirmed_quantity * i.confirmed_unit_price for i in items)
+
+    daily_revenue = [
+        PharmacyDailyRevenueOut(date=day, revenue=revenue)
+        for day, revenue in sorted(revenue_by_day.items())
+    ]
+
+    expiring_batches = (
+        db.query(PharmacyStockBatch)
+        .join(PharmacyStock, PharmacyStock.id == PharmacyStockBatch.stock_item_id)
+        .filter(
+            PharmacyStock.establishment_id == establishment_id,
+            PharmacyStockBatch.expiration_date <= (datetime.utcnow().date() + timedelta(days=PHARMACY_EXPIRY_WARNING_DAYS)),
+        )
+        .order_by(PharmacyStockBatch.expiration_date.asc())
+        .all()
+    )
+
+    return PharmacyReportOut(
+        daily_revenue=daily_revenue,
+        expiring_batches=[_to_batch_out(b, b.stock_item) for b in expiring_batches],
+    )

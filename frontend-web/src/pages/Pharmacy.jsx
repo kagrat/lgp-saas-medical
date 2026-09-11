@@ -217,6 +217,15 @@ export default function Pharmacy() {
               >
                 <p className="font-display text-lg text-forest-900 font-semibold">{pharmacy.name}</p>
                 <p className="text-sm text-forest-700">{pharmacy.city}{pharmacy.address ? ` - ${pharmacy.address}` : ''}</p>
+                {/* NOUVEAU (demande explicite de M. Faustin: "la ou la
+                    pharmacie est ouverte, le patient le sait deja pendant
+                    la recherche"). */}
+                {pharmacy.is_open_now === true && (
+                  <p className="text-sm text-primary-700 font-medium">● Ouvert{pharmacy.today_hours ? ` - ${pharmacy.today_hours}` : ''}</p>
+                )}
+                {pharmacy.is_open_now === false && (
+                  <p className="text-sm text-clay-600 font-medium">● Fermé{pharmacy.today_hours ? ` - rouvre selon horaires (${pharmacy.today_hours})` : ''}</p>
+                )}
                 {pharmacy.distance_km !== null && pharmacy.distance_km !== undefined && (
                   <p className="text-sm text-amber-600 font-medium">{pharmacy.distance_km} km</p>
                 )}

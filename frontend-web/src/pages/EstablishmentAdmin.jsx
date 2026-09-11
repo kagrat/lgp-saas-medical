@@ -24,6 +24,8 @@ import ReservationReviewForm from '../components/ReservationReviewForm'
 import NotificationBell from '../components/NotificationBell'
 import ReportsManager from '../components/ReportsManager'
 import InvoiceManager from '../components/InvoiceManager'
+import InventoryManager from '../components/InventoryManager'
+import PharmacyReportsManager from '../components/PharmacyReportsManager'
 import EquipmentSuppliersManager from '../components/EquipmentSuppliersManager'
 import SidebarLayout from '../components/SidebarLayout'
 
@@ -344,7 +346,7 @@ export default function EstablishmentAdmin() {
       ]
     : isPharmacy
     ? [
-        { id: 'pharmacy', label: 'Pharmacie', icon: Pill },
+        { id: 'pharmacy', label: isPharmacy ? 'Inventaire' : 'Pharmacie', icon: Pill },
         { id: 'orders', label: 'Commandes', icon: Package, badge: orders.filter((o) => o.status === 'pending').length },
       ]
     : [
@@ -614,45 +616,7 @@ export default function EstablishmentAdmin() {
         </div>
       )}
 
-      {tab === 'pharmacy' && !isLab && (
-        <div>
-          <form onSubmit={handleAddStock} className="grid sm:grid-cols-2 gap-3 bg-white border border-forest-100 rounded-xl p-5 mb-6">
-            <input required placeholder="Référence (ex: MED-00123)" value={newStock.reference}
-              onChange={(e) => setNewStock({ ...newStock, reference: e.target.value })}
-              className="rounded-lg border border-forest-100 px-3 py-2" />
-            <input required placeholder="Nom du médicament" value={newStock.medication_name}
-              onChange={(e) => setNewStock({ ...newStock, medication_name: e.target.value })}
-              className="rounded-lg border border-forest-100 px-3 py-2" />
-            <input placeholder="Catégorie" value={newStock.category}
-              onChange={(e) => setNewStock({ ...newStock, category: e.target.value })}
-              className="rounded-lg border border-forest-100 px-3 py-2" />
-            <input required type="number" placeholder="Quantite" value={newStock.quantity}
-              onChange={(e) => setNewStock({ ...newStock, quantity: e.target.value })}
-              className="rounded-lg border border-forest-100 px-3 py-2" />
-            <input required type="number" placeholder="Seuil d'alerte" value={newStock.alert_threshold}
-              onChange={(e) => setNewStock({ ...newStock, alert_threshold: e.target.value })}
-              className="rounded-lg border border-forest-100 px-3 py-2" />
-            <input required type="number" placeholder="Prix unitaire (FCFA)" value={newStock.unit_price}
-              onChange={(e) => setNewStock({ ...newStock, unit_price: e.target.value })}
-              className="rounded-lg border border-forest-100 px-3 py-2" />
-            <button type="submit" className="rounded-full bg-[var(--portal-accent)] text-white py-2.5 font-medium hover:brightness-90 transition">
-              Ajouter au stock
-            </button>
-          </form>
-
-          <div className="space-y-2">
-            {stock.map((s) => (
-              <div key={s.id} className="rounded-xl border border-forest-100 bg-white p-4 flex justify-between items-center">
-                <div>
-                  <p className="text-forest-900 font-medium">{s.medication_name} <span className="text-xs text-forest-700 font-normal">({s.reference})</span></p>
-                  <p className="text-sm text-forest-700">{s.quantity} en stock - {s.unit_price.toLocaleString('fr-FR')} FCFA</p>
-                </div>
-                {s.is_low_stock && <span className="text-xs px-3 py-1 rounded-full bg-clay-500/10 text-clay-600 font-medium">Stock bas</span>}
-              </div>
-            ))}
-          </div>
-        </div>
-      )}
+      {tab === 'pharmacy' && !isLab && <InventoryManager />}
 
       {tab === 'orders' && !isLab && (
         <div>
@@ -892,7 +856,7 @@ export default function EstablishmentAdmin() {
 
       {tab === 'billing' && <InvoiceManager />}
 
-      {tab === 'reports' && <ReportsManager />}
+      {tab === 'reports' && (isPharmacy ? <PharmacyReportsManager /> : <ReportsManager />)}
 
       {tab === 'equipment' && <EquipmentSuppliersManager />}
     </SidebarLayout>

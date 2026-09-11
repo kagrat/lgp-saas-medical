@@ -131,6 +131,12 @@ class PharmacySearchResult(BaseModel):
     city: str
     address: Optional[str] = None
     distance_km: Optional[float] = None
+    # NOUVEAU (demande explicite de M. Faustin: "la ou la pharmacie est
+    # ouverte, le patient le sait deja pendant la recherche"). Calcule
+    # directement ici (pas d'appel separe par pharmacie) pour eviter de
+    # multiplier les requetes reseau sur une liste de resultats.
+    is_open_now: Optional[bool] = None
+    today_hours: Optional[str] = None
 
     model_config = {"from_attributes": True}
 
@@ -336,6 +342,13 @@ class StockItemCreate(BaseModel):
     quantity: int = Field(ge=0)
     alert_threshold: int = Field(default=10, ge=0)
     unit_price: float = Field(ge=0)
+    # NOUVEAU (demande explicite de M. Faustin: Inventaire, partie 1).
+    unit_of_sale: Optional[str] = Field(default=None, max_length=100)
+    dci: Optional[str] = Field(default=None, max_length=200)
+    units_per_box: Optional[int] = Field(default=None, ge=1)
+    form: Optional[str] = Field(default=None, max_length=100)
+    dosage: Optional[str] = Field(default=None, max_length=100)
+    manufacturer: Optional[str] = Field(default=None, max_length=200)
 
 
 class StockItemOut(BaseModel):
@@ -348,6 +361,47 @@ class StockItemOut(BaseModel):
     unit_price: float
     establishment_id: str
     is_low_stock: bool
+    unit_of_sale: Optional[str] = None
+    dci: Optional[str] = None
+    units_per_box: Optional[int] = None
+    form: Optional[str] = None
+    dosage: Optional[str] = None
+    manufacturer: Optional[str] = None
+
+    model_config = {"from_attributes": True}
+
+
+class PharmacyBatchCreate(BaseModel):
+    """NOUVEAU (demande explicite de M. Faustin: Inventaire, partie 2 -
+    enregistrement des lots recus pour un produit deja cree en partie 1)."""
+    stock_item_id: str
+    lot_number: str = Field(min_length=1, max_length=100)
+    received_at: date
+    quantity_received: int = Field(gt=0)
+    expiration_date: date
+
+    @field_validator("expiration_date")
+    @classmethod
+    def expiration_after_reception(cls, v: date, info):
+        received_at = info.data.get("received_at")
+        if received_at and v <= received_at:
+            raise ValueError("La date d'expiration doit etre posterieure a la date de reception")
+        return v
+
+
+class PharmacyBatchOut(BaseModel):
+    """NOUVEAU (demande explicite de M. Faustin: Inventaire, partie 3 -
+    consultation du stock). "status" alterne automatiquement entre
+    disponible / expire_bientot / stock_faible."""
+    id: str
+    stock_item_id: str
+    medication_name: str
+    lot_number: str
+    received_at: date
+    quantity_received: int
+    expiration_date: date
+    unit_price: float
+    status: str
 
     model_config = {"from_attributes": True}
 
@@ -397,6 +451,12 @@ class ReservationOut(BaseModel):
     """Somme (confirmed_quantity * confirmed_unit_price) sur toutes les
     lignes - None tant que le pharmacien n'a pas encore tout verifie."""
     prescription_document_id: Optional[str] = None
+    # NOUVEAU (demande explicite de M. Faustin: liste des commandes
+    # restructuree - numero de commande, nom du patient et numero de
+    # telephone visibles directement, sans avoir a ouvrir chaque commande).
+    order_number: str
+    patient_name: str
+    patient_phone: Optional[str] = None
     # NOUVEAU (demande M. Faustin): paiement en ligne, obligatoire avant
     # preparation UNIQUEMENT en cas de livraison (voir pharmacy.py).
     is_paid: bool = False
@@ -1425,7 +1485,30 @@ class PharmacyStatsOut(BaseModel):
     revenue_today: float
 
 
+class PharmacyDailyRevenueOut(BaseModel):
+    """NOUVEAU (demande explicite de M. Faustin: le rapport generique
+    "revenu par departement" n'a aucun sens pour une pharmacie, qui n'a
+    pas de departements medicaux - rapport propre a la pharmacie)."""
+    date: date
+    revenue: float
+
+
+class PharmacyReportOut(BaseModel):
+    daily_revenue: list[PharmacyDailyRevenueOut]
+    expiring_batches: list[PharmacyBatchOut]
+
+
 class PharmacyOrderSummaryOut(BaseModel):
+    """NOUVEAU: raccourci des commandes en cours pour le tableau de bord -
+    un nombre limite, pas la liste complete (deja disponible dans
+    l'onglet Commandes)."""
+    id: str
+    patient_name: str
+    total_amount: Optional[float] = None
+    status: str
+    created_at: datetime
+
+
     """NOUVEAU: raccourci des commandes en cours pour le tableau de bord -
     un nombre limite, pas la liste complete (deja disponible dans
     l'onglet Commandes)."""

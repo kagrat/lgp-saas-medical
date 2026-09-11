@@ -1,8 +1,10 @@
 import { useEffect, useState } from 'react'
-import { BarChart, Pill, Package, MessageSquare, Clock, LayoutDashboard } from 'lucide-react'
+import { BarChart, Pill, Package, MessageSquare, Clock, LayoutDashboard, FileBarChart } from 'lucide-react'
 import api, { getErrorMessage } from '../api/client'
 import PharmacyStatsCards from '../components/PharmacyStatsCards'
 import PharmacyDashboard from '../components/PharmacyDashboard'
+import InventoryManager from '../components/InventoryManager'
+import PharmacyReportsManager from '../components/PharmacyReportsManager'
 import { RESERVATION_STATUSES, RESERVATION_STATUS_LABELS, RESERVATION_STEPS, STAFF_UPDATABLE_STATUSES, STAFF_ACTIONABLE_STATUSES, StatusBadge } from '../components/OrderStatus'
 import FilterTabs from '../components/FilterTabs'
 import StatusStepper from '../components/StatusStepper'
@@ -16,7 +18,6 @@ import NotificationBell from '../components/NotificationBell'
 export default function DesktopPharmacistDashboard() {
   const [establishment, setEstablishment] = useState(null)
   const [tab, setTab] = useState('dashboard')
-  const [stock, setStock] = useState([])
   const [orders, setOrders] = useState([])
   const [orderFilter, setOrderFilter] = useState('pending')
   const [conversations, setConversations] = useState([])
@@ -27,11 +28,9 @@ export default function DesktopPharmacistDashboard() {
   const [orderUpdateForm, setOrderUpdateForm] = useState({})
   const [expandedOrderId, setExpandedOrderId] = useState(null)
   const [orderHistory, setOrderHistory] = useState({})
-  const [newStock, setNewStock] = useState({ reference: '', medication_name: '', category: '', quantity: '', alert_threshold: 10, unit_price: '' })
 
   useEffect(() => {
     loadEstablishment()
-    loadStock()
     loadOrders()
   }, [])
 
@@ -45,15 +44,6 @@ export default function DesktopPharmacistDashboard() {
       setEstablishment(data)
     } catch (err) {
       setError(getErrorMessage(err, "Impossible de charger les informations de l'établissement."))
-    }
-  }
-
-  async function loadStock() {
-    try {
-      const { data } = await api.get('/pharmacy/stock')
-      setStock(data)
-    } catch (err) {
-      setError(getErrorMessage(err, 'Impossible de charger le stock.'))
     }
   }
 
@@ -109,23 +99,6 @@ export default function DesktopPharmacistDashboard() {
     }
   }
 
-  async function handleAddStock(e) {
-    e.preventDefault()
-    setError('')
-    try {
-      await api.post('/pharmacy/stock', {
-        ...newStock,
-        quantity: Number(newStock.quantity),
-        alert_threshold: Number(newStock.alert_threshold),
-        unit_price: Number(newStock.unit_price),
-      })
-      setNewStock({ reference: '', medication_name: '', category: '', quantity: '', alert_threshold: 10, unit_price: '' })
-      await loadStock()
-    } catch (err) {
-      setError(getErrorMessage(err, "Impossible d'ajouter ce médicament."))
-    }
-  }
-
   function updateOrderForm(reservationId, field, value) {
     setOrderUpdateForm((forms) => ({ ...forms, [reservationId]: { ...forms[reservationId], [field]: value } }))
   }
@@ -159,13 +132,14 @@ export default function DesktopPharmacistDashboard() {
   }, { all: orders.length })
 
   const tabs = [
-    // NOUVEAU (demande explicite de M. Faustin): tableau de bord en tete de menu.
     { id: 'dashboard', label: 'Tableau de bord', icon: LayoutDashboard },
-    { id: 'pharmacy', label: 'Pharmacie', icon: Pill },
     { id: 'orders', label: 'Commandes', icon: Package, badge: pendingCount },
+    // NOUVEAU (demande explicite de M. Faustin): renomme "Pharmacie" en
+    // "Inventaire" et deplace apres Commandes.
+    { id: 'inventory', label: 'Inventaire', icon: Pill },
+    { id: 'reports', label: 'Rapports', icon: FileBarChart },
     { id: 'messages', label: 'Messages', icon: MessageSquare },
     { id: 'schedule', label: 'Mon planning', icon: Clock },
-    // NOUVEAU (demande M. Faustin): Statistiques en derniere position.
     { id: 'stats', label: 'Statistiques', icon: BarChart },
   ]
 
@@ -191,159 +165,137 @@ export default function DesktopPharmacistDashboard() {
 
       {tab === 'dashboard' && <PharmacyDashboard />}
 
-      {tab === 'pharmacy' && (
-        <div>
-          <form onSubmit={handleAddStock} className="grid sm:grid-cols-2 gap-3 bg-white border border-forest-100 rounded-xl p-5 mb-6">
-            <input required placeholder="Référence (ex: MED-00123)" value={newStock.reference}
-              onChange={(e) => setNewStock({ ...newStock, reference: e.target.value })}
-              className="rounded-lg border border-forest-100 px-3 py-2" />
-            <input required placeholder="Nom du médicament" value={newStock.medication_name}
-              onChange={(e) => setNewStock({ ...newStock, medication_name: e.target.value })}
-              className="rounded-lg border border-forest-100 px-3 py-2" />
-            <input placeholder="Catégorie" value={newStock.category}
-              onChange={(e) => setNewStock({ ...newStock, category: e.target.value })}
-              className="rounded-lg border border-forest-100 px-3 py-2" />
-            <input required type="number" placeholder="Quantite" value={newStock.quantity}
-              onChange={(e) => setNewStock({ ...newStock, quantity: e.target.value })}
-              className="rounded-lg border border-forest-100 px-3 py-2" />
-            <input required type="number" placeholder="Seuil d'alerte" value={newStock.alert_threshold}
-              onChange={(e) => setNewStock({ ...newStock, alert_threshold: e.target.value })}
-              className="rounded-lg border border-forest-100 px-3 py-2" />
-            <input required type="number" placeholder="Prix unitaire (FCFA)" value={newStock.unit_price}
-              onChange={(e) => setNewStock({ ...newStock, unit_price: e.target.value })}
-              className="rounded-lg border border-forest-100 px-3 py-2" />
-            <button type="submit" className="rounded-full bg-[var(--portal-accent)] text-white py-2.5 font-medium hover:brightness-90 transition">
-              Ajouter au stock
-            </button>
-          </form>
-          <div className="space-y-2">
-            {stock.map((s) => (
-              <div key={s.id} className="rounded-xl border border-forest-100 bg-white p-4 flex justify-between items-center">
-                <div>
-                  <p className="text-forest-900 font-medium">{s.medication_name} <span className="text-xs text-forest-700 font-normal">({s.reference})</span></p>
-                  <p className="text-sm text-forest-700">{s.quantity} en stock - {s.unit_price.toLocaleString('fr-FR')} FCFA</p>
-                </div>
-                {s.is_low_stock && <span className="text-xs px-3 py-1 rounded-full bg-clay-500/10 text-clay-600 font-medium">Stock bas</span>}
-              </div>
-            ))}
-          </div>
-        </div>
-      )}
+      {tab === 'inventory' && <InventoryManager />}
+
+      {tab === 'reports' && <PharmacyReportsManager />}
 
       {tab === 'schedule' && <MySchedule />}
 
       {tab === 'orders' && (
         <div>
           <FilterTabs options={orderFilterOptions} active={orderFilter} onChange={setOrderFilter} counts={orderCounts} />
-          <div className="space-y-3">
-            {filteredOrders.length === 0 && <p className="text-forest-700">Aucune commande dans cette catégorie.</p>}
+
+          {/* NOUVEAU (demande explicite de M. Faustin): ligne d'entete
+              horizontale, puis les commandes disposees en liste compacte
+              correspondant a ces colonnes - le detail complet (numero,
+              date/heure recue, patient, telephone, ordonnance, mise a
+              jour du statut) n'apparait qu'au clic sur "Voir". */}
+          <div className="hidden sm:grid sm:grid-cols-[1fr_1fr_1fr_1fr_auto] gap-3 px-4 py-2 text-xs font-medium text-forest-700 uppercase tracking-wide">
+            <span>N° commande</span>
+            <span>Patient</span>
+            <span>Date</span>
+            <span>Statut</span>
+            <span>Action</span>
+          </div>
+
+          <div className="space-y-2">
+            {filteredOrders.length === 0 && <p className="text-forest-700 px-4">Aucune commande dans cette catégorie.</p>}
             {filteredOrders.map((o) => (
-              o.status === 'delivered' ? (
-                // NOUVEAU (demande M. Faustin, appliquee aussi cote
-                // pharmacien pour coherence): une commande deja livree n'a
-                // plus besoin du parcours detaille en 7 etapes - juste une
-                // ligne compacte, avec le detail complet disponible via
-                // "Voir le suivi".
-                <div key={o.id} className="rounded-xl border border-forest-100 bg-white p-4">
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <p className="text-forest-900 font-medium">
-                        {o.items.map((item) => item.medication_name).join(', ')}
-                      </p>
-                      <p className="text-sm text-forest-700 mt-0.5">
-                        Livree - {o.delivery_mode === 'delivery' ? 'Livraison' : 'Retrait sur place'}
-                      </p>
+              <div key={o.id} className="rounded-xl border border-forest-100 bg-white p-4">
+                <div className="grid sm:grid-cols-[1fr_1fr_1fr_1fr_auto] gap-3 items-center">
+                  <span className="text-sm text-forest-900 font-medium">{o.order_number}</span>
+                  <span className="text-sm text-forest-900">{o.patient_name}</span>
+                  <span className="text-sm text-forest-700">{new Date(o.created_at).toLocaleDateString('fr-FR')}</span>
+                  <StatusBadge status={o.status} />
+                  <button onClick={() => toggleOrderHistory(o.id)}
+                    className="text-sm rounded-full border border-forest-300 px-4 py-1.5 hover:bg-forest-50 transition justify-self-start sm:justify-self-end">
+                    {expandedOrderId === o.id ? 'Fermer' : 'Voir'}
+                  </button>
+                </div>
+
+                {expandedOrderId === o.id && (
+                  <div className="mt-4 pt-4 border-t border-forest-100">
+                    <div className="grid sm:grid-cols-2 gap-2 mb-4 text-sm">
+                      <p><span className="text-forest-700">N° commande:</span> <span className="text-forest-900 font-medium">{o.order_number}</span></p>
+                      <p><span className="text-forest-700">Reçue le:</span> <span className="text-forest-900 font-medium">{new Date(o.created_at).toLocaleString('fr-FR')}</span></p>
+                      <p><span className="text-forest-700">Patient:</span> <span className="text-forest-900 font-medium">{o.patient_name}</span></p>
+                      <p><span className="text-forest-700">Téléphone:</span> <span className="text-forest-900 font-medium">{o.patient_phone || 'Non renseigné'}</span></p>
                     </div>
-                    <button onClick={() => toggleOrderHistory(o.id)} className="text-xs text-amber-600 hover:underline shrink-0 ml-3">
-                      {expandedOrderId === o.id ? 'Masquer le suivi' : 'Voir le suivi'}
-                    </button>
-                  </div>
-                  {expandedOrderId === o.id && orderHistory[o.id] && (
-                    <div className="mt-3 pt-3 border-t border-forest-100 space-y-2">
-                      {orderHistory[o.id].map((h) => (
-                        <div key={h.id} className="flex items-center gap-3 text-sm">
-                          <StatusBadge status={h.status} />
-                          <span className="text-forest-700">{new Date(h.created_at).toLocaleString('fr-FR')}</span>
-                          {h.note && <span className="text-forest-700 italic">- {h.note}</span>}
-                        </div>
+                    {o.prescription_document_id && (
+                      <span className="inline-block text-xs px-2 py-0.5 rounded-full bg-amber-500/10 text-amber-600 font-medium mb-3">
+                        Issue d'une ordonnance
+                      </span>
+                    )}
+
+                    <div className="space-y-1 mb-3">
+                      {o.items.map((item) => (
+                        <p key={item.id} className="text-forest-900 font-medium text-sm">
+                          {item.quantity}x {item.medication_name} <span className="text-xs text-forest-700 font-normal">({item.medication_reference})</span>
+                        </p>
                       ))}
                     </div>
-                  )}
-                </div>
-              ) : (
-              <div key={o.id} className="rounded-xl border border-forest-100 bg-white p-4">
-                <div className="mb-3">
-                  {o.prescription_document_id && (
-                    <span className="inline-block text-xs px-2 py-0.5 rounded-full bg-amber-500/10 text-amber-600 font-medium mb-2">
-                      Issue d'une ordonnance
-                    </span>
-                  )}
-                  <div className="space-y-1 mb-2">
-                    {o.items.map((item) => (
-                      <p key={item.id} className="text-forest-900 font-medium">
-                        {item.quantity}x {item.medication_name} <span className="text-xs text-forest-700 font-normal">({item.medication_reference})</span>
-                      </p>
-                    ))}
-                  </div>
-                  <p className="text-sm text-forest-700 mb-3">
-                    {o.delivery_mode === 'delivery' ? 'Livraison' : 'Retrait sur place'}
-                  </p>
-                  <StatusStepper steps={RESERVATION_STEPS} currentValue={o.status} labels={RESERVATION_STATUS_LABELS} />
-                </div>
+                    <p className="text-sm text-forest-700 mb-3">
+                      {o.delivery_mode === 'delivery' ? 'Livraison' : 'Retrait sur place'}
+                    </p>
 
-                {o.status === 'pending' && <ReservationReviewForm reservation={o} onDone={loadOrders} />}
+                    {o.status !== 'delivered' && <StatusStepper steps={RESERVATION_STEPS} currentValue={o.status} labels={RESERVATION_STATUS_LABELS} />}
 
-                {o.status === 'awaiting_confirmation' && (
-                  <div className="mt-3 pt-3 border-t border-forest-100">
-                    <p className="text-sm text-amber-600 font-medium">En attente de la confirmation du patient</p>
-                    {o.items.map((item) => (
-                      <p key={item.id} className="text-sm text-forest-700">
-                        {item.medication_name}: {item.confirmed_quantity} x {item.confirmed_unit_price?.toLocaleString('fr-FR')} FCFA
-                      </p>
-                    ))}
-                    {o.total_amount !== null && o.total_amount !== undefined && (
-                      <p className="text-sm text-forest-900 font-medium mt-1">Total: {o.total_amount.toLocaleString('fr-FR')} FCFA</p>
+                    {o.status === 'pending' && <ReservationReviewForm reservation={o} onDone={loadOrders} />}
+
+                    {o.status === 'awaiting_confirmation' && (
+                      <div className="mt-3 pt-3 border-t border-forest-100">
+                        <p className="text-sm text-amber-600 font-medium">En attente de la confirmation du patient</p>
+                        {o.items.map((item) => (
+                          <p key={item.id} className="text-sm text-forest-700">
+                            {item.medication_name}: {item.confirmed_quantity} x {item.confirmed_unit_price?.toLocaleString('fr-FR')} FCFA
+                          </p>
+                        ))}
+                        {o.total_amount !== null && o.total_amount !== undefined && (
+                          <p className="text-sm text-forest-900 font-medium mt-1">Total: {o.total_amount.toLocaleString('fr-FR')} FCFA</p>
+                        )}
+                      </div>
+                    )}
+
+                    {STAFF_ACTIONABLE_STATUSES.includes(o.status) && (
+                      <div className="mt-3 pt-3 border-t border-forest-100 flex flex-wrap gap-2 items-end">
+                        <div>
+                          <label className="block text-xs text-forest-700 mb-1">Nouveau statut</label>
+                          <select
+                            value={orderUpdateForm[o.id]?.status || o.status}
+                            onChange={(e) => updateOrderForm(o.id, 'status', e.target.value)}
+                            className="rounded-lg border border-forest-100 px-3 py-1.5 text-sm bg-white"
+                          >
+                            {STAFF_UPDATABLE_STATUSES.map((s) => <option key={s} value={s}>{RESERVATION_STATUS_LABELS[s]}</option>)}
+                          </select>
+                        </div>
+                        <div>
+                          <label className="block text-xs text-forest-700 mb-1">Prêt estimé (optionnel)</label>
+                          <input type="datetime-local"
+                            value={orderUpdateForm[o.id]?.estimated_ready_at || ''}
+                            onChange={(e) => updateOrderForm(o.id, 'estimated_ready_at', e.target.value)}
+                            className="rounded-lg border border-forest-100 px-3 py-1.5 text-sm" />
+                        </div>
+                        <div className="flex-1 min-w-[200px]">
+                          <label className="block text-xs text-forest-700 mb-1">Note pour le patient (optionnel)</label>
+                          <input type="text"
+                            value={orderUpdateForm[o.id]?.note || ''}
+                            onChange={(e) => updateOrderForm(o.id, 'note', e.target.value)}
+                            className="w-full rounded-lg border border-forest-100 px-3 py-1.5 text-sm" />
+                        </div>
+                        <button
+                          onClick={() => submitOrderUpdate(o.id)}
+                          disabled={updatingOrderId === o.id}
+                          className="rounded-full bg-[var(--portal-accent)] text-white px-5 py-1.5 text-sm font-medium hover:brightness-90 transition disabled:opacity-50"
+                        >
+                          {updatingOrderId === o.id ? 'Mise a jour...' : 'Mettre a jour'}
+                        </button>
+                      </div>
+                    )}
+
+                    {o.status === 'delivered' && orderHistory[o.id] && (
+                      <div className="space-y-2">
+                        {orderHistory[o.id].map((h) => (
+                          <div key={h.id} className="flex items-center gap-3 text-sm">
+                            <StatusBadge status={h.status} />
+                            <span className="text-forest-700">{new Date(h.created_at).toLocaleString('fr-FR')}</span>
+                            {h.note && <span className="text-forest-700 italic">- {h.note}</span>}
+                          </div>
+                        ))}
+                      </div>
                     )}
                   </div>
                 )}
-
-                {STAFF_ACTIONABLE_STATUSES.includes(o.status) && (
-                  <div className="mt-3 pt-3 border-t border-forest-100 flex flex-wrap gap-2 items-end">
-                    <div>
-                      <label className="block text-xs text-forest-700 mb-1">Nouveau statut</label>
-                      <select
-                        value={orderUpdateForm[o.id]?.status || o.status}
-                        onChange={(e) => updateOrderForm(o.id, 'status', e.target.value)}
-                        className="rounded-lg border border-forest-100 px-3 py-1.5 text-sm bg-white"
-                      >
-                        {STAFF_UPDATABLE_STATUSES.map((s) => <option key={s} value={s}>{RESERVATION_STATUS_LABELS[s]}</option>)}
-                      </select>
-                    </div>
-                    <div>
-                      <label className="block text-xs text-forest-700 mb-1">Prêt estimé (optionnel)</label>
-                      <input type="datetime-local"
-                        value={orderUpdateForm[o.id]?.estimated_ready_at || ''}
-                        onChange={(e) => updateOrderForm(o.id, 'estimated_ready_at', e.target.value)}
-                        className="rounded-lg border border-forest-100 px-3 py-1.5 text-sm" />
-                    </div>
-                    <div className="flex-1 min-w-[200px]">
-                      <label className="block text-xs text-forest-700 mb-1">Note pour le patient (optionnel)</label>
-                      <input type="text"
-                        value={orderUpdateForm[o.id]?.note || ''}
-                        onChange={(e) => updateOrderForm(o.id, 'note', e.target.value)}
-                        className="w-full rounded-lg border border-forest-100 px-3 py-1.5 text-sm" />
-                    </div>
-                    <button
-                      onClick={() => submitOrderUpdate(o.id)}
-                      disabled={updatingOrderId === o.id}
-                      className="rounded-full bg-[var(--portal-accent)] text-white px-5 py-1.5 text-sm font-medium hover:brightness-90 transition disabled:opacity-50"
-                    >
-                      {updatingOrderId === o.id ? 'Mise a jour...' : 'Mettre a jour'}
-                    </button>
-                  </div>
-                )}
               </div>
-              )
             ))}
           </div>
         </div>

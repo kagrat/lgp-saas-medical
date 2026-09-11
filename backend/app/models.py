@@ -398,15 +398,55 @@ class PharmacyStock(Base):
 
     id = Column(UUID(as_uuid=False), primary_key=True, default=gen_uuid)
     establishment_id = Column(UUID(as_uuid=False), ForeignKey("establishments.id"), nullable=False)
-    reference = Column(String(50), nullable=False)  # numero de reference du medicament (etiquette/fabricant)
-    medication_name = Column(String(200), nullable=False)
+    reference = Column(String(50), nullable=False)  # numero de reference du medicament (etiquette/fabricant) = "code produit"
+    medication_name = Column(String(200), nullable=False)  # "nom du produit"
     category = Column(String(100))
-    quantity = Column(Integer, default=0)
-    alert_threshold = Column(Integer, default=10)  # alerte rupture de stock configurable
-    unit_price = Column(Float, default=0)
+    quantity = Column(Integer, default=0)  # quantite totale agregee - reste la source de verite pour la vente (compatibilite avec le flux de commande existant, deja teste)
+    alert_threshold = Column(Integer, default=10)  # "stock minimum pour alerte"
+    unit_price = Column(Float, default=0)  # "prix de vente"
+    # NOUVEAU (demande explicite de M. Faustin: refonte "Inventaire",
+    # partie 1 - enregistrement des informations produit). Champs
+    # purement additifs, tous NULLABLE - aucune ligne existante affectee.
+    unit_of_sale = Column(String(100), nullable=True)  # "unite de vente" (ex: boite, comprime, flacon)
+    dci = Column(String(200), nullable=True)  # "DCI / principe actif"
+    units_per_box = Column(Integer, nullable=True)  # "nombre d'unites / boite"
+    form = Column(String(100), nullable=True)  # "forme" (ex: comprime, sirop, injectable)
+    dosage = Column(String(100), nullable=True)  # "dosage" (ex: 500mg)
+    manufacturer = Column(String(200), nullable=True)  # "fabricant"
 
     establishment = relationship("Establishment", back_populates="stock_items")
     order_items = relationship("PharmacyOrderItem", back_populates="medication")
+
+
+class PharmacyStockBatch(Base):
+    """
+    NOUVEAU (demande explicite de M. Faustin: refonte "Inventaire", partie
+    2 - enregistrement des lots). Un produit (PharmacyStock) peut recevoir
+    plusieurs lots au fil du temps, chacun avec sa propre date de
+    peremption - necessaire pour alerter sur une peremption prochaine,
+    ce que l'ancien modele (une seule quantite globale, sans peremption)
+    ne permettait pas du tout.
+
+    IMPORTANT (choix delibere pour la securite/fiabilite): l'ajout d'un
+    lot INCREMENTE la quantite agregee de PharmacyStock.quantity (source
+    de verite pour la vente, deja utilisee par tout le flux de commande
+    existant et deja teste) - la vente elle-meme ne decompte PAS lot par
+    lot dans cette version (pas de logique FEFO/premier-expire-premier-
+    sorti). Les lots servent ici au suivi de peremption et a la
+    tracabilite des receptions, pas encore a la consommation detaillee.
+    """
+    __tablename__ = "pharmacy_stock_batches"
+
+    id = Column(UUID(as_uuid=False), primary_key=True, default=gen_uuid)
+    stock_item_id = Column(UUID(as_uuid=False), ForeignKey("pharmacy_stock.id"), nullable=False)
+    lot_number = Column(String(100), nullable=False)
+    received_at = Column(Date, nullable=False)
+    quantity_received = Column(Integer, nullable=False)
+    expiration_date = Column(Date, nullable=False)
+    created_by_user_id = Column(UUID(as_uuid=False), ForeignKey("users.id"), nullable=True)
+    created_at = Column(DateTime, default=datetime.utcnow)
+
+    stock_item = relationship("PharmacyStock")
 
 
 class PharmacyReservation(Base):
