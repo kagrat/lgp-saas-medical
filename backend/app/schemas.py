@@ -1025,6 +1025,35 @@ class ConversationSummaryOut(BaseModel):
     last_message: Optional[str] = None
     last_message_at: Optional[datetime] = None
 
+
+class InternalMessageCreate(BaseModel):
+    """NOUVEAU (demande explicite de M. Faustin: "il faut que l'ets puisse
+    envoyer des messages aux medecins") - messagerie interne, distincte du
+    chat patient <-> etablissement."""
+    content: str = Field(min_length=1, max_length=2000)
+
+
+class InternalMessageOut(BaseModel):
+    id: str
+    from_user_id: str
+    to_user_id: str
+    sender_name: str
+    content: str
+    is_read: bool
+    created_at: datetime
+
+    model_config = {"from_attributes": True}
+
+
+class InternalConversationSummaryOut(BaseModel):
+    """Une ligne = un collegue avec qui une conversation interne existe."""
+    other_user_id: str
+    other_user_name: str
+    other_user_role: str
+    last_message: Optional[str] = None
+    last_message_at: Optional[datetime] = None
+    unread_count: int = 0
+
 class UserProfileOut(BaseModel):
     id: str
     email: EmailStr

@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { BarChart, Stethoscope, Calendar, Pill, Package, FlaskConical, Users, MessageSquare, Building2, Clock, Clipboard, FileBarChart, Wrench, Receipt, BedDouble, UserCircle } from 'lucide-react'
+import { BarChart, Stethoscope, Calendar, Pill, Package, FlaskConical, Users, MessageSquare, MessageCircle, Building2, Clock, Clipboard, FileBarChart, Wrench, Receipt, BedDouble, UserCircle } from 'lucide-react'
 import api, { getErrorMessage } from '../api/client'
 import { SPECIALTIES, DAYS_OF_WEEK } from '../constants'
 import StarRating from '../components/StarRating'
@@ -27,6 +27,7 @@ import InventoryManager from '../components/InventoryManager'
 import PharmacyReportsManager from '../components/PharmacyReportsManager'
 import RoomsManager from '../components/RoomsManager'
 import EstablishmentProfileManager from '../components/EstablishmentProfileManager'
+import InternalMessaging from '../components/InternalMessaging'
 import EquipmentSuppliersManager from '../components/EquipmentSuppliersManager'
 import SidebarLayout from '../components/SidebarLayout'
 
@@ -383,6 +384,7 @@ export default function EstablishmentAdmin() {
     ...baseTabs,
     ...(showPatientsTab ? [{ id: 'patients', label: 'Patients', icon: Users }] : []),
     { id: 'messages', label: 'Messages', icon: MessageSquare },
+    { id: 'internal-messages', label: 'Messagerie interne', icon: MessageCircle },
     { id: 'team', label: 'Equipe', icon: Building2 },
     { id: 'hours', label: 'Horaires', icon: Clock },
     ...extraTabs,
@@ -863,6 +865,8 @@ export default function EstablishmentAdmin() {
           )}
         </div>
       )}
+
+      {tab === 'internal-messages' && <InternalMessaging />}
 
       {tab === 'profile' && (
         <EstablishmentProfileManager establishment={establishment} onUpdated={(updated) => setEstablishment(updated)} />

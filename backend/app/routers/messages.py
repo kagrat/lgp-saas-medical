@@ -29,10 +29,13 @@ from sqlalchemy.orm import Session
 from app.database import get_db
 from app.models import (
     Message, MessageSenderRole, Appointment, PharmacyReservation, LabTestRequest,
-    Patient, Doctor, Establishment, User, UserRole,
+    Patient, Doctor, Establishment, User, UserRole, InternalMessage,
 )
-from app.schemas import MessageCreate, MessageOut, ConversationSummaryOut
-from app.deps import require_roles
+from app.schemas import (
+    MessageCreate, MessageOut, ConversationSummaryOut,
+    InternalMessageCreate, InternalMessageOut, InternalConversationSummaryOut,
+)
+from app.deps import require_roles, get_current_user
 
 router = APIRouter(prefix="/messages", tags=["messagerie"])
 
@@ -261,3 +264,116 @@ def establishment_send_message(patient_id: str, payload: MessageCreate, db: Sess
     db.commit()
     db.refresh(message)
     return _to_message_out(message)
+
+
+# ============================================================================
+# NOUVEAU (demande explicite de M. Faustin: "il faut que l'ets puisse
+# envoyer des messages aux medecins"). Messagerie interne entre membres du
+# personnel d'un meme etablissement - distincte du chat patient <->
+# etablissement ci-dessus. Le modele InternalMessage existait deja
+# (prepare a l'avance) mais n'avait encore aucun schema ni endpoint.
+# ============================================================================
+
+def _internal_staff_role_check(current_user: User):
+    if current_user.role == UserRole.PATIENT:
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Reserve au personnel")
+    if not current_user.establishment_id:
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Compte non rattache a un etablissement")
+
+
+@router.get("/internal/mine", response_model=list[InternalConversationSummaryOut])
+def my_internal_conversations(db: Session = Depends(get_db), current_user: User = Depends(get_current_user)):
+    _internal_staff_role_check(current_user)
+
+    messages = (
+        db.query(InternalMessage)
+        .filter(
+            InternalMessage.establishment_id == current_user.establishment_id,
+            (InternalMessage.from_user_id == current_user.id) | (InternalMessage.to_user_id == current_user.id),
+        )
+        .order_by(InternalMessage.created_at.desc())
+        .all()
+    )
+
+    by_other: dict = {}
+    for m in messages:
+        other_id = m.to_user_id if m.from_user_id == current_user.id else m.from_user_id
+        if other_id not in by_other:
+            by_other[other_id] = {"last_message": m.content, "last_message_at": m.created_at, "unread_count": 0}
+        if m.to_user_id == current_user.id and not m.is_read:
+            by_other[other_id]["unread_count"] += 1
+
+    results = []
+    for other_id, info in by_other.items():
+        other_user = db.query(User).filter(User.id == other_id).first()
+        if not other_user:
+            continue
+        results.append(InternalConversationSummaryOut(
+            other_user_id=other_id, other_user_name=other_user.full_name, other_user_role=other_user.role,
+            last_message=info["last_message"], last_message_at=info["last_message_at"],
+            unread_count=info["unread_count"],
+        ))
+    results.sort(key=lambda r: r.last_message_at or datetime.min, reverse=True)
+    return results
+
+
+@router.get("/internal/conversation/{other_user_id}", response_model=list[InternalMessageOut])
+def internal_conversation(other_user_id: str, db: Session = Depends(get_db), current_user: User = Depends(get_current_user)):
+    _internal_staff_role_check(current_user)
+
+    other_user = db.query(User).filter(
+        User.id == other_user_id, User.establishment_id == current_user.establishment_id,
+    ).first()
+    if not other_user:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Collegue introuvable dans ton etablissement")
+
+    messages = (
+        db.query(InternalMessage)
+        .filter(
+            InternalMessage.establishment_id == current_user.establishment_id,
+            (
+                (InternalMessage.from_user_id == current_user.id) & (InternalMessage.to_user_id == other_user_id)
+            ) | (
+                (InternalMessage.from_user_id == other_user_id) & (InternalMessage.to_user_id == current_user.id)
+            ),
+        )
+        .order_by(InternalMessage.created_at.asc())
+        .all()
+    )
+    # Marque comme lus les messages RECUS dans cette conversation.
+    for m in messages:
+        if m.to_user_id == current_user.id and not m.is_read:
+            m.is_read = True
+    db.commit()
+
+    return messages
+
+
+@router.post("/internal/conversation/{other_user_id}", response_model=InternalMessageOut, status_code=status.HTTP_201_CREATED)
+def send_internal_message(other_user_id: str, payload: InternalMessageCreate, db: Session = Depends(get_db),
+                           current_user: User = Depends(get_current_user)):
+    """
+    SECURITE: le destinataire doit appartenir au MEME etablissement que
+    l'expediteur - sans ce controle, un membre du personnel aurait pu
+    envoyer un message interne a n'importe quel utilisateur de la
+    plateforme, y compris d'un etablissement totalement different.
+    """
+    _internal_staff_role_check(current_user)
+
+    other_user = db.query(User).filter(
+        User.id == other_user_id, User.establishment_id == current_user.establishment_id,
+    ).first()
+    if not other_user:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Collegue introuvable dans ton etablissement")
+    if other_user.id == current_user.id:
+        raise HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_ENTITY, detail="Impossible de s'envoyer un message a soi-meme")
+
+    message = InternalMessage(
+        id=str(uuid.uuid4()), establishment_id=current_user.establishment_id,
+        from_user_id=current_user.id, to_user_id=other_user_id,
+        sender_name=current_user.full_name, content=payload.content,
+    )
+    db.add(message)
+    db.commit()
+    db.refresh(message)
+    return message

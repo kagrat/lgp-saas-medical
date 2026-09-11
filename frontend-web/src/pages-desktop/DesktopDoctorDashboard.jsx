@@ -1,10 +1,11 @@
 import { useEffect, useState } from 'react'
-import { Calendar, Users, BedDouble, Clock, MessageSquare, CalendarCheck, Star } from 'lucide-react'
+import { Calendar, Users, BedDouble, Clock, MessageSquare, MessageCircle, CalendarCheck, Star } from 'lucide-react'
 import api, { getErrorMessage } from '../api/client'
 import { AppointmentStatusBadge } from '../components/AppointmentStatusUI'
 import { SELECTABLE_DOCUMENT_TYPES, DOCUMENT_TYPE_LABELS } from '../components/DocumentType'
 import ChatWindow from '../components/ChatWindow'
 import StartConversation from '../components/StartConversation'
+import InternalMessaging from '../components/InternalMessaging'
 import MyPatients from '../components/MyPatients'
 import Hospitalizations from '../components/Hospitalizations'
 import PrescriptionItemsEditor from '../components/PrescriptionItemsEditor'
@@ -30,6 +31,9 @@ export default function DesktopDoctorDashboard() {
   const [cancellingId, setCancellingId] = useState(null)
   const [reschedulingId, setReschedulingId] = useState(null)
   const [rescheduleValue, setRescheduleValue] = useState('')
+  const [rescheduleDate, setRescheduleDate] = useState('')
+  const [rescheduleSlots, setRescheduleSlots] = useState(null)
+  const [loadingRescheduleSlots, setLoadingRescheduleSlots] = useState(false)
   const [expandedAppointmentId, setExpandedAppointmentId] = useState(null)
   const [vitalsAppointmentId, setVitalsAppointmentId] = useState(null)
   const [vitalsData, setVitalsData] = useState([])
@@ -132,16 +136,35 @@ export default function DesktopDoctorDashboard() {
   function toggleReschedule(appointmentId) {
     setReschedulingId(reschedulingId === appointmentId ? null : appointmentId)
     setRescheduleValue('')
+    setRescheduleDate('')
+    setRescheduleSlots(null)
   }
 
-  async function submitReschedule(appointmentId) {
-    if (!rescheduleValue) return
+  async function checkRescheduleSlots(e) {
+    if (e) e.preventDefault()
+    if (!rescheduleDate || !myDoctorId) return
+    setLoadingRescheduleSlots(true)
+    setError('')
+    try {
+      const { data } = await api.get('/appointments/available-slots', {
+        params: { doctor_id: myDoctorId, target_date: rescheduleDate },
+      })
+      setRescheduleSlots(data.slots)
+    } catch (err) {
+      setError(getErrorMessage(err, 'Impossible de charger les creneaux libres.'))
+    } finally {
+      setLoadingRescheduleSlots(false)
+    }
+  }
+
+  async function submitReschedule(appointmentId, newDateTime) {
     setError('')
     try {
       await api.patch(`/appointments/${appointmentId}/reschedule`, {
-        new_scheduled_at: new Date(rescheduleValue).toISOString(),
+        new_scheduled_at: newDateTime,
       })
       setReschedulingId(null)
+      setRescheduleSlots(null)
       await loadAppointments()
     } catch (err) {
       setError(getErrorMessage(err, 'Impossible de reporter ce rendez-vous.'))
@@ -204,6 +227,7 @@ export default function DesktopDoctorDashboard() {
     { id: 'reviews', label: 'Mes avis', icon: Star },
     { id: 'schedule', label: 'Mon planning', icon: Clock },
     { id: 'messages', label: 'Messages', icon: MessageSquare },
+    { id: 'internal-messages', label: 'Messagerie interne', icon: MessageCircle },
   ]
 
   const selectedConversation = conversations.find((c) => c.patient_id === selectedPatientId)
@@ -298,17 +322,41 @@ export default function DesktopDoctorDashboard() {
               </div>
 
               {reschedulingId === a.id && (
-                <div className="mt-3 pt-3 border-t border-forest-100 flex flex-wrap gap-2 items-end">
-                  <div>
-                    <label className="block text-xs text-forest-700 mb-1">Nouvelle date et heure</label>
-                    <input type="datetime-local" value={rescheduleValue}
-                      onChange={(e) => setRescheduleValue(e.target.value)}
-                      className="rounded-lg border border-forest-100 px-3 py-1.5 text-sm" />
-                  </div>
-                  <button onClick={() => submitReschedule(a.id)}
-                    className="rounded-full bg-[var(--portal-accent)] text-white px-4 py-1.5 text-sm font-semibold hover:brightness-90 transition">
-                    Confirmer le report
-                  </button>
+                <div className="mt-3 pt-3 border-t border-forest-100">
+                  {/* NOUVEAU (demande explicite de M. Faustin: "le medecin
+                      pourra reporter un rendez-vous... sur ces
+                      disponibilites dans les semaines a venir") - avant,
+                      le medecin tapait une date/heure a l'aveugle, sans
+                      voir si le creneau etait meme libre. Reutilise le
+                      meme mecanisme deja teste (tous les creneaux
+                      reellement libres, pas de limite de date). */}
+                  <form onSubmit={checkRescheduleSlots} className="flex items-end gap-2 mb-3">
+                    <div>
+                      <label className="block text-xs text-forest-700 mb-1">Nouvelle date</label>
+                      <input type="date" required value={rescheduleDate} min={new Date().toISOString().slice(0, 10)}
+                        onChange={(e) => setRescheduleDate(e.target.value)}
+                        className="rounded-lg border border-forest-100 px-3 py-1.5 text-sm" />
+                    </div>
+                    <button type="submit" disabled={loadingRescheduleSlots}
+                      className="rounded-full border border-forest-300 px-4 py-1.5 text-sm hover:bg-forest-50 transition disabled:opacity-50">
+                      {loadingRescheduleSlots ? '...' : 'Voir les creneaux libres'}
+                    </button>
+                  </form>
+
+                  {rescheduleSlots && (
+                    rescheduleSlots.length === 0 ? (
+                      <p className="text-sm text-forest-700">Aucun creneau libre a cette date.</p>
+                    ) : (
+                      <div className="grid grid-cols-4 sm:grid-cols-6 gap-2">
+                        {rescheduleSlots.map((slot, idx) => (
+                          <button key={idx} onClick={() => submitReschedule(a.id, slot.slot_start)}
+                            className="rounded-lg border border-forest-100 bg-white py-2 text-sm font-medium text-forest-900 hover:border-primary-500 hover:bg-primary-50 transition">
+                            {new Date(slot.slot_start).toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' })}
+                          </button>
+                        ))}
+                      </div>
+                    )
+                  )}
                 </div>
               )}
 
@@ -438,6 +486,8 @@ export default function DesktopDoctorDashboard() {
           )}
         </div>
       )}
+
+      {tab === 'internal-messages' && <InternalMessaging />}
     </SidebarLayout>
   )
 }
