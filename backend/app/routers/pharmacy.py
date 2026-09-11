@@ -35,7 +35,7 @@ from app.models import (
 from app.schemas import (
     StockItemCreate, StockItemOut, ReservationCreate, ReservationOut, ReservationItemOut,
     ReservationStatusUpdate, ReservationHistoryOut, PharmacyStatsOut, ReservationReview,
-    PharmacySearchResult, PrescriptionMatchOut,
+    PharmacySearchResult, PrescriptionMatchOut, PharmacyOrderSummaryOut,
 )
 from app.deps import require_roles, require_establishment_types
 from app.services.geo import resolve_city_coordinates, haversine_km
@@ -259,12 +259,68 @@ def pharmacy_stats(db: Session = Depends(get_db),
         .count()
     )
 
+    # NOUVEAU (demande explicite de M. Faustin: tableau de bord pharmacie
+    # avec 4 grands rectangles - livraisons en cours + chiffre d'affaires
+    # journalier, en plus de ce qui existait deja).
+    deliveries_in_progress = (
+        db.query(PharmacyReservation)
+        .filter(PharmacyReservation.establishment_id == establishment_id, PharmacyReservation.status == ReservationStatus.OUT_FOR_DELIVERY)
+        .count()
+    )
+    today_start = now.replace(hour=0, minute=0, second=0, microsecond=0)
+    revenue_today = (
+        db.query(func.coalesce(func.sum(PharmacyOrderItem.confirmed_quantity * PharmacyOrderItem.confirmed_unit_price), 0.0))
+        .join(PharmacyReservation, PharmacyReservation.id == PharmacyOrderItem.reservation_id)
+        .filter(
+            PharmacyReservation.establishment_id == establishment_id,
+            PharmacyReservation.status == ReservationStatus.DELIVERED,
+            PharmacyReservation.created_at >= today_start,
+        )
+        .scalar() or 0.0
+    )
+
     return PharmacyStatsOut(
         total_orders=total_orders,
         orders_this_month=orders_this_month,
         pending_orders=pending_orders,
         low_stock_items=low_stock_items,
+        deliveries_in_progress=deliveries_in_progress,
+        revenue_today=revenue_today,
     )
+
+
+@router.get("/orders/summary", response_model=list[PharmacyOrderSummaryOut], dependencies=[_PHARMACY_ONLY])
+def pharmacy_orders_summary(db: Session = Depends(get_db),
+                             current_user: User = Depends(require_roles(UserRole.ESTABLISHMENT_ADMIN, UserRole.PHARMACIST))):
+    """
+    NOUVEAU (demande explicite de M. Faustin: "en dessous de ces
+    rectangles, on peut avoir une historique de vue globale sur les
+    commandes en cours de traitement" - raccourci limite pour le tableau
+    de bord, PAS la liste complete (deja disponible dans l'onglet
+    Commandes, qui reste la reference detaillee).
+    """
+    orders = (
+        db.query(PharmacyReservation)
+        .filter(
+            PharmacyReservation.establishment_id == current_user.establishment_id,
+            PharmacyReservation.status.notin_([ReservationStatus.DELIVERED, ReservationStatus.CANCELLED]),
+        )
+        .order_by(PharmacyReservation.created_at.desc())
+        .limit(8)
+        .all()
+    )
+    results = []
+    for o in orders:
+        patient = db.query(Patient).filter(Patient.id == o.patient_id).first()
+        items = db.query(PharmacyOrderItem).filter(PharmacyOrderItem.reservation_id == o.id).all()
+        total = None
+        if items and all(i.confirmed_quantity is not None and i.confirmed_unit_price is not None for i in items):
+            total = sum(i.confirmed_quantity * i.confirmed_unit_price for i in items)
+        results.append(PharmacyOrderSummaryOut(
+            id=o.id, patient_name=patient.user.full_name if patient else "Inconnu", total_amount=total,
+            status=o.status, created_at=o.created_at,
+        ))
+    return results
 
 
 @router.get("/reservations/mine", response_model=list[ReservationOut])

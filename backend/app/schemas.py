@@ -1419,6 +1419,21 @@ class PharmacyStatsOut(BaseModel):
     orders_this_month: int
     pending_orders: int
     low_stock_items: int
+    # NOUVEAU (demande explicite de M. Faustin: tableau de bord pharmacie
+    # en tete de menu, avec 4 grands rectangles).
+    deliveries_in_progress: int
+    revenue_today: float
+
+
+class PharmacyOrderSummaryOut(BaseModel):
+    """NOUVEAU: raccourci des commandes en cours pour le tableau de bord -
+    un nombre limite, pas la liste complete (deja disponible dans
+    l'onglet Commandes)."""
+    id: str
+    patient_name: str
+    total_amount: Optional[float] = None
+    status: str
+    created_at: datetime
 
 class SupportMessageCreate(BaseModel):
     content: str = Field(min_length=1, max_length=2000)

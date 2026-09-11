@@ -1,7 +1,8 @@
 import { useEffect, useState } from 'react'
-import { BarChart, Pill, Package, MessageSquare, Clock } from 'lucide-react'
+import { BarChart, Pill, Package, MessageSquare, Clock, LayoutDashboard } from 'lucide-react'
 import api, { getErrorMessage } from '../api/client'
 import PharmacyStatsCards from '../components/PharmacyStatsCards'
+import PharmacyDashboard from '../components/PharmacyDashboard'
 import { RESERVATION_STATUSES, RESERVATION_STATUS_LABELS, RESERVATION_STEPS, STAFF_UPDATABLE_STATUSES, STAFF_ACTIONABLE_STATUSES, StatusBadge } from '../components/OrderStatus'
 import FilterTabs from '../components/FilterTabs'
 import StatusStepper from '../components/StatusStepper'
@@ -14,7 +15,7 @@ import NotificationBell from '../components/NotificationBell'
 
 export default function DesktopPharmacistDashboard() {
   const [establishment, setEstablishment] = useState(null)
-  const [tab, setTab] = useState('orders')
+  const [tab, setTab] = useState('dashboard')
   const [stock, setStock] = useState([])
   const [orders, setOrders] = useState([])
   const [orderFilter, setOrderFilter] = useState('pending')
@@ -158,6 +159,8 @@ export default function DesktopPharmacistDashboard() {
   }, { all: orders.length })
 
   const tabs = [
+    // NOUVEAU (demande explicite de M. Faustin): tableau de bord en tete de menu.
+    { id: 'dashboard', label: 'Tableau de bord', icon: LayoutDashboard },
     { id: 'pharmacy', label: 'Pharmacie', icon: Pill },
     { id: 'orders', label: 'Commandes', icon: Package, badge: pendingCount },
     { id: 'messages', label: 'Messages', icon: MessageSquare },
@@ -185,6 +188,8 @@ export default function DesktopPharmacistDashboard() {
       {error && <p className="text-clay-600 mb-6">{error}</p>}
 
       {tab === 'stats' && <PharmacyStatsCards />}
+
+      {tab === 'dashboard' && <PharmacyDashboard />}
 
       {tab === 'pharmacy' && (
         <div>
