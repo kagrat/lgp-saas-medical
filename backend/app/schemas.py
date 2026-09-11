@@ -300,6 +300,9 @@ class AppointmentOut(BaseModel):
     duration_minutes: int
     status: AppointmentStatus
     notes: Optional[str] = None
+    # NOUVEAU (demande explicite de M. Faustin: liste des RDV restructuree
+    # - numero de dossier visible directement sur la ligne).
+    dossier_number: Optional[str] = None
 
     model_config = {"from_attributes": True}
 
@@ -1242,6 +1245,13 @@ class AppointmentReschedule(BaseModel):
         if v < datetime.utcnow():
             raise ValueError("Impossible de reporter a une date passee")
         return v
+
+
+class AppointmentTransfer(BaseModel):
+    """NOUVEAU (demande explicite de M. Faustin: "transferer un rendez-vous
+    a un collegue") - reassigne un rendez-vous CONFIRME a un autre medecin
+    du meme etablissement, au meme creneau horaire."""
+    new_doctor_id: str
 
 
 class OpeningHoursCreate(BaseModel):

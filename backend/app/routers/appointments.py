@@ -16,7 +16,7 @@ from app.database import get_db
 from app.models import Appointment, Doctor, Patient, User, UserRole, AppointmentStatus, AuditLog, VitalSigns, Establishment, DoctorAvailability
 from app.schemas import (
     AppointmentCreate, AppointmentOut, AppointmentSearchRequest, AppointmentSearchResponse, AppointmentReschedule,
-    VitalSignsCreate, VitalSignsOut, SuggestionSlot, AppointmentBookForPatient, AvailableSlotsResponse,
+    VitalSignsCreate, VitalSignsOut, SuggestionSlot, AppointmentBookForPatient, AvailableSlotsResponse, AppointmentTransfer,
 )
 from app.deps import require_roles, get_current_user
 from app.services.suggestion_engine import find_appointment_or_suggest, _free_slots_for_doctor, _rating_stats
@@ -37,6 +37,7 @@ def _to_appointment_out(appointment: Appointment) -> AppointmentOut:
         duration_minutes=appointment.duration_minutes,
         status=appointment.status,
         notes=appointment.notes,
+        dossier_number=appointment.patient.dossier_number if appointment.patient else None,
     )
 
 
@@ -335,6 +336,58 @@ def reschedule_appointment(appointment_id: str, payload: AppointmentReschedule, 
     db.add(AuditLog(user_id=current_user.id, establishment_id=appointment.establishment_id,
                      action="reschedule_appointment",
                      details=f"RDV {appointment.id} reporte de {old_time} a {payload.new_scheduled_at}"))
+    db.commit()
+    db.refresh(appointment)
+    return _to_appointment_out(appointment)
+
+
+@router.patch("/{appointment_id}/transfer", response_model=AppointmentOut)
+def transfer_appointment(appointment_id: str, payload: AppointmentTransfer, db: Session = Depends(get_db),
+                          current_user: User = Depends(require_roles(
+                              UserRole.ESTABLISHMENT_ADMIN, UserRole.SECRETARY, UserRole.DOCTOR))):
+    """
+    NOUVEAU (demande explicite de M. Faustin: "transferer un rendez-vous a
+    un collegue") - reassigne un rendez-vous CONFIRME a un autre medecin
+    du meme etablissement, au meme creneau horaire. Le nouveau medecin est
+    alerte (meme mecanisme de notification que pour un nouveau
+    rendez-vous cree directement).
+    """
+    appointment = db.query(Appointment).filter(Appointment.id == appointment_id).first()
+    if not appointment:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Rendez-vous introuvable")
+    if appointment.establishment_id != current_user.establishment_id:
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Acces refuse")
+    if appointment.status not in (AppointmentStatus.CONFIRMED, AppointmentStatus.ARRIVED):
+        raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail="Ce rendez-vous ne peut plus etre transfere")
+
+    new_doctor = db.query(Doctor).filter(
+        Doctor.id == payload.new_doctor_id, Doctor.establishment_id == current_user.establishment_id,
+        Doctor.is_active == True,
+    ).first()
+    if not new_doctor:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Medecin introuvable dans ton etablissement")
+    if new_doctor.id == appointment.doctor_id:
+        raise HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_ENTITY, detail="Ce rendez-vous est deja avec ce medecin")
+
+    conflict = (
+        db.query(Appointment)
+        .filter(
+            Appointment.doctor_id == new_doctor.id,
+            Appointment.status == AppointmentStatus.CONFIRMED,
+            Appointment.scheduled_at == appointment.scheduled_at,
+        )
+        .first()
+    )
+    if conflict:
+        raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail="Ce medecin a deja un rendez-vous a ce creneau")
+
+    old_doctor_id = appointment.doctor_id
+    appointment.doctor_id = new_doctor.id
+    db.add(AuditLog(user_id=current_user.id, establishment_id=appointment.establishment_id,
+                     action="transfer_appointment",
+                     details=f"RDV {appointment.id} transfere du medecin {old_doctor_id} vers {new_doctor.id}"))
+    create_appointment_notification(db, new_doctor.user_id, appointment.establishment_id,
+                                     appointment.patient.user.full_name if appointment.patient else "Patient", appointment.scheduled_at)
     db.commit()
     db.refresh(appointment)
     return _to_appointment_out(appointment)

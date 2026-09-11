@@ -35,6 +35,9 @@ export default function DesktopDoctorDashboard() {
   const [rescheduleSlots, setRescheduleSlots] = useState(null)
   const [loadingRescheduleSlots, setLoadingRescheduleSlots] = useState(false)
   const [expandedAppointmentId, setExpandedAppointmentId] = useState(null)
+  const [transferringId, setTransferringId] = useState(null)
+  const [colleagues, setColleagues] = useState(null)
+  const [loadingColleagues, setLoadingColleagues] = useState(false)
   const [vitalsAppointmentId, setVitalsAppointmentId] = useState(null)
   const [vitalsData, setVitalsData] = useState([])
   const [loadingVitals, setLoadingVitals] = useState(false)
@@ -171,6 +174,37 @@ export default function DesktopDoctorDashboard() {
     }
   }
 
+  async function toggleTransfer(appointmentId) {
+    if (transferringId === appointmentId) {
+      setTransferringId(null)
+      setColleagues(null)
+      return
+    }
+    setTransferringId(appointmentId)
+    setColleagues(null)
+    setLoadingColleagues(true)
+    try {
+      const { data } = await api.get('/doctors/search', { params: { establishment_id: establishment?.id } })
+      setColleagues(data.filter((d) => d.id !== myDoctorId))
+    } catch (err) {
+      setError(getErrorMessage(err, 'Impossible de charger la liste des collegues.'))
+    } finally {
+      setLoadingColleagues(false)
+    }
+  }
+
+  async function submitTransfer(appointmentId, newDoctorId) {
+    setError('')
+    try {
+      await api.patch(`/appointments/${appointmentId}/transfer`, { new_doctor_id: newDoctorId })
+      setTransferringId(null)
+      setColleagues(null)
+      await loadAppointments()
+    } catch (err) {
+      setError(getErrorMessage(err, 'Impossible de transferer ce rendez-vous.'))
+    }
+  }
+
   function toggleAppointmentExpand(appointmentId) {
     setExpandedAppointmentId(expandedAppointmentId === appointmentId ? null : appointmentId)
     setDocMessage('')
@@ -262,36 +296,64 @@ export default function DesktopDoctorDashboard() {
           {appointments.length === 0 && <p className="text-forest-700">Aucun rendez-vous.</p>}
           {appointments.map((a) => (
             <div key={a.id} className="rounded-xl border border-forest-100 bg-white p-4">
+              {/* NOUVEAU (demande explicite de M. Faustin): la ligne
+                  n'affiche plus que l'essentiel (patient, date/heure,
+                  numero de dossier) + un seul bouton "Ouvrir" - toutes
+                  les actions apparaissent seulement une fois ouvert. */}
               <div className="flex justify-between items-center flex-wrap gap-2">
                 <div>
                   <p className="text-forest-900 font-medium">{a.patient_name}</p>
-                  <p className="text-sm text-forest-700">{new Date(a.scheduled_at).toLocaleString('fr-FR')}</p>
+                  <p className="text-sm text-forest-700">
+                    {new Date(a.scheduled_at).toLocaleString('fr-FR')}
+                    {a.dossier_number && ` - Dossier ${a.dossier_number}`}
+                  </p>
                 </div>
-                <div className="flex items-center gap-2 flex-wrap">
+                <div className="flex items-center gap-2">
                   <AppointmentStatusBadge status={a.status} />
                   <button
-                    onClick={() => toggleVitals(a.id)}
-                    className="text-sm rounded-full border border-secondary-500 text-secondary-600 px-4 py-1.5 hover:bg-forest-50 transition"
+                    onClick={() => setExpandedAppointmentId(expandedAppointmentId === a.id ? null : a.id)}
+                    className="text-sm rounded-full bg-[var(--portal-accent)] text-white px-5 py-1.5 hover:brightness-90 transition"
                   >
-                    {vitalsAppointmentId === a.id ? 'Fermer' : 'Constantes'}
+                    {expandedAppointmentId === a.id ? 'Fermer' : 'Ouvrir'}
                   </button>
-                  {a.status === 'confirmed' && (
-                    <>
-                      <button
-                        onClick={() => markArrived(a.id)}
-                        disabled={arrivingId === a.id}
-                        className="text-sm rounded-full border border-forest-300 px-4 py-1.5 hover:bg-forest-50 transition disabled:opacity-50"
-                      >
-                        {arrivingId === a.id ? '...' : 'Marquer arrive'}
-                      </button>
-                      <button
-                        onClick={() => toggleReschedule(a.id)}
-                        className="text-sm rounded-full border border-amber-400 text-amber-600 px-4 py-1.5 hover:bg-amber-50 transition"
-                      >
-                        Reporter
-                      </button>
-                    </>
-                  )}
+                </div>
+              </div>
+
+              {expandedAppointmentId === a.id && (
+                <div className="mt-3 pt-3 border-t border-forest-100">
+                  <div className="flex items-center gap-2 flex-wrap mb-1">
+                    <button
+                      onClick={() => toggleVitals(a.id)}
+                      className="text-sm rounded-full border border-secondary-500 text-secondary-600 px-4 py-1.5 hover:bg-forest-50 transition"
+                    >
+                      {vitalsAppointmentId === a.id ? 'Fermer les constantes' : 'Constantes'}
+                    </button>
+                    {a.status === 'confirmed' && (
+                      <>
+                        <button
+                          onClick={() => markArrived(a.id)}
+                          disabled={arrivingId === a.id}
+                          className="text-sm rounded-full border border-forest-300 px-4 py-1.5 hover:bg-forest-50 transition disabled:opacity-50"
+                        >
+                          {arrivingId === a.id ? '...' : 'Marquer arrive'}
+                        </button>
+                        <button
+                          onClick={() => toggleReschedule(a.id)}
+                          className="text-sm rounded-full border border-amber-400 text-amber-600 px-4 py-1.5 hover:bg-amber-50 transition"
+                        >
+                          Reporter
+                        </button>
+                        {/* NOUVEAU (demande explicite de M. Faustin:
+                            "transferer un rendez-vous a un collegue"). */}
+                        <button
+                          onClick={() => toggleTransfer(a.id)}
+                          className="text-sm rounded-full border border-secondary-500 text-secondary-600 px-4 py-1.5 hover:bg-forest-50 transition"
+                        >
+                          Transferer a un collegue
+                        </button>
+                      </>
+                    )}
+                  </div>
                   {(a.status === 'confirmed' || a.status === 'arrived') && (
                     <>
                       <button
@@ -310,16 +372,26 @@ export default function DesktopDoctorDashboard() {
                       </button>
                     </>
                   )}
-                  {a.status === 'completed' && (
-                    <button
-                      onClick={() => toggleAppointmentExpand(a.id)}
-                      className="text-sm rounded-full border border-forest-300 px-4 py-1.5 hover:bg-forest-50 transition"
-                    >
-                      {expandedAppointmentId === a.id ? 'Fermer' : 'Ajouter au dossier'}
-                    </button>
+
+                  {transferringId === a.id && (
+                    <div className="mt-3 pt-3 border-t border-forest-100">
+                      <p className="text-sm font-medium text-forest-900 mb-2">Transferer a un collegue</p>
+                      {loadingColleagues && <p className="text-sm text-forest-700">Chargement...</p>}
+                      {colleagues && colleagues.length === 0 && <p className="text-sm text-forest-700">Aucun autre medecin dans cet etablissement.</p>}
+                      {colleagues && colleagues.length > 0 && (
+                        <div className="grid sm:grid-cols-2 gap-2">
+                          {colleagues.map((doc) => (
+                            <button key={doc.id} onClick={() => submitTransfer(a.id, doc.id)}
+                              className="text-left rounded-lg border border-forest-100 p-2 text-sm hover:border-forest-300 transition">
+                              {doc.full_name} <span className="text-xs text-forest-700">({doc.specialty})</span>
+                            </button>
+                          ))}
+                        </div>
+                      )}
+                    </div>
                   )}
                 </div>
-              </div>
+              )}
 
               {reschedulingId === a.id && (
                 <div className="mt-3 pt-3 border-t border-forest-100">
