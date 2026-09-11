@@ -691,6 +691,13 @@ class Message(Base):
     id = Column(UUID(as_uuid=False), primary_key=True, default=gen_uuid)
     patient_id = Column(UUID(as_uuid=False), ForeignKey("patients.id"), nullable=False)
     establishment_id = Column(UUID(as_uuid=False), ForeignKey("establishments.id"), nullable=False)
+    # CORRIGE (bug critique trouve en testant, jamais detecte avant): tout
+    # le fichier routers/messages.py (envoi de message, cloisonnement par
+    # role medecin/pharmacien/labo) s'appuyait sur Message.doctor_id, qui
+    # n'existait PAS du tout sur ce modele - envoyer un message plantait
+    # donc systematiquement (TypeError), pour absolument tout le monde,
+    # depuis toujours.
+    doctor_id = Column(UUID(as_uuid=False), ForeignKey("doctors.id"), nullable=True)
     sender_role = Column(Enum(MessageSenderRole), nullable=False)
     sender_name = Column(String(200), nullable=False)
     content = Column(Text, nullable=False)

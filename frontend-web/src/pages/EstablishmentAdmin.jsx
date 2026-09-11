@@ -414,7 +414,7 @@ export default function EstablishmentAdmin() {
     <SidebarLayout
       portalLabel={isLab ? 'Portail Laboratoire' : isPharmacy ? 'Portail Pharmacie' : 'Portail Hôpital / Clinique'}
       title={establishment.name}
-      subtitle={isLab ? 'Gestion des demandes d\'analyses.' : 'Gestion des medecins, rendez-vous et pharmacie de ton etablissement.'}
+      subtitle={isLab ? 'Gestion des demandes d\'analyses.' : isPharmacy ? 'Gestion de l\'inventaire et des commandes de ta pharmacie.' : 'Gestion des medecins, rendez-vous et pharmacie de ton etablissement.'}
       tabs={tabs}
       activeTab={tab}
       onTabChange={(id) => { setTab(id); setError('') }}

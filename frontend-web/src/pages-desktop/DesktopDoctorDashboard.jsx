@@ -4,6 +4,7 @@ import api, { getErrorMessage } from '../api/client'
 import { AppointmentStatusBadge } from '../components/AppointmentStatusUI'
 import { SELECTABLE_DOCUMENT_TYPES, DOCUMENT_TYPE_LABELS } from '../components/DocumentType'
 import ChatWindow from '../components/ChatWindow'
+import StartConversation from '../components/StartConversation'
 import MyPatients from '../components/MyPatients'
 import Hospitalizations from '../components/Hospitalizations'
 import PrescriptionItemsEditor from '../components/PrescriptionItemsEditor'
@@ -21,6 +22,7 @@ export default function DesktopDoctorDashboard() {
   const [appointments, setAppointments] = useState([])
   const [conversations, setConversations] = useState([])
   const [selectedPatientId, setSelectedPatientId] = useState(null)
+  const [selectedPatientName, setSelectedPatientName] = useState(null)
   const [error, setError] = useState('')
 
   const [completingId, setCompletingId] = useState(null)
@@ -205,6 +207,7 @@ export default function DesktopDoctorDashboard() {
   ]
 
   const selectedConversation = conversations.find((c) => c.patient_id === selectedPatientId)
+    || (selectedPatientId && selectedPatientName ? { patient_id: selectedPatientId, patient_name: selectedPatientName } : null)
 
   return (
     <SidebarLayout
@@ -391,7 +394,16 @@ export default function DesktopDoctorDashboard() {
 
       {tab === 'messages' && (
         <div>
-          {conversations.length === 0 ? (
+          <div className="mb-4">
+            <StartConversation
+              searchFn={async (query) => {
+                const { data } = await api.get('/doctors/me/patients', { params: query ? { search: query } : {} })
+                return data.map((p) => ({ patient_id: p.id, full_name: p.full_name }))
+              }}
+              onStart={(p) => { setSelectedPatientId(p.patient_id); setSelectedPatientName(p.full_name) }}
+            />
+          </div>
+          {conversations.length === 0 && !selectedConversation ? (
             <p className="text-forest-700">Aucune conversation pour le moment.</p>
           ) : (
             <div className="grid sm:grid-cols-3 gap-4">

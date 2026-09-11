@@ -7,6 +7,7 @@ import FilterTabs from '../components/FilterTabs'
 import StatusStepper from '../components/StatusStepper'
 import ReservationReviewForm from '../components/ReservationReviewForm'
 import ChatWindow from '../components/ChatWindow'
+import StartConversation from '../components/StartConversation'
 import MySchedule from '../components/MySchedule'
 import SidebarLayout from '../components/SidebarLayout'
 import NotificationBell from '../components/NotificationBell'
@@ -19,6 +20,7 @@ export default function DesktopPharmacistDashboard() {
   const [orderFilter, setOrderFilter] = useState('pending')
   const [conversations, setConversations] = useState([])
   const [selectedPatientId, setSelectedPatientId] = useState(null)
+  const [selectedPatientName, setSelectedPatientName] = useState(null)
   const [error, setError] = useState('')
   const [updatingOrderId, setUpdatingOrderId] = useState(null)
   const [orderUpdateForm, setOrderUpdateForm] = useState({})
@@ -167,6 +169,7 @@ export default function DesktopPharmacistDashboard() {
   const orderFilterOptions = [{ value: 'all', label: 'Tous' }, ...RESERVATION_STATUSES.map((s) => ({ value: s, label: RESERVATION_STATUS_LABELS[s] }))]
   const filteredOrders = orderFilter === 'all' ? orders : orders.filter((o) => o.status === orderFilter)
   const selectedConversation = conversations.find((c) => c.patient_id === selectedPatientId)
+    || (selectedPatientId && selectedPatientName ? { patient_id: selectedPatientId, patient_name: selectedPatientName } : null)
 
   return (
     <SidebarLayout
@@ -343,7 +346,16 @@ export default function DesktopPharmacistDashboard() {
 
       {tab === 'messages' && (
         <div>
-          {conversations.length === 0 ? (
+          <div className="mb-4">
+            <StartConversation
+              searchFn={async (query) => {
+                const { data } = await api.get('/patients/establishment', { params: query ? { search: query } : {} })
+                return data.map((p) => ({ patient_id: p.id, full_name: p.full_name }))
+              }}
+              onStart={(p) => { setSelectedPatientId(p.patient_id); setSelectedPatientName(p.full_name) }}
+            />
+          </div>
+          {conversations.length === 0 && !selectedConversation ? (
             <p className="text-forest-700">Aucune conversation pour le moment.</p>
           ) : (
             <div className="grid sm:grid-cols-3 gap-4">
