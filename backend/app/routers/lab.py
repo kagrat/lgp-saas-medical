@@ -25,6 +25,7 @@ from app.schemas import (
     LabTestRegisterByStaff, LabStatsOut, LabReferralCreate,
 )
 from app.deps import require_roles
+from app.routers.notifications import create_lab_request_notification
 
 router = APIRouter(prefix="/lab", tags=["laboratoire"])
 
@@ -93,6 +94,11 @@ def request_test(payload: LabTestRequestCreate, db: Session = Depends(get_db),
         scheduled_sample_at=payload.scheduled_sample_at,
     )
     db.add(lab_test)
+    # NOUVEAU (demande explicite de M. Faustin: "le laboratoire est
+    # alerte s'il y a une nouvelle analyse") - le laboratoire n'aurait
+    # sinon aucun moyen de savoir qu'une demande vient d'arriver, sans
+    # verifier manuellement la liste en permanence.
+    create_lab_request_notification(db, lab.id, payload.test_name, current_user.full_name)
     db.commit()
     db.refresh(lab_test)
     return _to_lab_test_out(lab_test, db)
@@ -168,6 +174,7 @@ def refer_test_to_lab(payload: LabReferralCreate, db: Session = Depends(get_db),
         referred_by_doctor_id=referring_doctor_id,
     )
     db.add(lab_test)
+    create_lab_request_notification(db, lab.id, payload.test_name, appointment.patient.user.full_name)
     db.commit()
     db.refresh(lab_test)
     return _to_lab_test_out(lab_test, db)

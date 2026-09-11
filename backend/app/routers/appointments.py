@@ -21,6 +21,7 @@ from app.schemas import (
 from app.deps import require_roles, get_current_user
 from app.services.suggestion_engine import find_appointment_or_suggest, _free_slots_for_doctor, _rating_stats
 from app.services.notifications import send_confirmation_email, send_sms
+from app.routers.notifications import create_appointment_notification
 
 router = APIRouter(prefix="/appointments", tags=["rendez-vous"])
 
@@ -149,6 +150,9 @@ def create_appointment(payload: AppointmentCreate, db: Session = Depends(get_db)
     db.add(appointment)
     db.add(AuditLog(user_id=current_user.id, establishment_id=doctor.establishment_id,
                      action="create_appointment", details=f"RDV cree pour patient {patient.dossier_number}"))
+    # NOUVEAU (demande explicite de M. Faustin: "un medecin est alerte
+    # pour un nouveau rendez-vous").
+    create_appointment_notification(db, doctor.user_id, doctor.establishment_id, current_user.full_name, appointment.scheduled_at)
     db.commit()
     db.refresh(appointment)
 
@@ -220,6 +224,7 @@ def book_appointment_for_patient(payload: AppointmentBookForPatient, db: Session
     db.add(appointment)
     db.add(AuditLog(user_id=current_user.id, establishment_id=doctor.establishment_id,
                      action="book_appointment_for_patient", details=f"RDV cree par le personnel pour patient {patient.dossier_number}"))
+    create_appointment_notification(db, doctor.user_id, doctor.establishment_id, patient.user.full_name, appointment.scheduled_at)
     db.commit()
     db.refresh(appointment)
 

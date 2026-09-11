@@ -19,6 +19,7 @@ import LabCatalogManager from '../components/LabCatalogManager'
 import PharmacyStatsCards from '../components/PharmacyStatsCards'
 import LabReferralForm from '../components/LabReferralForm'
 import DoctorAvailabilityManager from '../components/DoctorAvailabilityManager'
+import DoctorReviewsList from '../components/DoctorReviewsList'
 import ReservationReviewForm from '../components/ReservationReviewForm'
 import NotificationBell from '../components/NotificationBell'
 import ReportsManager from '../components/ReportsManager'
@@ -479,7 +480,18 @@ export default function EstablishmentAdmin() {
                     {expandedDoctorId === d.id ? 'Fermer' : 'Gerer les disponibilites'}
                   </button>
                 </div>
-                {expandedDoctorId === d.id && <DoctorAvailabilityManager doctorId={d.id} />}
+                {expandedDoctorId === d.id && (
+                  <div>
+                    <DoctorAvailabilityManager doctorId={d.id} />
+                    {/* NOUVEAU (demande explicite de M. Faustin): l'admin
+                        d'etablissement ne voyait avant que la note
+                        moyenne (etoiles) - jamais les avis ecrits eux-memes. */}
+                    <div className="mt-4 pt-4 border-t border-forest-100">
+                      <p className="text-sm font-medium text-forest-900 mb-3">Avis des patients</p>
+                      <DoctorReviewsList doctorId={d.id} />
+                    </div>
+                  </div>
+                )}
               </div>
             ))}
           </div>

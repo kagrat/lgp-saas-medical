@@ -22,6 +22,7 @@ from app.schemas import (
     ClinicalFlagCreate, ClinicalFlagOut,
 )
 from app.deps import require_roles, get_current_user
+from app.routers.notifications import create_dossier_share_notification
 from app.security import hash_password
 from app.routers.health_records import _to_document_out
 
@@ -534,10 +535,14 @@ def share_patient_record(patient_id: str, payload: PatientRecordShareCreate, db:
         to_doctor_id=to_doctor.id, note=payload.note,
     )
     db.add(share)
+
+    patient = db.query(Patient).filter(Patient.id == patient_id).first()
+    # NOUVEAU (demande explicite de M. Faustin: "si un confrere lui envoi
+    # un patient ou un dossier").
+    create_dossier_share_notification(db, to_doctor.user_id, to_doctor.establishment_id, current_user.full_name, patient.user.full_name)
     db.commit()
     db.refresh(share)
 
-    patient = db.query(Patient).filter(Patient.id == patient_id).first()
     return PatientRecordShareOut(
         id=share.id, patient_id=share.patient_id, patient_name=patient.user.full_name,
         from_doctor_id=doctor.id, from_doctor_name=current_user.full_name,

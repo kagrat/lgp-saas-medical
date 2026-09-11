@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { Calendar, Users, BedDouble, Clock, MessageSquare, CalendarCheck } from 'lucide-react'
+import { Calendar, Users, BedDouble, Clock, MessageSquare, CalendarCheck, Star } from 'lucide-react'
 import api, { getErrorMessage } from '../api/client'
 import { AppointmentStatusBadge } from '../components/AppointmentStatusUI'
 import { SELECTABLE_DOCUMENT_TYPES, DOCUMENT_TYPE_LABELS } from '../components/DocumentType'
@@ -10,6 +10,8 @@ import PrescriptionItemsEditor from '../components/PrescriptionItemsEditor'
 import MySchedule from '../components/MySchedule'
 import LabReferralForm from '../components/LabReferralForm'
 import DoctorAvailabilityManager from '../components/DoctorAvailabilityManager'
+import DoctorReviewsList from '../components/DoctorReviewsList'
+import NotificationBell from '../components/NotificationBell'
 import SidebarLayout from '../components/SidebarLayout'
 
 export default function DesktopDoctorDashboard() {
@@ -197,6 +199,7 @@ export default function DesktopDoctorDashboard() {
     { id: 'patients', label: 'Patients', icon: Users },
     { id: 'hospitalizations', label: 'Hospitalisations', icon: BedDouble },
     { id: 'availability', label: 'Ma disponibilité', icon: CalendarCheck },
+    { id: 'reviews', label: 'Mes avis', icon: Star },
     { id: 'schedule', label: 'Mon planning', icon: Clock },
     { id: 'messages', label: 'Messages', icon: MessageSquare },
   ]
@@ -212,6 +215,7 @@ export default function DesktopDoctorDashboard() {
       activeTab={tab}
       onTabChange={(id) => { setTab(id); setError('') }}
       accentColor="bg-secondary-500"
+      headerRight={<NotificationBell />}
     >
       {error && <p className="text-clay-600 mb-6">{error}</p>}
 
@@ -377,6 +381,10 @@ export default function DesktopDoctorDashboard() {
 
       {tab === 'availability' && (
         myDoctorId ? <DoctorAvailabilityManager doctorId={myDoctorId} /> : <p className="text-forest-700">Chargement...</p>
+      )}
+
+      {tab === 'reviews' && (
+        myDoctorId ? <DoctorReviewsList doctorId={myDoctorId} /> : <p className="text-forest-700">Chargement...</p>
       )}
 
       {tab === 'schedule' && <MySchedule />}
