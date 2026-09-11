@@ -12,6 +12,11 @@ export default function ReportsManager() {
   const [auditLogs, setAuditLogs] = useState([])
   const [error, setError] = useState('')
   const [exporting, setExporting] = useState(false)
+  // NOUVEAU (demande explicite de M. Faustin: "le journal des connexions
+  // doit etre cache et/ou reduit") - replie par defaut, et limite a un
+  // nombre raisonnable d'entrees plutot que tout afficher sans limite.
+  const [showAuditLog, setShowAuditLog] = useState(false)
+  const AUDIT_LOG_DISPLAY_LIMIT = 20
 
   useEffect(() => {
     load()
@@ -74,18 +79,28 @@ export default function ReportsManager() {
         ))}
       </div>
 
-      <h3 className="font-display text-lg text-forest-900 font-semibold mb-3">Journal d'activite de l'etablissement</h3>
-      <div className="space-y-1">
-        {auditLogs.length === 0 && <p className="text-forest-700 text-sm">Aucune activite enregistree.</p>}
-        {auditLogs.map((log) => (
-          <div key={log.id} className="rounded-lg bg-forest-50 px-3 py-2 text-sm">
-            <span className="text-forest-900 font-medium">{log.user_name}</span>{' '}
-            <span className="text-forest-700">- {log.action}</span>
-            {log.details && <span className="text-forest-500"> - {log.details}</span>}
-            <span className="text-forest-400 text-xs block">{new Date(log.created_at).toLocaleString('fr-FR')}</span>
-          </div>
-        ))}
+      <div className="flex items-center justify-between mb-3">
+        <h3 className="font-display text-lg text-forest-900 font-semibold">Journal d'activite de l'etablissement</h3>
+        <button onClick={() => setShowAuditLog((v) => !v)} className="text-sm text-forest-700 hover:underline">
+          {showAuditLog ? 'Masquer' : 'Afficher'}
+        </button>
       </div>
+      {showAuditLog && (
+        <div className="space-y-1">
+          {auditLogs.length === 0 && <p className="text-forest-700 text-sm">Aucune activite enregistree.</p>}
+          {auditLogs.slice(0, AUDIT_LOG_DISPLAY_LIMIT).map((log) => (
+            <div key={log.id} className="rounded-lg bg-forest-50 px-3 py-2 text-sm">
+              <span className="text-forest-900 font-medium">{log.user_name}</span>{' '}
+              <span className="text-forest-700">- {log.action}</span>
+              {log.details && <span className="text-forest-500"> - {log.details}</span>}
+              <span className="text-forest-400 text-xs block">{new Date(log.created_at).toLocaleString('fr-FR')}</span>
+            </div>
+          ))}
+          {auditLogs.length > AUDIT_LOG_DISPLAY_LIMIT && (
+            <p className="text-xs text-forest-700 pt-1">Affiche les {AUDIT_LOG_DISPLAY_LIMIT} entrees les plus recentes sur {auditLogs.length}.</p>
+          )}
+        </div>
+      )}
     </div>
   )
 }

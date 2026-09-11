@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { BarChart, Stethoscope, Calendar, Pill, Package, FlaskConical, Users, MessageSquare, Building2, Clock, Clipboard, FileBarChart, Wrench, Receipt } from 'lucide-react'
+import { BarChart, Stethoscope, Calendar, Pill, Package, FlaskConical, Users, MessageSquare, Building2, Clock, Clipboard, FileBarChart, Wrench, Receipt, BedDouble } from 'lucide-react'
 import api, { getErrorMessage } from '../api/client'
 import { SPECIALTIES, DAYS_OF_WEEK } from '../constants'
 import StarRating from '../components/StarRating'
@@ -14,7 +14,6 @@ import OpeningHoursManager from '../components/OpeningHoursManager'
 import FilterTabs from '../components/FilterTabs'
 import StatusStepper from '../components/StatusStepper'
 import { LabStatsCards, RegisterTestByStaff } from '../components/LabStaffTools'
-import ServicesRoomsManager from '../components/ServicesRoomsManager'
 import LabCatalogManager from '../components/LabCatalogManager'
 import PharmacyStatsCards from '../components/PharmacyStatsCards'
 import LabReferralForm from '../components/LabReferralForm'
@@ -26,6 +25,7 @@ import ReportsManager from '../components/ReportsManager'
 import InvoiceManager from '../components/InvoiceManager'
 import InventoryManager from '../components/InventoryManager'
 import PharmacyReportsManager from '../components/PharmacyReportsManager'
+import RoomsManager from '../components/RoomsManager'
 import EquipmentSuppliersManager from '../components/EquipmentSuppliersManager'
 import SidebarLayout from '../components/SidebarLayout'
 
@@ -358,9 +358,20 @@ export default function EstablishmentAdmin() {
         { id: 'doctors', label: 'Médecins', icon: Stethoscope },
         { id: 'appointments', label: 'Rendez-vous', icon: Calendar },
       ]
+  // NOUVEAU (demande explicite de M. Faustin): l'ancien onglet "Services"
+  // melangeait 4 choses distinctes - prestations facturables, chambres,
+  // departements et stock general. Decision precise de M. Faustin: retirer
+  // seulement les prestations facturables (aucun usage clair identifie),
+  // garder les chambres (essentielles pour l'admission) sous un nom clair
+  // "Chambres et Lits", et deplacer le stock general vers l'onglet
+  // "Equipement" (qui l'utilisait deja pour les commandes fournisseurs).
+  // Les chambres ne concernent que l'hopital/clinique - une pharmacie ou
+  // un laboratoire n'admet pas de patient.
   const extraTabs = isLab
     ? [{ id: 'catalog', label: 'Catalogue', icon: Clipboard }]
-    : [{ id: 'services', label: 'Services', icon: Wrench }]
+    : isPharmacy
+    ? []
+    : [{ id: 'rooms', label: 'Chambres et Lits', icon: BedDouble }]
   // Onglet Patients reserve aux hopitaux/cliniques: une pharmacie ou un
   // laboratoire n'a pas de dossier de consultation a afficher - seuls des
   // rendez-vous medicaux justifient cet annuaire (meme regle appliquee
@@ -850,7 +861,8 @@ export default function EstablishmentAdmin() {
 
       {tab === 'hours' && <OpeningHoursManager />}
 
-      {tab === 'services' && !isLab && <ServicesRoomsManager />}
+      {tab === 'rooms' && <RoomsManager />}
+
 
       {tab === 'catalog' && isLab && <LabCatalogManager />}
 

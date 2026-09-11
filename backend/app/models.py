@@ -743,6 +743,27 @@ class Message(Base):
     content = Column(Text, nullable=False)
     created_at = Column(DateTime, default=datetime.utcnow)
 
+class InternalMessage(Base):
+    """
+    NOUVEAU (demande explicite de M. Faustin: "il faut que l'ets puisse
+    envoyer des messages aux medecins"). Messagerie interne entre membres
+    du PERSONNEL d'un meme etablissement (admin <-> medecin, et plus
+    largement n'importe quel membre du personnel entre eux) - distincte
+    du chat "concierge" patient <-> etablissement (Message ci-dessus),
+    qui ne concerne que les patients.
+    """
+    __tablename__ = "internal_messages"
+
+    id = Column(UUID(as_uuid=False), primary_key=True, default=gen_uuid)
+    establishment_id = Column(UUID(as_uuid=False), ForeignKey("establishments.id"), nullable=False)
+    from_user_id = Column(UUID(as_uuid=False), ForeignKey("users.id"), nullable=False)
+    to_user_id = Column(UUID(as_uuid=False), ForeignKey("users.id"), nullable=False)
+    sender_name = Column(String(200), nullable=False)
+    content = Column(Text, nullable=False)
+    is_read = Column(Boolean, default=False)
+    created_at = Column(DateTime, default=datetime.utcnow)
+
+
 class Dependent(Base):
     """Module 'Mes proches' - purement informatif pour l'instant, pas encore lie a la prise de RDV."""
     __tablename__ = "dependents"
