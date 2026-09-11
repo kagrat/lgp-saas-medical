@@ -88,6 +88,14 @@ class Establishment(Base):
     subscription_status = Column(Enum(SubscriptionStatus), default=SubscriptionStatus.TRIAL)
     is_active = Column(Boolean, default=True)
     created_at = Column(DateTime, default=datetime.utcnow)
+    # NOUVEAU (demande explicite de M. Faustin: profil d'etablissement
+    # avec logo). Stocke l'image directement en base (format "data URL"
+    # base64) plutot que via un service de stockage de fichiers externe -
+    # plus simple, fonctionne de facon fiable sur l'infrastructure
+    # actuelle (pas de risque de perte au redemarrage/redeploiement),
+    # adapte a un logo qui reste de petite taille (limite appliquee cote
+    # serveur, voir establishments.py).
+    logo_url = Column(Text, nullable=True)
 
     users = relationship("User", back_populates="establishment")
     doctors = relationship("Doctor", back_populates="establishment")

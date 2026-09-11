@@ -55,6 +55,7 @@ export default function SidebarLayout({
   onTabChange,
   headerRight,
   accentColor = 'bg-primary-700',
+  logoUrl,
   children,
 }) {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
@@ -137,9 +138,16 @@ export default function SidebarLayout({
       <main className="flex-1 min-w-0 overflow-y-auto pt-14 md:pt-0">
         <div className="max-w-5xl mx-auto px-8 py-10">
           <div className="flex justify-between items-start mb-8">
-            <div>
-              <h1 className="font-display text-3xl font-semibold text-ink">{title}</h1>
-              {subtitle && <p className="text-forest-500 mt-1">{subtitle}</p>}
+            <div className="flex items-center gap-4">
+              {/* NOUVEAU (demande explicite de M. Faustin: profil
+                  d'etablissement avec nom + logo). */}
+              {logoUrl && (
+                <img src={logoUrl} alt="" className="w-14 h-14 rounded-xl object-cover border border-forest-100 shrink-0" />
+              )}
+              <div>
+                <h1 className="font-display text-3xl font-semibold text-ink">{title}</h1>
+                {subtitle && <p className="text-forest-500 mt-1">{subtitle}</p>}
+              </div>
             </div>
             {headerRight}
           </div>

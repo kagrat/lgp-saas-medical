@@ -104,8 +104,25 @@ class EstablishmentOut(BaseModel):
     subscription_status: SubscriptionStatus
     is_active: bool
     created_at: datetime
+    logo_url: Optional[str] = None
 
     model_config = {"from_attributes": True}
+
+
+class EstablishmentLogoUpdate(BaseModel):
+    """NOUVEAU (demande explicite de M. Faustin: profil d'etablissement
+    avec logo). logo_url attendu au format "data URL" base64
+    (image/png;base64,... ou image/jpeg;base64,...) - taille limitee cote
+    serveur pour eviter qu'une image demesuree alourdisse chaque reponse
+    API qui inclut l'etablissement."""
+    logo_url: str = Field(max_length=700_000)  # ~500 Ko d'image encodee en base64
+
+    @field_validator("logo_url")
+    @classmethod
+    def valid_data_url(cls, v: str) -> str:
+        if not v.startswith("data:image/"):
+            raise ValueError("Le logo doit etre une image valide (PNG ou JPEG)")
+        return v
 
 
 class EstablishmentSearchResult(BaseModel):

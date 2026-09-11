@@ -18,7 +18,7 @@ from app.models import Establishment, Doctor, User, UserRole, AuditLog, Departme
 from app.schemas import (
     EstablishmentCreate, EstablishmentOut, EstablishmentSearchResult,
     EstablishmentStatusUpdate, EstablishmentUpdate, StaffCreate, StaffOut, StaffProfileUpdate,
-    DepartmentCreate, DepartmentUpdate, DepartmentOut,
+    DepartmentCreate, DepartmentUpdate, DepartmentOut, EstablishmentLogoUpdate,
 )
 from app.deps import require_roles, get_current_user
 from app.security import hash_password
@@ -90,6 +90,23 @@ def my_establishment(db: Session = Depends(get_db), current_user: User = Depends
     establishment = db.query(Establishment).filter(Establishment.id == current_user.establishment_id).first()
     if not establishment:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Etablissement introuvable")
+    return establishment
+
+
+@router.patch("/me/logo", response_model=EstablishmentOut)
+def update_establishment_logo(payload: EstablishmentLogoUpdate, db: Session = Depends(get_db),
+                               current_user: User = Depends(require_roles(UserRole.ESTABLISHMENT_ADMIN))):
+    """
+    NOUVEAU (demande explicite de M. Faustin: profil d'etablissement avec
+    logo). Reserve a l'admin - une decision d'image de marque, pas a
+    changer par n'importe quel membre du personnel.
+    """
+    establishment = db.query(Establishment).filter(Establishment.id == current_user.establishment_id).first()
+    if not establishment:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Etablissement introuvable")
+    establishment.logo_url = payload.logo_url
+    db.commit()
+    db.refresh(establishment)
     return establishment
 
 

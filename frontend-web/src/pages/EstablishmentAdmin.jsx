@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { BarChart, Stethoscope, Calendar, Pill, Package, FlaskConical, Users, MessageSquare, Building2, Clock, Clipboard, FileBarChart, Wrench, Receipt, BedDouble } from 'lucide-react'
+import { BarChart, Stethoscope, Calendar, Pill, Package, FlaskConical, Users, MessageSquare, Building2, Clock, Clipboard, FileBarChart, Wrench, Receipt, BedDouble, UserCircle } from 'lucide-react'
 import api, { getErrorMessage } from '../api/client'
 import { SPECIALTIES, DAYS_OF_WEEK } from '../constants'
 import StarRating from '../components/StarRating'
@@ -26,6 +26,7 @@ import InvoiceManager from '../components/InvoiceManager'
 import InventoryManager from '../components/InventoryManager'
 import PharmacyReportsManager from '../components/PharmacyReportsManager'
 import RoomsManager from '../components/RoomsManager'
+import EstablishmentProfileManager from '../components/EstablishmentProfileManager'
 import EquipmentSuppliersManager from '../components/EquipmentSuppliersManager'
 import SidebarLayout from '../components/SidebarLayout'
 
@@ -378,6 +379,7 @@ export default function EstablishmentAdmin() {
   // cote serveur dans patients.py::establishment_patient_directory).
   const showPatientsTab = !isPharmacy && !isLab
   const tabs = [
+    { id: 'profile', label: 'Profil', icon: UserCircle },
     ...baseTabs,
     ...(showPatientsTab ? [{ id: 'patients', label: 'Patients', icon: Users }] : []),
     { id: 'messages', label: 'Messages', icon: MessageSquare },
@@ -394,8 +396,12 @@ export default function EstablishmentAdmin() {
     { id: 'billing', label: 'Facturation', icon: Receipt },
     { id: 'reports', label: 'Rapports', icon: FileBarChart },
     // NOUVEAU (equipement + fournisseurs, dernier chantier du cahier des
-    // charges): meme raisonnement, disponible partout.
-    { id: 'equipment', label: 'Equipement', icon: Wrench },
+    // charges): disponible pour hopital/clinique et laboratoire.
+    // EXCLU pour la pharmacie (demande explicite de M. Faustin): son
+    // propre "Inventaire" (medicaments, lots, peremption) couvre deja son
+    // besoin - un onglet "Equipement" separe avec un "stock general"
+    // distinct aurait fait doublon et pretait a confusion.
+    ...(isPharmacy ? [] : [{ id: 'equipment', label: 'Equipement', icon: Wrench }]),
     // NOUVEAU (demande M. Faustin): Statistiques desormais en toute
     // derniere position du menu, plus en tete - l'onglet operationnel
     // (rendez-vous/commandes/analyses) doit primer visuellement.
@@ -427,6 +433,7 @@ export default function EstablishmentAdmin() {
     <SidebarLayout
       portalLabel={isLab ? 'Portail Laboratoire' : isPharmacy ? 'Portail Pharmacie' : 'Portail Hôpital / Clinique'}
       title={establishment.name}
+      logoUrl={establishment.logo_url}
       subtitle={isLab ? 'Gestion des demandes d\'analyses.' : isPharmacy ? 'Gestion de l\'inventaire et des commandes de ta pharmacie.' : 'Gestion des medecins, rendez-vous et pharmacie de ton etablissement.'}
       tabs={tabs}
       activeTab={tab}
@@ -857,6 +864,10 @@ export default function EstablishmentAdmin() {
         </div>
       )}
 
+      {tab === 'profile' && (
+        <EstablishmentProfileManager establishment={establishment} onUpdated={(updated) => setEstablishment(updated)} />
+      )}
+
       {tab === 'team' && <TeamMembers />}
 
       {tab === 'hours' && <OpeningHoursManager />}
@@ -870,7 +881,7 @@ export default function EstablishmentAdmin() {
 
       {tab === 'reports' && (isPharmacy ? <PharmacyReportsManager /> : <ReportsManager />)}
 
-      {tab === 'equipment' && <EquipmentSuppliersManager />}
+      {tab === 'equipment' && !isPharmacy && <EquipmentSuppliersManager />}
     </SidebarLayout>
   )
 }
