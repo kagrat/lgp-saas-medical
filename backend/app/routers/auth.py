@@ -15,7 +15,7 @@ from sqlalchemy.orm import Session
 from app.database import get_db
 from app.models import User, Patient, UserRole, AuditLog, PasswordResetToken
 from app.schemas import (
-    LoginRequest, TokenResponse, PatientRegisterRequest, UserProfileUpdate, PasswordChangeRequest, UserProfileOut,
+    LoginRequest, TokenResponse, PatientRegisterRequest, UserProfileUpdate, PasswordChangeRequest, UserProfileOut, UserPhotoUpdate,
     ForgotPasswordRequest, ResetPasswordRequest,
 )
 from app.security import verify_password, hash_password, create_access_token
@@ -44,7 +44,7 @@ def _to_profile_out(user: User) -> UserProfileOut:
     return UserProfileOut(
         id=user.id, email=user.email, full_name=user.full_name, phone=user.phone,
         role=user.role, establishment_id=user.establishment_id,
-        gender=user.gender, residence=user.residence,
+        gender=user.gender, residence=user.residence, photo_url=user.photo_url,
     )
 
 
@@ -152,6 +152,19 @@ def update_profile(payload: UserProfileUpdate, db: Session = Depends(get_db),
 
     db.add(AuditLog(user_id=current_user.id, establishment_id=current_user.establishment_id,
                      action="update_profile", details="Profil modifie"))
+    db.commit()
+    db.refresh(current_user)
+    return _to_profile_out(current_user)
+
+
+@router.patch("/me/photo", response_model=UserProfileOut)
+def update_profile_photo(payload: UserPhotoUpdate, db: Session = Depends(get_db),
+                          current_user: User = Depends(get_current_user)):
+    """NOUVEAU (demande explicite de M. Faustin: "un profil pour chaque
+    medecin ou chaque utilisateur... il peut ajouter des photos a son
+    profil") - ouvert a TOUT utilisateur connecte (medecin, infirmier,
+    secretaire...), chacun ne modifie que sa PROPRE photo."""
+    current_user.photo_url = payload.photo_url
     db.commit()
     db.refresh(current_user)
     return _to_profile_out(current_user)

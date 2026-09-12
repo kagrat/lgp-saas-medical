@@ -31,6 +31,19 @@ export default function MyPatients() {
   const [newFlagLabel, setNewFlagLabel] = useState('')
   const [savingFlag, setSavingFlag] = useState(false)
 
+  // NOUVEAU (demande explicite de M. Faustin: "une option dans chaque
+  // dossier de consultation pour admettre un patient en hospitalisation
+  // sans se remettre a saisir a nouveau les informations du patient") -
+  // le patient est deja identifie (selectedId/detail.id), donc ce
+  // formulaire ne demande jamais rien d'autre que les details propres a
+  // CETTE hospitalisation.
+  const [showAdmitForm, setShowAdmitForm] = useState(false)
+  const [departments, setDepartments] = useState([])
+  const [rooms, setRooms] = useState([])
+  const [admitForm, setAdmitForm] = useState({ department_id: '', room_id: '', diagnosis: '', expected_discharge_date: '' })
+  const [savingAdmit, setSavingAdmit] = useState(false)
+  const [admitMessage, setAdmitMessage] = useState('')
+
   const [docForm, setDocForm] = useState({ appointment_id: '', document_type: 'consultation_note', title: '', content: '' })
   const [prescriptionItems, setPrescriptionItems] = useState([])
   const [savingDoc, setSavingDoc] = useState(false)
@@ -120,6 +133,47 @@ export default function MyPatients() {
       setDetail(data)
     } catch (err) {
       setError(getErrorMessage(err, 'Suppression impossible.'))
+    }
+  }
+
+  async function toggleAdmitForm() {
+    const next = !showAdmitForm
+    setShowAdmitForm(next)
+    setAdmitMessage('')
+    if (next && departments.length === 0) {
+      try {
+        const [deptRes, roomsRes] = await Promise.all([
+          api.get('/establishments/departments'),
+          api.get('/services/rooms/mine'),
+        ])
+        setDepartments(deptRes.data)
+        setRooms(roomsRes.data)
+      } catch (err) {
+        setError('Impossible de charger les departements/chambres.')
+      }
+    }
+  }
+
+  async function submitAdmission(e) {
+    e.preventDefault()
+    setSavingAdmit(true)
+    setError('')
+    setAdmitMessage('')
+    try {
+      await api.post('/admissions', {
+        patient_id: selectedId,
+        department_id: admitForm.department_id || null,
+        room_id: admitForm.room_id || null,
+        diagnosis: admitForm.diagnosis || null,
+        expected_discharge_date: admitForm.expected_discharge_date || null,
+      })
+      setAdmitMessage('Patient admis en hospitalisation - retrouve-le dans l\'onglet "Hospitalisations".')
+      setAdmitForm({ department_id: '', room_id: '', diagnosis: '', expected_discharge_date: '' })
+      setShowAdmitForm(false)
+    } catch (err) {
+      setError(getErrorMessage(err, "Impossible d'admettre ce patient."))
+    } finally {
+      setSavingAdmit(false)
     }
   }
 

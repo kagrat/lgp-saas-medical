@@ -14,6 +14,7 @@ import StartConversation from '../components/StartConversation'
 import MySchedule from '../components/MySchedule'
 import SidebarLayout from '../components/SidebarLayout'
 import NotificationBell from '../components/NotificationBell'
+import UserProfileBadge from '../components/UserProfileBadge'
 
 export default function DesktopPharmacistDashboard() {
   const [establishment, setEstablishment] = useState(null)
@@ -157,7 +158,7 @@ export default function DesktopPharmacistDashboard() {
       activeTab={tab}
       onTabChange={(id) => { setTab(id); setError('') }}
       accentColor="bg-success-700"
-      headerRight={<NotificationBell />}
+      headerRight={<div className="flex items-center gap-4"><NotificationBell /><UserProfileBadge /></div>}
     >
       {error && <p className="text-clay-600 mb-6">{error}</p>}
 

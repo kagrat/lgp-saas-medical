@@ -260,6 +260,12 @@ class User(Base):
     role = Column(Enum(UserRole), nullable=False)
     is_active = Column(Boolean, default=True)
     created_at = Column(DateTime, default=datetime.utcnow)
+    # NOUVEAU (demande explicite de M. Faustin: "un profil pour chaque
+    # medecin ou chaque utilisateur... il peut ajouter des photos a son
+    # profil") - sur User (pas seulement Doctor) pour couvrir tout le
+    # personnel, pas seulement les medecins. Meme approche que le logo
+    # d'etablissement (image stockee en base, format data URL base64).
+    photo_url = Column(Text, nullable=True)
 
     establishment = relationship("Establishment", back_populates="users")
     doctor_profile = relationship("Doctor", back_populates="user", uselist=False)

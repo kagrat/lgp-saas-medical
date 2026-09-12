@@ -1066,6 +1066,7 @@ class UserProfileOut(BaseModel):
     residence: Optional[str] = None
     role: UserRole
     establishment_id: Optional[str] = None
+    photo_url: Optional[str] = None
 
 
 class UserProfileUpdate(BaseModel):
@@ -1074,6 +1075,20 @@ class UserProfileUpdate(BaseModel):
     email: Optional[EmailStr] = None
     gender: Optional[str] = None
     residence: Optional[str] = None
+
+
+class UserPhotoUpdate(BaseModel):
+    """NOUVEAU (demande explicite de M. Faustin: "il peut ajouter des
+    photos a son profil") - meme approche et memes limites que le logo
+    d'etablissement (EstablishmentLogoUpdate)."""
+    photo_url: str = Field(max_length=700_000)
+
+    @field_validator("photo_url")
+    @classmethod
+    def valid_data_url(cls, v: str) -> str:
+        if not v.startswith("data:image/"):
+            raise ValueError("La photo doit etre une image valide (PNG ou JPEG)")
+        return v
 
 
 class PasswordChangeRequest(BaseModel):

@@ -6,6 +6,8 @@ import { SELECTABLE_DOCUMENT_TYPES, DOCUMENT_TYPE_LABELS } from '../components/D
 import ChatWindow from '../components/ChatWindow'
 import StartConversation from '../components/StartConversation'
 import InternalMessaging from '../components/InternalMessaging'
+import AdmitPatientShortcut from '../components/AdmitPatientShortcut'
+import UserProfileBadge from '../components/UserProfileBadge'
 import MyPatients from '../components/MyPatients'
 import Hospitalizations from '../components/Hospitalizations'
 import PrescriptionItemsEditor from '../components/PrescriptionItemsEditor'
@@ -276,7 +278,7 @@ export default function DesktopDoctorDashboard() {
       activeTab={tab}
       onTabChange={(id) => { setTab(id); setError('') }}
       accentColor="bg-secondary-500"
-      headerRight={<NotificationBell />}
+      headerRight={<div className="flex items-center gap-4"><NotificationBell /><UserProfileBadge /></div>}
     >
       {error && <p className="text-clay-600 mb-6">{error}</p>}
 
@@ -371,6 +373,13 @@ export default function DesktopDoctorDashboard() {
                         {cancellingId === a.id ? '...' : 'Annuler'}
                       </button>
                     </>
+                  )}
+
+                  {/* NOUVEAU (demande explicite de M. Faustin: admettre
+                      un patient en hospitalisation directement depuis sa
+                      consultation, sans ressaisir ses informations). */}
+                  {(a.status === 'confirmed' || a.status === 'arrived') && (
+                    <AdmitPatientShortcut patientId={a.patient_id} patientName={a.patient_name} onAdmitted={loadAppointments} />
                   )}
 
                   {transferringId === a.id && (

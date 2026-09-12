@@ -21,6 +21,7 @@ import DoctorAvailabilityManager from '../components/DoctorAvailabilityManager'
 import DoctorReviewsList from '../components/DoctorReviewsList'
 import ReservationReviewForm from '../components/ReservationReviewForm'
 import NotificationBell from '../components/NotificationBell'
+import UserProfileBadge from '../components/UserProfileBadge'
 import ReportsManager from '../components/ReportsManager'
 import InvoiceManager from '../components/InvoiceManager'
 import InventoryManager from '../components/InventoryManager'
@@ -441,7 +442,7 @@ export default function EstablishmentAdmin() {
       activeTab={tab}
       onTabChange={(id) => { setTab(id); setError('') }}
       accentColor={isLab ? 'bg-secondary-900' : isPharmacy ? 'bg-success-700' : 'bg-primary-500'}
-      headerRight={<NotificationBell />}
+      headerRight={<div className="flex items-center gap-4"><NotificationBell /><UserProfileBadge /></div>}
     >
       {error && <p className="text-clay-600 mb-6">{error}</p>}
 

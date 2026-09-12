@@ -10,6 +10,7 @@ import ChatWindow from '../components/ChatWindow'
 import MySchedule from '../components/MySchedule'
 import SidebarLayout from '../components/SidebarLayout'
 import NotificationBell from '../components/NotificationBell'
+import UserProfileBadge from '../components/UserProfileBadge'
 
 export default function DesktopLabTechDashboard() {
   const [establishment, setEstablishment] = useState(null)
@@ -106,7 +107,7 @@ export default function DesktopLabTechDashboard() {
       activeTab={tab}
       onTabChange={(id) => { setTab(id); setError('') }}
       accentColor="bg-secondary-900"
-      headerRight={<NotificationBell />}
+      headerRight={<div className="flex items-center gap-4"><NotificationBell /><UserProfileBadge /></div>}
     >
       {error && <p className="text-clay-600 mb-6">{error}</p>}
 
