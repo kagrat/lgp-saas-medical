@@ -260,6 +260,19 @@ class User(Base):
     role = Column(Enum(UserRole), nullable=False)
     is_active = Column(Boolean, default=True)
     created_at = Column(DateTime, default=datetime.utcnow)
+    # NOUVEAU (audit de securite complet, demande explicite de M. Faustin:
+    # traiter les 5 points trouves): protection anti force-brute sur la
+    # connexion - stockee en base (pas seulement en memoire, qui se
+    # perdrait a chaque redemarrage/redeploiement du serveur, rendant la
+    # protection inutile en pratique sur Railway).
+    failed_login_attempts = Column(Integer, default=0, nullable=False)
+    locked_until = Column(DateTime, nullable=True)
+    # NOUVEAU (audit de securite complet, demande explicite de M. Faustin:
+    # traiter les 5 points trouves): authentification a deux facteurs,
+    # par code envoye par email (reutilise l'infrastructure email deja en
+    # place pour la reinitialisation de mot de passe) - desactivee par
+    # defaut, chaque utilisateur choisit de l'activer sur son compte.
+    two_factor_enabled = Column(Boolean, default=False, nullable=False)
     # NOUVEAU (demande explicite de M. Faustin: "un profil pour chaque
     # medecin ou chaque utilisateur... il peut ajouter des photos a son
     # profil") - sur User (pas seulement Doctor) pour couvrir tout le
@@ -286,6 +299,25 @@ class PasswordResetToken(Base):
     id = Column(UUID(as_uuid=False), primary_key=True, default=gen_uuid)
     user_id = Column(UUID(as_uuid=False), ForeignKey("users.id"), nullable=False)
     token_hash = Column(String(64), nullable=False, index=True)  # sha256 hexdigest
+    expires_at = Column(DateTime, nullable=False)
+    used = Column(Boolean, default=False)
+    created_at = Column(DateTime, default=datetime.utcnow)
+
+    user = relationship("User")
+
+
+class TwoFactorCode(Base):
+    """
+    NOUVEAU (audit de securite complet, demande explicite de M. Faustin):
+    code a 6 chiffres envoye par email, valable 10 minutes, usage unique -
+    meme principe de stockage que PasswordResetToken (jamais le code brut
+    en base, seulement son hash).
+    """
+    __tablename__ = "two_factor_codes"
+
+    id = Column(UUID(as_uuid=False), primary_key=True, default=gen_uuid)
+    user_id = Column(UUID(as_uuid=False), ForeignKey("users.id"), nullable=False)
+    code_hash = Column(String(64), nullable=False, index=True)  # sha256 hexdigest
     expires_at = Column(DateTime, nullable=False)
     used = Column(Boolean, default=False)
     created_at = Column(DateTime, default=datetime.utcnow)

@@ -24,6 +24,25 @@ class TokenResponse(BaseModel):
     establishment_id: Optional[str] = None
 
 
+class LoginResponse(BaseModel):
+    """NOUVEAU (audit de securite complet): reponse de connexion qui peut
+    soit contenir un vrai jeton (2FA desactivee ou pas d'utilisateur a
+    verifier), soit indiquer qu'un code de verification vient d'etre
+    envoye par email (2FA activee)."""
+    requires_2fa: bool = False
+    token: Optional[TokenResponse] = None
+    message: Optional[str] = None
+
+
+class Verify2FARequest(BaseModel):
+    email: EmailStr
+    code: str = Field(min_length=6, max_length=6)
+
+
+class TwoFactorToggle(BaseModel):
+    enabled: bool
+
+
 class WalkInPatientCreate(BaseModel):
     """NOUVEAU (demande M. Faustin): le personnel d'accueil cree un patient
     qui se presente physiquement, sans passer par l'auto-inscription. Email
@@ -1067,6 +1086,7 @@ class UserProfileOut(BaseModel):
     role: UserRole
     establishment_id: Optional[str] = None
     photo_url: Optional[str] = None
+    two_factor_enabled: bool = False
 
 
 class UserProfileUpdate(BaseModel):

@@ -19,6 +19,7 @@ export default function UserProfileBadge() {
   const [specialty, setSpecialty] = useState(null)
   const [open, setOpen] = useState(false)
   const [uploading, setUploading] = useState(false)
+  const [togglingTwoFactor, setTogglingTwoFactor] = useState(false)
   const fileInputRef = useRef(null)
 
   useEffect(() => {
@@ -86,6 +87,21 @@ export default function UserProfileBadge() {
     }
   }
 
+  // NOUVEAU (audit de securite complet, demande explicite de M. Faustin):
+  // chaque utilisateur active/desactive la double authentification
+  // directement depuis son profil.
+  async function toggleTwoFactor() {
+    setTogglingTwoFactor(true)
+    try {
+      await api.patch('/auth/2fa', { enabled: !profile.two_factor_enabled })
+      setProfile({ ...profile, two_factor_enabled: !profile.two_factor_enabled })
+    } catch (err) {
+      // silencieux - pas critique
+    } finally {
+      setTogglingTwoFactor(false)
+    }
+  }
+
   if (!profile) return null
 
   const subtitle = specialty || ROLE_LABELS[profile.role] || profile.role
@@ -118,6 +134,24 @@ export default function UserProfileBadge() {
             {uploading ? 'Envoi...' : 'Changer la photo'}
           </button>
           <input ref={fileInputRef} type="file" accept="image/png,image/jpeg" onChange={handleFileChange} className="hidden" />
+
+          <div className="mt-3 pt-3 border-t border-forest-100">
+            <div className="flex items-center justify-between mb-1">
+              <p className="text-xs font-medium text-forest-900">Double authentification</p>
+              <button
+                onClick={toggleTwoFactor}
+                disabled={togglingTwoFactor}
+                className={`text-xs px-2 py-1 rounded-full font-medium transition disabled:opacity-50 ${profile.two_factor_enabled ? 'bg-success-500/10 text-success-700' : 'bg-forest-50 text-forest-700'}`}
+              >
+                {togglingTwoFactor ? '...' : profile.two_factor_enabled ? 'Activée' : 'Désactivée'}
+              </button>
+            </div>
+            <p className="text-xs text-forest-700">
+              {profile.two_factor_enabled
+                ? 'Un code te sera envoye par email a chaque connexion.'
+                : 'Ajoute un code envoye par email a chaque connexion, pour plus de securite.'}
+            </p>
+          </div>
         </div>
       )}
     </div>

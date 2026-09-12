@@ -5,6 +5,7 @@ import { PatientSidebarChrome } from '../components/PatientLayout'
 
 export default function Profile() {
   const [profile, setProfile] = useState(null)
+  const [togglingTwoFactor, setTogglingTwoFactor] = useState(false)
   const [infoForm, setInfoForm] = useState({ full_name: '', phone: '', email: '', gender: '', residence: '' })
   const [passwordForm, setPasswordForm] = useState({ current_password: '', new_password: '', confirm_password: '' })
   const [error, setError] = useState('')
@@ -127,6 +128,18 @@ export default function Profile() {
       setError(getErrorMessage(err, 'Impossible de modifier le mot de passe.'))
     } finally {
       setSavingPassword(false)
+    }
+  }
+
+  async function toggleTwoFactor() {
+    setTogglingTwoFactor(true)
+    try {
+      await api.patch('/auth/2fa', { enabled: !profile.two_factor_enabled })
+      setProfile({ ...profile, two_factor_enabled: !profile.two_factor_enabled })
+    } catch (err) {
+      setError(getErrorMessage(err, 'Impossible de modifier ce reglage.'))
+    } finally {
+      setTogglingTwoFactor(false)
     }
   }
 
@@ -319,6 +332,27 @@ export default function Profile() {
             {savingPassword ? 'Modification...' : 'Modifier le mot de passe'}
           </button>
         </form>
+      </section>
+
+      {/* NOUVEAU (audit de securite complet, demande explicite de M.
+          Faustin): double authentification, activable par chaque
+          utilisateur sur son propre compte. */}
+      <section className="mt-10">
+        <h2 className="font-display text-xl font-semibold text-forest-900 mb-4">Double authentification</h2>
+        <div className="bg-white border border-forest-100 rounded-xl p-5 flex items-center justify-between">
+          <p className="text-sm text-forest-700 max-w-md">
+            {profile?.two_factor_enabled
+              ? 'Un code te sera envoye par email a chaque connexion, en plus de ton mot de passe.'
+              : 'Ajoute un code envoye par email a chaque connexion, pour proteger davantage ton compte.'}
+          </p>
+          <button
+            onClick={toggleTwoFactor}
+            disabled={togglingTwoFactor}
+            className={`text-sm px-4 py-2 rounded-full font-medium transition disabled:opacity-50 shrink-0 ml-4 ${profile?.two_factor_enabled ? 'bg-success-500/10 text-success-700' : 'border border-forest-300 text-forest-900 hover:bg-forest-50'}`}
+          >
+            {togglingTwoFactor ? '...' : profile?.two_factor_enabled ? 'Activée - désactiver' : 'Activer'}
+          </button>
+        </div>
       </section>
     </div>
   )

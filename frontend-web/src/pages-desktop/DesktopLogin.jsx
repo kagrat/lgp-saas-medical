@@ -25,6 +25,18 @@ export default function DesktopLogin() {
   const [notice, setNotice] = useState('')
   const [loading, setLoading] = useState(false)
   const [showForgotPassword, setShowForgotPassword] = useState(false)
+  const [requires2FA, setRequires2FA] = useState(false)
+  const [code, setCode] = useState('')
+  const [verifying, setVerifying] = useState(false)
+
+  function routeAfterLogin(role) {
+    const target = ROLE_ROUTES[role]
+    if (target) {
+      navigate(target)
+    } else {
+      setError("Ce type de compte n'a pas encore d'espace dedie sur cette application.")
+    }
+  }
 
   useEffect(() => {
     if (consumeSessionExpiredFlag()) {
@@ -38,19 +50,31 @@ export default function DesktopLogin() {
     setLoading(true)
     try {
       const { data } = await api.post('/auth/login', { email, password })
-      saveSession(data.access_token, data.role, data.establishment_id)
-      const target = ROLE_ROUTES[data.role]
-      if (target) {
-        navigate(target)
+      if (data.requires_2fa) {
+        setRequires2FA(true)
       } else {
-        // CORRECTIF: avant, un role sans espace dedie renvoyait
-        // silencieusement a la connexion, sans explication.
-        setError("Ce type de compte n'a pas encore d'espace dedie sur cette application.")
+        saveSession(data.token.access_token, data.token.role, data.token.establishment_id)
+        routeAfterLogin(data.token.role)
       }
     } catch (err) {
       setError(getErrorMessage(err, 'Connexion impossible. Verifie tes identifiants.'))
     } finally {
       setLoading(false)
+    }
+  }
+
+  async function handleVerifyCode(e) {
+    e.preventDefault()
+    setError('')
+    setVerifying(true)
+    try {
+      const { data } = await api.post('/auth/verify-2fa', { email, code })
+      saveSession(data.access_token, data.role, data.establishment_id)
+      routeAfterLogin(data.role)
+    } catch (err) {
+      setError(getErrorMessage(err, 'Code invalide ou expire.'))
+    } finally {
+      setVerifying(false)
     }
   }
 
@@ -71,27 +95,43 @@ export default function DesktopLogin() {
             </p>
           )}
 
-          <form onSubmit={handleSubmit} className="space-y-4">
-            <div>
-              <label htmlFor="email" className="block text-sm font-medium text-forest-900 mb-1">Email professionnel</label>
-              <input
-                id="email" type="email" required value={email} onChange={(e) => setEmail(e.target.value)}
-                className="w-full rounded-lg border border-forest-100 px-4 py-2.5 focus:border-forest-500"
-              />
-            </div>
-            <div>
-              <label htmlFor="password" className="block text-sm font-medium text-forest-900 mb-1">Mot de passe</label>
-              <input
-                id="password" type="password" required value={password} onChange={(e) => setPassword(e.target.value)}
-                className="w-full rounded-lg border border-forest-100 px-4 py-2.5 focus:border-forest-500"
-              />
-            </div>
+          <form onSubmit={requires2FA ? handleVerifyCode : handleSubmit} className="space-y-4">
+            {!requires2FA ? (
+              <>
+                <div>
+                  <label htmlFor="email" className="block text-sm font-medium text-forest-900 mb-1">Email professionnel</label>
+                  <input
+                    id="email" type="email" required value={email} onChange={(e) => setEmail(e.target.value)}
+                    className="w-full rounded-lg border border-forest-100 px-4 py-2.5 focus:border-forest-500"
+                  />
+                </div>
+                <div>
+                  <label htmlFor="password" className="block text-sm font-medium text-forest-900 mb-1">Mot de passe</label>
+                  <input
+                    id="password" type="password" required value={password} onChange={(e) => setPassword(e.target.value)}
+                    className="w-full rounded-lg border border-forest-100 px-4 py-2.5 focus:border-forest-500"
+                  />
+                </div>
+              </>
+            ) : (
+              <div>
+                <p className="text-sm text-forest-700 mb-3">
+                  Un code de verification vient d'etre envoye a {email}. Saisis-le ci-dessous.
+                </p>
+                <label htmlFor="code" className="block text-sm font-medium text-forest-900 mb-1">Code a 6 chiffres</label>
+                <input
+                  id="code" type="text" inputMode="numeric" maxLength={6} required value={code}
+                  onChange={(e) => setCode(e.target.value.replace(/\D/g, ''))}
+                  className="w-full rounded-lg border border-forest-100 px-4 py-2.5 focus:border-forest-500 text-center text-2xl tracking-widest"
+                />
+              </div>
+            )}
             {error && <p className="text-clay-600 text-sm">{error}</p>}
             <button
-              type="submit" disabled={loading}
+              type="submit" disabled={requires2FA ? verifying : loading}
               className="w-full rounded-full bg-primary-700 text-white py-3 font-medium hover:bg-primary-900 transition disabled:opacity-50"
             >
-              {loading ? 'Connexion...' : 'Se connecter'}
+              {requires2FA ? (verifying ? 'Verification...' : 'Verifier le code') : (loading ? 'Connexion...' : 'Se connecter')}
             </button>
           </form>
 
