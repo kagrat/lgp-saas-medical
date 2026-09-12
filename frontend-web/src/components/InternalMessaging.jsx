@@ -15,7 +15,11 @@ import StartConversation from './StartConversation'
  */
 export default function InternalMessaging() {
   const role = getRole()
-  const canSearchStaff = role === 'establishment_admin' || role === 'hr_manager'
+  // CORRIGE (demande explicite de M. Faustin: verifier si un medecin
+  // peut ecrire a la reception ou a un confrere - c'etait NON avant,
+  // seul admin/RH avait acces a l'annuaire). Desormais ouvert a tout le
+  // personnel, alignee sur la restriction elargie cote serveur.
+  const canSearchStaff = role !== 'patient'
   const [conversations, setConversations] = useState([])
   const [selectedUserId, setSelectedUserId] = useState(null)
   const [selectedUserName, setSelectedUserName] = useState(null)

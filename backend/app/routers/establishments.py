@@ -271,10 +271,24 @@ def create_staff_member(payload: StaffCreate, db: Session = Depends(get_db),
 
 @router.get("/staff", response_model=list[StaffOut])
 def list_staff(db: Session = Depends(get_db),
-               current_user: User = Depends(require_roles(UserRole.ESTABLISHMENT_ADMIN, UserRole.HR_MANAGER))):
+               current_user: User = Depends(require_roles(*ALLOWED_STAFF_ROLES, UserRole.DOCTOR, UserRole.ESTABLISHMENT_ADMIN))):
+    """
+    CORRIGE (demande explicite de M. Faustin: verifier si un medecin peut
+    ecrire a la reception ou a un confrere - reponse etait NON, seul
+    admin/RH pouvaient consulter cet annuaire pour demarrer une
+    conversation interne). La LECTURE est desormais ouverte a tout le
+    personnel (annuaire des collegues, information non sensible) - les
+    operations d'ECRITURE (creer, desactiver, modifier un profil staff)
+    restent reservees a admin/RH via leurs propres controles separes,
+    inchanges.
+    """
     staff = (
         db.query(User)
-        .filter(User.establishment_id == current_user.establishment_id, User.role.in_(list(ALLOWED_STAFF_ROLES)))
+        .filter(
+            User.establishment_id == current_user.establishment_id,
+            User.role.in_(list(ALLOWED_STAFF_ROLES) + [UserRole.DOCTOR]),
+            User.id != current_user.id,
+        )
         .order_by(User.full_name)
         .all()
     )

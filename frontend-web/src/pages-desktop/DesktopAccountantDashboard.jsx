@@ -1,8 +1,11 @@
 import { useState } from 'react'
-import { Receipt, Clock } from 'lucide-react'
+import { Receipt, Clock, MessageCircle } from 'lucide-react'
 import MySchedule from '../components/MySchedule'
 import InvoiceManager from '../components/InvoiceManager'
 import SidebarLayout from '../components/SidebarLayout'
+import InternalMessaging from '../components/InternalMessaging'
+import NotificationBell from '../components/NotificationBell'
+import UserProfileBadge from '../components/UserProfileBadge'
 
 /**
  * NOUVEAU (facturation reelle, chantier prioritaire du cahier des
@@ -21,6 +24,7 @@ export default function DesktopAccountantDashboard() {
   const tabs = [
     { id: 'billing', label: 'Facturation', icon: Receipt },
     { id: 'schedule', label: 'Mon planning', icon: Clock },
+    { id: 'internal-messages', label: 'Messagerie interne', icon: MessageCircle },
   ]
 
   return (
@@ -31,9 +35,12 @@ export default function DesktopAccountantDashboard() {
       activeTab={tab}
       onTabChange={setTab}
       accentColor="bg-primary-500"
+      headerRight={<div className="flex items-center gap-4"><NotificationBell /><UserProfileBadge /></div>}
     >
       {tab === 'billing' && <InvoiceManager />}
       {tab === 'schedule' && <MySchedule />}
+
+      {tab === 'internal-messages' && <InternalMessaging />}
     </SidebarLayout>
   )
 }

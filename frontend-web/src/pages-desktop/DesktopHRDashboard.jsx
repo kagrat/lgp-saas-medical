@@ -1,10 +1,13 @@
 import { useEffect, useState } from 'react'
-import { Users, CalendarClock, Clock } from 'lucide-react'
+import { Users, CalendarClock, Clock, MessageCircle } from 'lucide-react'
 import api, { getErrorMessage } from '../api/client'
 import TeamMembers from '../components/TeamMembers'
 import SchedulingManager from '../components/SchedulingManager'
 import MySchedule from '../components/MySchedule'
 import SidebarLayout from '../components/SidebarLayout'
+import InternalMessaging from '../components/InternalMessaging'
+import NotificationBell from '../components/NotificationBell'
+import UserProfileBadge from '../components/UserProfileBadge'
 
 /**
  * NOUVEAU (gestion interne complete, demande M. Faustin): espace du
@@ -32,6 +35,7 @@ export default function DesktopHRDashboard() {
     { id: 'team', label: 'Equipe', icon: Users },
     { id: 'scheduling', label: 'Planning & Conges', icon: CalendarClock },
     { id: 'my-schedule', label: 'Mon planning', icon: Clock },
+    { id: 'internal-messages', label: 'Messagerie interne', icon: MessageCircle },
   ]
 
   return (
@@ -43,12 +47,15 @@ export default function DesktopHRDashboard() {
       activeTab={tab}
       onTabChange={(id) => { setTab(id); setError('') }}
       accentColor="bg-primary-500"
+      headerRight={<div className="flex items-center gap-4"><NotificationBell /><UserProfileBadge /></div>}
     >
       {error && <p className="text-clay-600 mb-6">{error}</p>}
 
       {tab === 'team' && <TeamMembers />}
       {tab === 'scheduling' && <SchedulingManager />}
       {tab === 'my-schedule' && <MySchedule />}
+
+      {tab === 'internal-messages' && <InternalMessaging />}
     </SidebarLayout>
   )
 }

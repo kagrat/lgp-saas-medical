@@ -8,6 +8,7 @@ import StartConversation from '../components/StartConversation'
 import InternalMessaging from '../components/InternalMessaging'
 import AdmitPatientShortcut from '../components/AdmitPatientShortcut'
 import UserProfileBadge from '../components/UserProfileBadge'
+import QuickMessageBox from '../components/QuickMessageBox'
 import MyPatients from '../components/MyPatients'
 import Hospitalizations from '../components/Hospitalizations'
 import PrescriptionItemsEditor from '../components/PrescriptionItemsEditor'
@@ -355,6 +356,13 @@ export default function DesktopDoctorDashboard() {
                         </button>
                       </>
                     )}
+                  </div>
+                  {/* NOUVEAU (demande explicite de M. Faustin, manque
+                      trouve lors d'un audit complet: envoyer un message
+                      directement depuis la consultation, sans aller dans
+                      l'onglet Messages). */}
+                  <div className="mt-2">
+                    <QuickMessageBox patientId={a.patient_id} />
                   </div>
                   {(a.status === 'confirmed' || a.status === 'arrived') && (
                     <>

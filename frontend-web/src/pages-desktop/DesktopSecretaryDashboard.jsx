@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { Calendar, Users, Clock, UserPlus, CalendarPlus } from 'lucide-react'
+import { Calendar, Users, Clock, UserPlus, CalendarPlus, MessageCircle } from 'lucide-react'
 import api, { getErrorMessage } from '../api/client'
 import { AppointmentStatusBadge } from '../components/AppointmentStatusUI'
 import FilterTabs from '../components/FilterTabs'
@@ -8,6 +8,9 @@ import WalkInPatientForm from '../components/WalkInPatientForm'
 import CompleteRegistrationForm from '../components/CompleteRegistrationForm'
 import ReceptionBookAppointment from '../components/ReceptionBookAppointment'
 import MySchedule from '../components/MySchedule'
+import InternalMessaging from '../components/InternalMessaging'
+import NotificationBell from '../components/NotificationBell'
+import UserProfileBadge from '../components/UserProfileBadge'
 import SidebarLayout from '../components/SidebarLayout'
 
 export default function DesktopSecretaryDashboard() {
@@ -110,6 +113,7 @@ export default function DesktopSecretaryDashboard() {
     { id: 'nouveau-patient', label: 'Nouveau patient', icon: UserPlus },
     { id: 'prendre-rendez-vous', label: 'Prendre rendez-vous', icon: CalendarPlus },
     { id: 'schedule', label: 'Mon planning', icon: Clock },
+    { id: 'internal-messages', label: 'Messagerie interne', icon: MessageCircle },
   ]
 
   const appointmentFilterOptions = [
@@ -130,6 +134,7 @@ export default function DesktopSecretaryDashboard() {
       activeTab={tab}
       onTabChange={(id) => { setTab(id); setError('') }}
       accentColor="bg-primary-500"
+      headerRight={<div className="flex items-center gap-4"><NotificationBell /><UserProfileBadge /></div>}
     >
       {error && <p className="text-clay-600 mb-6">{error}</p>}
 
@@ -217,6 +222,8 @@ export default function DesktopSecretaryDashboard() {
       {tab === 'prendre-rendez-vous' && <ReceptionBookAppointment />}
 
       {tab === 'schedule' && <MySchedule />}
+
+      {tab === 'internal-messages' && <InternalMessaging />}
     </SidebarLayout>
   )
 }

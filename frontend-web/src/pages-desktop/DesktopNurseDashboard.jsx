@@ -1,9 +1,12 @@
 import { useEffect, useState } from 'react'
-import { BedDouble, Clock, ClipboardCheck } from 'lucide-react'
+import { BedDouble, Clock, ClipboardCheck, MessageCircle } from 'lucide-react'
 import api, { getErrorMessage } from '../api/client'
 import MySchedule from '../components/MySchedule'
 import AppointmentCheckIn from '../components/AppointmentCheckIn'
 import SidebarLayout from '../components/SidebarLayout'
+import InternalMessaging from '../components/InternalMessaging'
+import NotificationBell from '../components/NotificationBell'
+import UserProfileBadge from '../components/UserProfileBadge'
 
 /**
  * NOUVEAU (hospitalisation, demande confirmee par M. Faustin): espace
@@ -134,6 +137,7 @@ export default function DesktopNurseDashboard() {
     { id: 'arrivees', label: 'Arrivées du jour', icon: ClipboardCheck },
     { id: 'patients', label: 'Patients hospitalises', icon: BedDouble },
     { id: 'schedule', label: 'Mon planning', icon: Clock },
+    { id: 'internal-messages', label: 'Messagerie interne', icon: MessageCircle },
   ]
 
   return (
@@ -145,10 +149,13 @@ export default function DesktopNurseDashboard() {
       activeTab={tab}
       onTabChange={(id) => { setTab(id); setError('') }}
       accentColor="bg-primary-500"
+      headerRight={<div className="flex items-center gap-4"><NotificationBell /><UserProfileBadge /></div>}
     >
       {error && <p className="text-clay-600 mb-6">{error}</p>}
 
       {tab === 'schedule' && <MySchedule />}
+
+      {tab === 'internal-messages' && <InternalMessaging />}
 
       {tab === 'arrivees' && <AppointmentCheckIn />}
 
