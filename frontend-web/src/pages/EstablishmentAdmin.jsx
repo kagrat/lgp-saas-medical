@@ -39,7 +39,6 @@ export default function EstablishmentAdmin() {
   const [doctors, setDoctors] = useState([])
   const [appointments, setAppointments] = useState([])
   const [appointmentFilter, setAppointmentFilter] = useState('all')
-  const [stock, setStock] = useState([])
   const [orders, setOrders] = useState([])
   const [orderFilter, setOrderFilter] = useState('pending')
   const [labTests, setLabTests] = useState([])
@@ -67,7 +66,6 @@ export default function EstablishmentAdmin() {
   const [newDoctor, setNewDoctor] = useState({
     email: '', password: '', full_name: '', phone: '', specialty: SPECIALTIES[0], consultation_price: '',
   })
-  const [newStock, setNewStock] = useState({ reference: '', medication_name: '', category: '', quantity: '', alert_threshold: 10, unit_price: '' })
 
   useEffect(() => {
     loadEstablishment()
@@ -139,7 +137,10 @@ export default function EstablishmentAdmin() {
       if (isLab) {
         calls.push(api.get('/lab/tests/establishment'))
       } else if (isPharmacy) {
-        calls.push(api.get('/pharmacy/stock'), api.get('/pharmacy/reservations/establishment'))
+        // CORRIGE (audit complet: code mort trouve et nettoye) - le
+        // stock etait charge ici avant, mais InventoryManager charge
+        // desormais ses propres donnees independamment.
+        calls.push(api.get('/pharmacy/reservations/establishment'))
       } else {
         calls.push(api.get('/doctors/establishment'), api.get('/appointments/establishment'))
       }
@@ -155,10 +156,9 @@ export default function EstablishmentAdmin() {
         })
         setLabUpdateForm(initialLabForms)
       } else if (isPharmacy) {
-        setStock(results[1].data)
-        setOrders(results[2].data)
+        setOrders(results[1].data)
         const initialOrderForms = {}
-        results[2].data.forEach((o) => {
+        results[1].data.forEach((o) => {
           // Meme correctif que DesktopPharmacistDashboard.jsx: eviter que
           // le select memorise un statut ('confirmed') absent de ses
           // propres options.
@@ -184,23 +184,6 @@ export default function EstablishmentAdmin() {
       await loadAll()
     } catch (err) {
       setError(getErrorMessage(err, "Impossible d'ajouter ce médecin."))
-    }
-  }
-
-  async function handleAddStock(e) {
-    e.preventDefault()
-    setError('')
-    try {
-      await api.post('/pharmacy/stock', {
-        ...newStock,
-        quantity: Number(newStock.quantity),
-        alert_threshold: Number(newStock.alert_threshold),
-        unit_price: Number(newStock.unit_price),
-      })
-      setNewStock({ reference: '', medication_name: '', category: '', quantity: '', alert_threshold: 10, unit_price: '' })
-      await loadAll()
-    } catch (err) {
-      setError(getErrorMessage(err, "Impossible d'ajouter ce médicament."))
     }
   }
 
