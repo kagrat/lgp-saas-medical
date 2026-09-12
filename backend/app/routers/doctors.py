@@ -21,7 +21,7 @@ from app.schemas import (
     PatientRecordShareCreate, PatientRecordShareOut, MedicalDocumentOut,
     ClinicalFlagCreate, ClinicalFlagOut,
 )
-from app.deps import require_roles, get_current_user
+from app.deps import require_roles, get_current_user, get_current_user_optional
 from app.routers.notifications import create_dossier_share_notification
 from app.security import hash_password
 from app.routers.health_records import _to_document_out
@@ -283,18 +283,33 @@ def create_or_update_review(doctor_id: str, payload: DoctorReviewCreate, db: Ses
 
 
 @router.get("/{doctor_id}/reviews", response_model=list[DoctorReviewOut])
-def list_reviews(doctor_id: str, db: Session = Depends(get_db)):
+def list_reviews(doctor_id: str, db: Session = Depends(get_db),
+                  current_user: Optional[User] = Depends(get_current_user_optional)):
+    """
+    CORRIGE (audit de securite complet, decision explicite de M. Faustin:
+    afficher "Patient verifie" au lieu du nom complet sur un avis PUBLIC).
+    Le vrai nom reste visible uniquement pour le medecin concerne et
+    l'admin de son etablissement (suivi qualite interne legitime) - tout
+    autre visiteur, connecte ou non, voit un affichage anonyme.
+    """
     reviews = (
         db.query(DoctorReview)
         .filter(DoctorReview.doctor_id == doctor_id)
         .order_by(DoctorReview.created_at.desc())
         .all()
     )
+    doctor = db.query(Doctor).filter(Doctor.id == doctor_id).first()
+    can_see_real_name = bool(
+        current_user and (
+            (doctor and current_user.id == doctor.user_id) or
+            (doctor and current_user.role == UserRole.ESTABLISHMENT_ADMIN and current_user.establishment_id == doctor.establishment_id)
+        )
+    )
     return [
         DoctorReviewOut(
             id=r.id, doctor_id=r.doctor_id, patient_id=r.patient_id,
-            patient_name=r.patient.user.full_name, rating=r.rating,
-            comment=r.comment, created_at=r.created_at,
+            patient_name=r.patient.user.full_name if can_see_real_name else "Patient verifie",
+            rating=r.rating, comment=r.comment, created_at=r.created_at,
         )
         for r in reviews
     ]

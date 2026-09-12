@@ -17,6 +17,28 @@ from app.models import User, UserRole, Establishment, EstablishmentType
 from app.security import decode_access_token
 
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/auth/login")
+# NOUVEAU (audit de securite complet, demande explicite de M. Faustin:
+# anonymiser le nom du patient sur un avis PUBLIC, tout en gardant le
+# vrai nom visible pour le medecin concerne et son etablissement).
+# auto_error=False: ne rejette jamais une requete sans jeton, contrairement
+# a oauth2_scheme normal - permet a un meme endpoint de servir a la fois
+# un visiteur anonyme et un utilisateur connecte.
+oauth2_scheme_optional = OAuth2PasswordBearer(tokenUrl="/auth/login", auto_error=False)
+
+
+def get_current_user_optional(token: str = Depends(oauth2_scheme_optional), db: Session = Depends(get_db)) -> Optional[User]:
+    if not token:
+        return None
+    payload = decode_access_token(token)
+    if payload is None:
+        return None
+    user_id = payload.get("sub")
+    if user_id is None:
+        return None
+    user = db.query(User).filter(User.id == user_id).first()
+    if user is None or not user.is_active:
+        return None
+    return user
 
 
 def get_current_user(token: str = Depends(oauth2_scheme), db: Session = Depends(get_db)) -> User:
