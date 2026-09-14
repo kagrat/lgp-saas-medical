@@ -368,7 +368,9 @@ export default function EstablishmentAdmin() {
     ...baseTabs,
     ...(showPatientsTab ? [{ id: 'patients', label: 'Patients', icon: Users }] : []),
     { id: 'messages', label: 'Messages', icon: MessageSquare },
-    { id: 'internal-messages', label: 'Messagerie interne', icon: MessageCircle },
+    // NOUVEAU (demande explicite de M. Faustin: retirer la messagerie
+    // interne du menu pharmacie specifiquement).
+    ...(isPharmacy ? [] : [{ id: 'internal-messages', label: 'Messagerie interne', icon: MessageCircle }]),
     { id: 'team', label: 'Equipe', icon: Building2 },
     { id: 'hours', label: 'Horaires', icon: Clock },
     ...extraTabs,
@@ -850,7 +852,7 @@ export default function EstablishmentAdmin() {
         </div>
       )}
 
-      {tab === 'internal-messages' && <InternalMessaging />}
+      {tab === 'internal-messages' && !isPharmacy && <InternalMessaging />}
 
       {tab === 'profile' && (
         <EstablishmentProfileManager establishment={establishment} onUpdated={(updated) => setEstablishment(updated)} />

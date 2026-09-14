@@ -35,6 +35,7 @@ export default function InventoryManager() {
   const [subTab, setSubTab] = useState('produits')
   const [products, setProducts] = useState([])
   const [batches, setBatches] = useState(null)
+  const [consultationSearch, setConsultationSearch] = useState('')
   const [error, setError] = useState('')
 
   const [productForm, setProductForm] = useState({
@@ -266,11 +267,28 @@ export default function InventoryManager() {
           vrai tableau avec colonnes, pas une liste de cartes). */}
       {subTab === 'consultation' && (
         <div>
+          {/* NOUVEAU (demande explicite de M. Faustin: barre de
+              recherche de produits pour la consultation du stock). */}
+          <input
+            type="text"
+            placeholder="Rechercher un produit..."
+            value={consultationSearch}
+            onChange={(e) => setConsultationSearch(e.target.value)}
+            className="w-full sm:w-80 rounded-lg border border-forest-100 px-3 py-2 text-sm mb-4"
+          />
           {batches === null ? (
             <p className="text-forest-700 text-sm">Chargement...</p>
           ) : batches.length === 0 ? (
             <p className="text-forest-700 text-sm">Aucun lot enregistré pour le moment.</p>
           ) : (
+            (() => {
+              const filteredBatches = consultationSearch.trim()
+                ? batches.filter((b) => b.medication_name.toLowerCase().includes(consultationSearch.trim().toLowerCase()))
+                : batches
+              if (filteredBatches.length === 0) {
+                return <p className="text-forest-700 text-sm">Aucun produit ne correspond à "{consultationSearch}".</p>
+              }
+              return (
             <div className="overflow-x-auto rounded-xl border border-forest-100 bg-white">
               <table className="w-full text-sm">
                 <thead>
@@ -284,7 +302,7 @@ export default function InventoryManager() {
                   </tr>
                 </thead>
                 <tbody>
-                  {batches.map((b) => (
+                  {filteredBatches.map((b) => (
                     <tr key={b.id} className="border-b border-forest-100 last:border-0">
                       <td className="px-4 py-3">
                         <div className="flex items-center gap-2">
@@ -308,6 +326,8 @@ export default function InventoryManager() {
                 </tbody>
               </table>
             </div>
+              )
+            })()
           )}
         </div>
       )}
