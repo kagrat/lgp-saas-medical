@@ -484,6 +484,14 @@ class ReservationItemOut(BaseModel):
     confirmed_quantity: Optional[int] = None
     confirmed_unit_price: Optional[float] = None
     stock_status: Optional[str] = None
+    # NOUVEAU (demande explicite de M. Faustin: "le prix des medicaments
+    # vienne automatiquement dans la case medicament lors de la
+    # confirmation de commande... vue que ces prix ont deja ete
+    # specifies dans l'inventaire") - prix ACTUEL du catalogue, distinct
+    # de confirmed_unit_price (la valeur que le pharmacien confirme
+    # reellement, modifiable si besoin - un prix a pu changer entre la
+    # demande du patient et la verification).
+    catalog_unit_price: Optional[float] = None
 
     model_config = {"from_attributes": True}
 

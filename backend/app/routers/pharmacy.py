@@ -106,6 +106,7 @@ def _to_reservation_out(reservation: PharmacyReservation, db: Session) -> Reserv
             confirmed_quantity=item.confirmed_quantity,
             confirmed_unit_price=item.confirmed_unit_price,
             stock_status=item.stock_status,
+            catalog_unit_price=item.medication.unit_price,
         )
         for item in reservation.items
     ]

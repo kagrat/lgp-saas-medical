@@ -41,23 +41,37 @@ export default function PharmacyDashboard({ onSelectOrder }) {
       {summary.length === 0 ? (
         <p className="text-forest-700 text-sm">Aucune commande en cours actuellement.</p>
       ) : (
-        <div className="space-y-2">
-          {summary.map((o) => (
-            <button
-              key={o.id}
-              onClick={() => onSelectOrder && onSelectOrder(o.id)}
-              className="w-full text-left rounded-xl border border-forest-100 bg-white p-3 flex justify-between items-center flex-wrap gap-2 hover:border-forest-300 transition"
-            >
-              <div>
-                <p className="text-forest-900 font-medium text-sm">{o.order_number} - {o.patient_name}</p>
-                <p className="text-xs text-forest-700">{new Date(o.created_at).toLocaleString('fr-FR')}</p>
+        <div>
+          {/* CORRIGE (demande explicite de M. Faustin: "la facon dont les
+              commandes s'affichent dans le menu du tableau de bord soit
+              comme celle du menu commandes") - meme ligne d'entete et
+              memes colonnes que l'onglet Commandes, pour une presentation
+              identique. */}
+          <div className="hidden sm:grid sm:grid-cols-[1fr_1fr_1fr_1fr_auto] gap-3 px-4 py-2 text-xs font-medium text-forest-700 uppercase tracking-wide">
+            <span>N° commande</span>
+            <span>Patient</span>
+            <span>Date</span>
+            <span>Statut</span>
+            <span>Action</span>
+          </div>
+          <div className="space-y-2">
+            {summary.map((o) => (
+              <div key={o.id} className="rounded-xl border border-forest-100 bg-white p-4">
+                <div className="grid sm:grid-cols-[1fr_1fr_1fr_1fr_auto] gap-3 items-center">
+                  <span className="text-sm text-forest-900 font-medium">{o.order_number}</span>
+                  <span className="text-sm text-forest-900">{o.patient_name}</span>
+                  <span className="text-sm text-forest-700">{new Date(o.created_at).toLocaleDateString('fr-FR')}</span>
+                  <StatusBadge status={o.status} />
+                  <button
+                    onClick={() => onSelectOrder && onSelectOrder(o.id)}
+                    className="text-sm rounded-full bg-[var(--portal-accent)] text-white px-5 py-1.5 hover:brightness-90 transition justify-self-start sm:justify-self-end"
+                  >
+                    Ouvrir
+                  </button>
+                </div>
               </div>
-              <div className="flex items-center gap-3">
-                {o.total_amount !== null && <span className="text-sm text-forest-900 font-medium">{o.total_amount.toLocaleString('fr-FR')} FCFA</span>}
-                <StatusBadge status={o.status} />
-              </div>
-            </button>
-          ))}
+            ))}
+          </div>
         </div>
       )}
     </div>

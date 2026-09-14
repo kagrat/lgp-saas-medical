@@ -12,10 +12,11 @@ export default function ReservationReviewForm({ reservation, onDone }) {
     reservation.items.map((item) => ({
       item_id: item.id,
       confirmed_quantity: item.quantity,
-      confirmed_unit_price: '',
-      // NOUVEAU (demande M. Faustin): liste deroulante structuree au lieu
-      // de deviner une rupture via une quantite confirmee a 0 - plus clair
-      // pour le patient ET plus facile a filtrer/analyser plus tard.
+      // NOUVEAU (demande explicite de M. Faustin: "le prix des
+      // medicaments vienne automatiquement... vue que ces prix ont deja
+      // ete specifies dans l'inventaire") - prerempli avec le prix du
+      // catalogue, mais reste modifiable si le pharmacien veut ajuster.
+      confirmed_unit_price: item.catalog_unit_price ?? '',
       stock_status: 'disponible',
     }))
   )
@@ -88,7 +89,12 @@ export default function ReservationReviewForm({ reservation, onDone }) {
                     className="w-full rounded-lg border border-forest-100 px-3 py-1.5 text-sm bg-white disabled:bg-forest-50 disabled:text-forest-500" />
                 </div>
                 <div>
-                  <label className="block text-xs text-forest-700 mb-1">Prix unitaire confirmé (FCFA)</label>
+                  <label className="block text-xs text-forest-700 mb-1">
+                    Prix unitaire confirmé (FCFA)
+                    {item.catalog_unit_price !== null && item.catalog_unit_price !== undefined && (
+                      <span className="text-forest-500"> - prérempli depuis l'inventaire, modifiable</span>
+                    )}
+                  </label>
                   <input type="number" min="0" step="1" required value={line.confirmed_unit_price}
                     onChange={(e) => updateLine(item.id, 'confirmed_unit_price', e.target.value)}
                     className="w-full rounded-lg border border-forest-100 px-3 py-1.5 text-sm bg-white" />
