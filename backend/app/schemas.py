@@ -1594,6 +1594,7 @@ class PharmacyOrderSummaryOut(BaseModel):
     un nombre limite, pas la liste complete (deja disponible dans
     l'onglet Commandes)."""
     id: str
+    order_number: str
     patient_name: str
     total_amount: Optional[float] = None
     status: str

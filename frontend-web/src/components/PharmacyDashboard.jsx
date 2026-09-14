@@ -45,7 +45,7 @@ export default function PharmacyDashboard() {
           {summary.map((o) => (
             <div key={o.id} className="rounded-xl border border-forest-100 bg-white p-3 flex justify-between items-center flex-wrap gap-2">
               <div>
-                <p className="text-forest-900 font-medium text-sm">{o.patient_name}</p>
+                <p className="text-forest-900 font-medium text-sm">{o.order_number} - {o.patient_name}</p>
                 <p className="text-xs text-forest-700">{new Date(o.created_at).toLocaleString('fr-FR')}</p>
               </div>
               <div className="flex items-center gap-3">

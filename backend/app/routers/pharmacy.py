@@ -447,7 +447,8 @@ def pharmacy_orders_summary(db: Session = Depends(get_db),
         if items and all(i.confirmed_quantity is not None and i.confirmed_unit_price is not None for i in items):
             total = sum(i.confirmed_quantity * i.confirmed_unit_price for i in items)
         results.append(PharmacyOrderSummaryOut(
-            id=o.id, patient_name=patient.user.full_name if patient else "Inconnu", total_amount=total,
+            id=o.id, order_number=f"CMD-{o.id[:8].upper()}",
+            patient_name=patient.user.full_name if patient else "Inconnu", total_amount=total,
             status=o.status, created_at=o.created_at,
         ))
     return results
