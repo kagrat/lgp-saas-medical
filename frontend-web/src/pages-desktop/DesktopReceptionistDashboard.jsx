@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { UserPlus, ClipboardCheck, Clock, CalendarPlus, MessageCircle } from 'lucide-react'
+import { UserPlus, ClipboardCheck, Clock, CalendarPlus, MessageCircle, MessageSquare } from 'lucide-react'
 import MySchedule from '../components/MySchedule'
 import WalkInPatientForm from '../components/WalkInPatientForm'
 import CompleteRegistrationForm from '../components/CompleteRegistrationForm'
@@ -7,6 +7,7 @@ import AppointmentCheckIn from '../components/AppointmentCheckIn'
 import ReceptionBookAppointment from '../components/ReceptionBookAppointment'
 import SidebarLayout from '../components/SidebarLayout'
 import InternalMessaging from '../components/InternalMessaging'
+import PatientMessaging from '../components/PatientMessaging'
 import NotificationBell from '../components/NotificationBell'
 import UserProfileBadge from '../components/UserProfileBadge'
 
@@ -26,6 +27,7 @@ export default function DesktopReceptionistDashboard() {
     { id: 'schedule', label: 'Mon planning', icon: Clock },
     // NOUVEAU (audit complet: manquait completement, corrige - le
     // personnel d'accueil doit pouvoir echanger avec les medecins).
+    { id: 'messages', label: 'Messages', icon: MessageSquare },
     { id: 'internal-messages', label: 'Messagerie interne', icon: MessageCircle },
   ]
 
@@ -49,6 +51,8 @@ export default function DesktopReceptionistDashboard() {
       )}
       {tab === 'rendez-vous' && <ReceptionBookAppointment />}
       {tab === 'schedule' && <MySchedule />}
+      {tab === 'messages' && <PatientMessaging />}
+
       {tab === 'internal-messages' && <InternalMessaging />}
     </SidebarLayout>
   )

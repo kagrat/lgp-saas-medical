@@ -18,7 +18,7 @@ from app.models import Establishment, Doctor, User, UserRole, AuditLog, Departme
 from app.schemas import (
     EstablishmentCreate, EstablishmentOut, EstablishmentSearchResult,
     EstablishmentStatusUpdate, EstablishmentUpdate, StaffCreate, StaffOut, StaffProfileUpdate,
-    DepartmentCreate, DepartmentUpdate, DepartmentOut, EstablishmentLogoUpdate,
+    DepartmentCreate, DepartmentUpdate, DepartmentOut, EstablishmentLogoUpdate, EstablishmentSelfUpdate,
 )
 from app.deps import require_roles, get_current_user
 from app.security import hash_password
@@ -105,6 +105,30 @@ def update_establishment_logo(payload: EstablishmentLogoUpdate, db: Session = De
     if not establishment:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Etablissement introuvable")
     establishment.logo_url = payload.logo_url
+    db.commit()
+    db.refresh(establishment)
+    return establishment
+
+
+@router.patch("/me", response_model=EstablishmentOut)
+def update_my_establishment(payload: EstablishmentSelfUpdate, db: Session = Depends(get_db),
+                             current_user: User = Depends(require_roles(UserRole.ESTABLISHMENT_ADMIN))):
+    """
+    NOUVEAU (demande explicite de M. Faustin: "il faut donner la main aux
+    ETS pour modifier le nom de leur ETS"). Volontairement restreint a
+    nom/ville/adresse - jamais le "type" d'etablissement (classification
+    de plateforme), qui reste reserve au super-admin via update_establishment.
+    """
+    establishment = db.query(Establishment).filter(Establishment.id == current_user.establishment_id).first()
+    if not establishment:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Etablissement introuvable")
+
+    update_data = payload.model_dump(exclude_unset=True)
+    for field, value in update_data.items():
+        setattr(establishment, field, value)
+
+    db.add(AuditLog(user_id=current_user.id, establishment_id=establishment.id,
+                     action="update_establishment_self", details="Etablissement modifie par son propre admin"))
     db.commit()
     db.refresh(establishment)
     return establishment

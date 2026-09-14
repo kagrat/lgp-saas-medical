@@ -1,9 +1,10 @@
 import { useState } from 'react'
-import { Receipt, Clock, MessageCircle } from 'lucide-react'
+import { Receipt, Clock, MessageCircle, MessageSquare } from 'lucide-react'
 import MySchedule from '../components/MySchedule'
 import InvoiceManager from '../components/InvoiceManager'
 import SidebarLayout from '../components/SidebarLayout'
 import InternalMessaging from '../components/InternalMessaging'
+import PatientMessaging from '../components/PatientMessaging'
 import NotificationBell from '../components/NotificationBell'
 import UserProfileBadge from '../components/UserProfileBadge'
 
@@ -24,6 +25,7 @@ export default function DesktopAccountantDashboard() {
   const tabs = [
     { id: 'billing', label: 'Facturation', icon: Receipt },
     { id: 'schedule', label: 'Mon planning', icon: Clock },
+    { id: 'messages', label: 'Messages', icon: MessageSquare },
     { id: 'internal-messages', label: 'Messagerie interne', icon: MessageCircle },
   ]
 
@@ -39,6 +41,8 @@ export default function DesktopAccountantDashboard() {
     >
       {tab === 'billing' && <InvoiceManager />}
       {tab === 'schedule' && <MySchedule />}
+
+      {tab === 'messages' && <PatientMessaging />}
 
       {tab === 'internal-messages' && <InternalMessaging />}
     </SidebarLayout>

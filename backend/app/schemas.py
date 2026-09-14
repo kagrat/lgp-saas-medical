@@ -190,6 +190,18 @@ class EstablishmentUpdate(BaseModel):
     longitude: Optional[float] = None
 
 
+class EstablishmentSelfUpdate(BaseModel):
+    """NOUVEAU (demande explicite de M. Faustin: "donner la main aux ETS
+    pour modifier le nom de leur ETS"). Volontairement plus restreint que
+    EstablishmentUpdate (reserve au super-admin) - PAS de "type"
+    (classification hopital/clinique/pharmacie/labo, decision de
+    plateforme), un etablissement ne modifie que ses propres informations
+    d'identite courantes."""
+    name: Optional[str] = Field(default=None, min_length=2, max_length=200)
+    city: Optional[str] = None
+    address: Optional[str] = None
+
+
 # ---------- MEDECINS ----------
 
 class DoctorAvailabilityCreate(BaseModel):

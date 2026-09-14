@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { Calendar, Users, Clock, UserPlus, CalendarPlus, MessageCircle } from 'lucide-react'
+import { Calendar, Users, Clock, UserPlus, CalendarPlus, MessageCircle, MessageSquare } from 'lucide-react'
 import api, { getErrorMessage } from '../api/client'
 import { AppointmentStatusBadge } from '../components/AppointmentStatusUI'
 import FilterTabs from '../components/FilterTabs'
@@ -9,6 +9,7 @@ import CompleteRegistrationForm from '../components/CompleteRegistrationForm'
 import ReceptionBookAppointment from '../components/ReceptionBookAppointment'
 import MySchedule from '../components/MySchedule'
 import InternalMessaging from '../components/InternalMessaging'
+import PatientMessaging from '../components/PatientMessaging'
 import NotificationBell from '../components/NotificationBell'
 import UserProfileBadge from '../components/UserProfileBadge'
 import SidebarLayout from '../components/SidebarLayout'
@@ -113,6 +114,7 @@ export default function DesktopSecretaryDashboard() {
     { id: 'nouveau-patient', label: 'Nouveau patient', icon: UserPlus },
     { id: 'prendre-rendez-vous', label: 'Prendre rendez-vous', icon: CalendarPlus },
     { id: 'schedule', label: 'Mon planning', icon: Clock },
+    { id: 'messages', label: 'Messages', icon: MessageSquare },
     { id: 'internal-messages', label: 'Messagerie interne', icon: MessageCircle },
   ]
 
@@ -222,6 +224,8 @@ export default function DesktopSecretaryDashboard() {
       {tab === 'prendre-rendez-vous' && <ReceptionBookAppointment />}
 
       {tab === 'schedule' && <MySchedule />}
+
+      {tab === 'messages' && <PatientMessaging />}
 
       {tab === 'internal-messages' && <InternalMessaging />}
     </SidebarLayout>

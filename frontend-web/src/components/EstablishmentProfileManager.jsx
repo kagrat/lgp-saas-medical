@@ -14,6 +14,29 @@ export default function EstablishmentProfileManager({ establishment, onUpdated }
   const [error, setError] = useState('')
   const [message, setMessage] = useState('')
 
+  // NOUVEAU (demande explicite de M. Faustin: "donner la main aux ETS
+  // pour modifier le nom de leur ETS").
+  const [name, setName] = useState(establishment?.name || '')
+  const [savingName, setSavingName] = useState(false)
+  const [nameMessage, setNameMessage] = useState('')
+
+  async function handleSaveName(e) {
+    e.preventDefault()
+    if (!name.trim()) return
+    setSavingName(true)
+    setNameMessage('')
+    setError('')
+    try {
+      const { data } = await api.patch('/establishments/me', { name })
+      setNameMessage('Nom mis à jour.')
+      if (onUpdated) onUpdated(data)
+    } catch (err) {
+      setError(getErrorMessage(err, "Impossible d'enregistrer ce nom."))
+    } finally {
+      setSavingName(false)
+    }
+  }
+
   function resizeImage(file) {
     return new Promise((resolve, reject) => {
       const reader = new FileReader()
@@ -75,7 +98,15 @@ export default function EstablishmentProfileManager({ establishment, onUpdated }
   return (
     <div className="rounded-xl border border-forest-100 bg-white p-5 max-w-md">
       <p className="text-sm font-medium text-forest-900 mb-1">Établissement</p>
-      <p className="font-display text-xl text-forest-900 font-semibold mb-4">{establishment?.name}</p>
+      <form onSubmit={handleSaveName} className="flex items-center gap-2 mb-4">
+        <input value={name} onChange={(e) => setName(e.target.value)}
+          className="font-display text-xl text-forest-900 font-semibold rounded-lg border border-forest-100 px-3 py-1.5 flex-1" />
+        <button type="submit" disabled={savingName || !name.trim() || name === establishment?.name}
+          className="rounded-full bg-[var(--portal-accent)] text-white px-4 py-2 text-sm font-medium hover:brightness-90 transition disabled:opacity-50 shrink-0">
+          {savingName ? '...' : 'Enregistrer'}
+        </button>
+      </form>
+      {nameMessage && <p className="text-forest-900 bg-forest-50 border border-forest-300 rounded-lg p-2 mb-3 text-sm">{nameMessage}</p>}
 
       {error && <p className="text-clay-600 text-sm mb-3">{error}</p>}
       {message && <p className="text-forest-900 bg-forest-50 border border-forest-300 rounded-lg p-2 mb-3 text-sm">{message}</p>}

@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from 'react'
+import { Link } from 'react-router-dom'
 import api from '../api/client'
 
 const ROLE_LABELS = {
@@ -134,6 +135,16 @@ export default function UserProfileBadge() {
             {uploading ? 'Envoi...' : 'Changer la photo'}
           </button>
           <input ref={fileInputRef} type="file" accept="image/png,image/jpeg" onChange={handleFileChange} className="hidden" />
+
+          {/* CORRIGE (demande explicite de M. Faustin: le personnel doit
+              pouvoir changer son mot de passe par defaut) - avant, aucun
+              lien nulle part ne menait a la page de profil complete
+              (changement de mot de passe inclus) depuis le tableau de
+              bord du personnel. */}
+          <Link to="/profil" onClick={() => setOpen(false)}
+            className="block w-full text-center mt-2 text-sm rounded-full border border-forest-300 py-1.5 hover:bg-forest-50 transition">
+            Voir mon profil complet
+          </Link>
 
           <div className="mt-3 pt-3 border-t border-forest-100">
             <div className="flex items-center justify-between mb-1">

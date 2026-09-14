@@ -1,10 +1,11 @@
 import { useEffect, useState } from 'react'
-import { BedDouble, Clock, ClipboardCheck, MessageCircle } from 'lucide-react'
+import { BedDouble, Clock, ClipboardCheck, MessageCircle, MessageSquare } from 'lucide-react'
 import api, { getErrorMessage } from '../api/client'
 import MySchedule from '../components/MySchedule'
 import AppointmentCheckIn from '../components/AppointmentCheckIn'
 import SidebarLayout from '../components/SidebarLayout'
 import InternalMessaging from '../components/InternalMessaging'
+import PatientMessaging from '../components/PatientMessaging'
 import NotificationBell from '../components/NotificationBell'
 import UserProfileBadge from '../components/UserProfileBadge'
 
@@ -137,6 +138,7 @@ export default function DesktopNurseDashboard() {
     { id: 'arrivees', label: 'Arrivées du jour', icon: ClipboardCheck },
     { id: 'patients', label: 'Patients hospitalises', icon: BedDouble },
     { id: 'schedule', label: 'Mon planning', icon: Clock },
+    { id: 'messages', label: 'Messages', icon: MessageSquare },
     { id: 'internal-messages', label: 'Messagerie interne', icon: MessageCircle },
   ]
 
@@ -154,6 +156,8 @@ export default function DesktopNurseDashboard() {
       {error && <p className="text-clay-600 mb-6">{error}</p>}
 
       {tab === 'schedule' && <MySchedule />}
+
+      {tab === 'messages' && <PatientMessaging />}
 
       {tab === 'internal-messages' && <InternalMessaging />}
 

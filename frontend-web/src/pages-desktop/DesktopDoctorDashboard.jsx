@@ -297,98 +297,116 @@ export default function DesktopDoctorDashboard() {
             </button>
           </div>
           {appointments.length === 0 && <p className="text-forest-700">Aucun rendez-vous.</p>}
+
+          {/* CORRIGE (demande explicite de M. Faustin: "Faut classer les
+              informations: Nom du patient, Numero de dossier, Date du
+              RDV, HEURE DU RDV et option Ouvrir") - avant, la date et
+              l'heure etaient fusionnees et le numero de dossier place en
+              dernier, dans un ordre different de sa demande. Ligne
+              d'entete + colonnes alignees, meme principe deja applique
+              cote pharmacie pour rester coherent dans tout le systeme. */}
+          {appointments.length > 0 && (
+            <div className="hidden sm:grid sm:grid-cols-[1.5fr_1fr_1fr_0.8fr_auto_auto] gap-3 px-4 py-2 text-xs font-medium text-forest-700 uppercase tracking-wide">
+              <span>Nom du patient</span>
+              <span>N° de dossier</span>
+              <span>Date</span>
+              <span>Heure</span>
+              <span>Statut</span>
+              <span>Action</span>
+            </div>
+          )}
+
           {appointments.map((a) => (
             <div key={a.id} className="rounded-xl border border-forest-100 bg-white p-4">
-              {/* NOUVEAU (demande explicite de M. Faustin): la ligne
-                  n'affiche plus que l'essentiel (patient, date/heure,
-                  numero de dossier) + un seul bouton "Ouvrir" - toutes
-                  les actions apparaissent seulement une fois ouvert. */}
-              <div className="flex justify-between items-center flex-wrap gap-2">
-                <div>
-                  <p className="text-forest-900 font-medium">{a.patient_name}</p>
-                  <p className="text-sm text-forest-700">
-                    {new Date(a.scheduled_at).toLocaleString('fr-FR')}
-                    {a.dossier_number && ` - Dossier ${a.dossier_number}`}
-                  </p>
-                </div>
-                <div className="flex items-center gap-2">
-                  <AppointmentStatusBadge status={a.status} />
-                  <button
-                    onClick={() => setExpandedAppointmentId(expandedAppointmentId === a.id ? null : a.id)}
-                    className="text-sm rounded-full bg-[var(--portal-accent)] text-white px-5 py-1.5 hover:brightness-90 transition"
-                  >
-                    {expandedAppointmentId === a.id ? 'Fermer' : 'Ouvrir'}
-                  </button>
-                </div>
+              <div className="grid sm:grid-cols-[1.5fr_1fr_1fr_0.8fr_auto_auto] gap-3 items-center">
+                <span className="text-forest-900 font-medium">{a.patient_name}</span>
+                <span className="text-sm text-forest-700">{a.dossier_number || '—'}</span>
+                <span className="text-sm text-forest-700">{new Date(a.scheduled_at).toLocaleDateString('fr-FR')}</span>
+                <span className="text-sm text-forest-700">{new Date(a.scheduled_at).toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' })}</span>
+                <AppointmentStatusBadge status={a.status} />
+                <button
+                  onClick={() => setExpandedAppointmentId(expandedAppointmentId === a.id ? null : a.id)}
+                  className="text-sm rounded-full bg-[var(--portal-accent)] text-white px-5 py-1.5 hover:brightness-90 transition justify-self-start sm:justify-self-end"
+                >
+                  {expandedAppointmentId === a.id ? 'Fermer' : 'Ouvrir'}
+                </button>
               </div>
 
               {expandedAppointmentId === a.id && (
-                <div className="mt-3 pt-3 border-t border-forest-100">
-                  <div className="flex items-center gap-2 flex-wrap mb-1">
-                    <button
-                      onClick={() => toggleVitals(a.id)}
-                      className="text-sm rounded-full border border-secondary-500 text-secondary-600 px-4 py-1.5 hover:bg-forest-50 transition"
-                    >
-                      {vitalsAppointmentId === a.id ? 'Fermer les constantes' : 'Constantes'}
-                    </button>
-                    {a.status === 'confirmed' && (
-                      <>
+                <div className="mt-3 pt-3 border-t border-forest-100 space-y-3">
+                  {/* CORRIGE (demande explicite de M. Faustin, capture
+                      jointe: "organiser de maniere esthetique le reste
+                      des options") - avant, tous les boutons etaient
+                      alignes en vrac avec des couleurs differentes sans
+                      logique. Regroupes maintenant par intention:
+                      "Actions" (fait avancer le rendez-vous) puis
+                      "Outils" (utilises pendant la consultation). */}
+                  <div>
+                    <p className="text-xs font-medium text-forest-700 uppercase tracking-wide mb-1.5">Actions</p>
+                    <div className="flex items-center gap-2 flex-wrap">
+                      {a.status === 'confirmed' && (
                         <button
                           onClick={() => markArrived(a.id)}
                           disabled={arrivingId === a.id}
-                          className="text-sm rounded-full border border-forest-300 px-4 py-1.5 hover:bg-forest-50 transition disabled:opacity-50"
+                          className="text-sm rounded-full border border-forest-300 text-forest-900 px-4 py-1.5 hover:bg-forest-50 transition disabled:opacity-50"
                         >
-                          {arrivingId === a.id ? '...' : 'Marquer arrive'}
+                          {arrivingId === a.id ? '...' : 'Marquer arrivé'}
                         </button>
+                      )}
+                      {(a.status === 'confirmed' || a.status === 'arrived') && (
                         <button
-                          onClick={() => toggleReschedule(a.id)}
-                          className="text-sm rounded-full border border-amber-400 text-amber-600 px-4 py-1.5 hover:bg-amber-50 transition"
+                          onClick={() => markCompleted(a.id)}
+                          disabled={completingId === a.id}
+                          className="text-sm rounded-full bg-[var(--portal-accent)] text-white px-4 py-1.5 hover:brightness-90 transition disabled:opacity-50"
                         >
-                          Reporter
+                          {completingId === a.id ? 'Mise à jour...' : 'Marquer terminé'}
                         </button>
-                        {/* NOUVEAU (demande explicite de M. Faustin:
-                            "transferer un rendez-vous a un collegue"). */}
+                      )}
+                      {a.status === 'confirmed' && (
+                        <>
+                          <button
+                            onClick={() => toggleReschedule(a.id)}
+                            className="text-sm rounded-full border border-forest-300 text-forest-700 px-4 py-1.5 hover:bg-forest-50 transition"
+                          >
+                            Reporter
+                          </button>
+                          <button
+                            onClick={() => toggleTransfer(a.id)}
+                            className="text-sm rounded-full border border-forest-300 text-forest-700 px-4 py-1.5 hover:bg-forest-50 transition"
+                          >
+                            Transférer à un collègue
+                          </button>
+                        </>
+                      )}
+                      {(a.status === 'confirmed' || a.status === 'arrived') && (
                         <button
-                          onClick={() => toggleTransfer(a.id)}
-                          className="text-sm rounded-full border border-secondary-500 text-secondary-600 px-4 py-1.5 hover:bg-forest-50 transition"
+                          onClick={() => cancelAppointment(a.id)}
+                          disabled={cancellingId === a.id}
+                          className="text-sm rounded-full border border-transparent text-clay-600 px-4 py-1.5 hover:bg-clay-500/10 transition disabled:opacity-50"
                         >
-                          Transferer a un collegue
+                          {cancellingId === a.id ? '...' : 'Annuler'}
                         </button>
-                      </>
-                    )}
+                      )}
+                    </div>
                   </div>
-                  {/* NOUVEAU (demande explicite de M. Faustin, manque
-                      trouve lors d'un audit complet: envoyer un message
-                      directement depuis la consultation, sans aller dans
-                      l'onglet Messages). */}
-                  <div className="mt-2">
-                    <QuickMessageBox patientId={a.patient_id} />
-                  </div>
-                  {(a.status === 'confirmed' || a.status === 'arrived') && (
-                    <>
-                      <button
-                        onClick={() => markCompleted(a.id)}
-                        disabled={completingId === a.id}
-                        className="text-sm rounded-full bg-[var(--portal-accent)] text-white px-4 py-1.5 hover:brightness-90 transition disabled:opacity-50"
-                      >
-                        {completingId === a.id ? 'Mise a jour...' : 'Marquer termine'}
-                      </button>
-                      <button
-                        onClick={() => cancelAppointment(a.id)}
-                        disabled={cancellingId === a.id}
-                        className="text-sm rounded-full border border-clay-500 text-clay-600 px-4 py-1.5 hover:bg-clay-500 hover:text-white transition disabled:opacity-50"
-                      >
-                        {cancellingId === a.id ? '...' : 'Annuler'}
-                      </button>
-                    </>
-                  )}
 
-                  {/* NOUVEAU (demande explicite de M. Faustin: admettre
-                      un patient en hospitalisation directement depuis sa
-                      consultation, sans ressaisir ses informations). */}
-                  {(a.status === 'confirmed' || a.status === 'arrived') && (
-                    <AdmitPatientShortcut patientId={a.patient_id} patientName={a.patient_name} onAdmitted={loadAppointments} />
-                  )}
+                  <div>
+                    <p className="text-xs font-medium text-forest-700 uppercase tracking-wide mb-1.5">Outils</p>
+                    <div className="flex items-center gap-2 flex-wrap">
+                      <button
+                        onClick={() => toggleVitals(a.id)}
+                        className="text-sm rounded-full border border-forest-300 text-forest-700 px-4 py-1.5 hover:bg-forest-50 transition"
+                      >
+                        {vitalsAppointmentId === a.id ? 'Fermer les constantes' : 'Constantes'}
+                      </button>
+                      {/* CORRIGE (audit complet: envoyer un message
+                          directement depuis la consultation). */}
+                      <QuickMessageBox patientId={a.patient_id} />
+                      {(a.status === 'confirmed' || a.status === 'arrived') && (
+                        <AdmitPatientShortcut patientId={a.patient_id} patientName={a.patient_name} onAdmitted={loadAppointments} />
+                      )}
+                    </div>
+                  </div>
 
                   {transferringId === a.id && (
                     <div className="mt-3 pt-3 border-t border-forest-100">

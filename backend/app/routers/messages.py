@@ -40,7 +40,15 @@ from app.deps import require_roles, get_current_user
 router = APIRouter(prefix="/messages", tags=["messagerie"])
 
 ESTABLISHMENT_STAFF_ROLES = (
+    # CORRIGE (demande explicite de M. Faustin: "permettre au medecin ET
+    # aux autres utilisateurs d'envoyer des messages aux patients") -
+    # avant, seuls admin/medecin/pharmacien/technicien labo pouvaient
+    # ecrire a un patient - infirmier, secretariat, accueil, RH et
+    # comptabilite en etaient exclus sans raison metier claire. La
+    # verification _patient_has_relationship ci-dessous reste inchangee
+    # quel que soit le role (aucun acces a un patient sans lien reel).
     UserRole.ESTABLISHMENT_ADMIN, UserRole.DOCTOR, UserRole.PHARMACIST, UserRole.LAB_TECHNICIAN,
+    UserRole.NURSE, UserRole.RECEPTIONIST, UserRole.SECRETARY, UserRole.HR_MANAGER, UserRole.ACCOUNTANT,
 )
 
 
@@ -93,7 +101,20 @@ def _current_doctor_id(db: Session, current_user: User) -> str | None:
 
 
 def _can_staff_access_thread(current_user: User, thread_doctor_id: str | None, current_doctor_id: str | None) -> bool:
-    if current_user.role == UserRole.ESTABLISHMENT_ADMIN:
+    # CORRIGE (demande explicite de M. Faustin: "permettre aux autres
+    # utilisateurs d'envoyer des messages aux patients") - cette
+    # verification est DISTINCTE de la restriction de role sur
+    # l'endpoint (ESTABLISHMENT_STAFF_ROLES ci-dessus) et avait sa PROPRE
+    # liste figee, jamais mise a jour en meme temps - le personnel
+    # nouvellement autorise (infirmier, accueil, secretariat, RH,
+    # comptabilite) etait donc quand meme bloque ici. Traites comme
+    # l'admin: acces a toute conversation de LEUR etablissement, pas
+    # limites a un medecin precis (role de soutien general, pas une
+    # relation de soins individuelle comme un medecin).
+    if current_user.role in (
+        UserRole.ESTABLISHMENT_ADMIN, UserRole.NURSE, UserRole.RECEPTIONIST,
+        UserRole.SECRETARY, UserRole.HR_MANAGER, UserRole.ACCOUNTANT,
+    ):
         return True
     if current_user.role == UserRole.DOCTOR:
         return thread_doctor_id is not None and thread_doctor_id == current_doctor_id

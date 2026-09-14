@@ -1,11 +1,12 @@
 import { useEffect, useState } from 'react'
-import { Users, CalendarClock, Clock, MessageCircle } from 'lucide-react'
+import { Users, CalendarClock, Clock, MessageCircle, MessageSquare } from 'lucide-react'
 import api, { getErrorMessage } from '../api/client'
 import TeamMembers from '../components/TeamMembers'
 import SchedulingManager from '../components/SchedulingManager'
 import MySchedule from '../components/MySchedule'
 import SidebarLayout from '../components/SidebarLayout'
 import InternalMessaging from '../components/InternalMessaging'
+import PatientMessaging from '../components/PatientMessaging'
 import NotificationBell from '../components/NotificationBell'
 import UserProfileBadge from '../components/UserProfileBadge'
 
@@ -35,6 +36,7 @@ export default function DesktopHRDashboard() {
     { id: 'team', label: 'Equipe', icon: Users },
     { id: 'scheduling', label: 'Planning & Conges', icon: CalendarClock },
     { id: 'my-schedule', label: 'Mon planning', icon: Clock },
+    { id: 'messages', label: 'Messages', icon: MessageSquare },
     { id: 'internal-messages', label: 'Messagerie interne', icon: MessageCircle },
   ]
 
@@ -54,6 +56,8 @@ export default function DesktopHRDashboard() {
       {tab === 'team' && <TeamMembers />}
       {tab === 'scheduling' && <SchedulingManager />}
       {tab === 'my-schedule' && <MySchedule />}
+
+      {tab === 'messages' && <PatientMessaging />}
 
       {tab === 'internal-messages' && <InternalMessaging />}
     </SidebarLayout>
