@@ -123,6 +123,20 @@ export default function EstablishmentAdmin() {
     }
   }
 
+  // NOUVEAU (demande explicite de M. Faustin: depuis le raccourci du
+  // tableau de bord, cliquer sur une commande doit directement l'ouvrir,
+  // prete a traiter, dans l'onglet Commandes/Inventaire correspondant).
+  function openOrderFromDashboard(orderId) {
+    setTab('orders')
+    setOrderFilter('all')
+    setExpandedOrderId(orderId)
+    if (!orderHistory[orderId]) {
+      api.get(`/pharmacy/reservations/${orderId}/history`)
+        .then(({ data }) => setOrderHistory((h) => ({ ...h, [orderId]: data })))
+        .catch(() => setError("Impossible de charger le suivi de cette commande."))
+    }
+  }
+
   async function loadAll() {
     try {
       const isLab = establishment.type === 'laboratoire'
@@ -627,7 +641,7 @@ export default function EstablishmentAdmin() {
         </div>
       )}
 
-      {tab === 'dashboard' && isPharmacy && <PharmacyDashboard />}
+      {tab === 'dashboard' && isPharmacy && <PharmacyDashboard onSelectOrder={openOrderFromDashboard} />}
 
       {tab === 'pharmacy' && !isLab && <InventoryManager />}
 

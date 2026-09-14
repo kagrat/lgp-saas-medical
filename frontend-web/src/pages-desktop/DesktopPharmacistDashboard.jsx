@@ -90,6 +90,21 @@ export default function DesktopPharmacistDashboard() {
     }
   }
 
+  // NOUVEAU (demande explicite de M. Faustin: depuis le raccourci du
+  // tableau de bord, cliquer sur une commande doit directement l'ouvrir,
+  // prete a traiter, dans l'onglet Commandes). "all" garantit que la
+  // commande reste visible peu importe son statut actuel.
+  function openOrderFromDashboard(orderId) {
+    setTab('orders')
+    setOrderFilter('all')
+    setExpandedOrderId(orderId)
+    if (!orderHistory[orderId]) {
+      api.get(`/pharmacy/reservations/${orderId}/history`)
+        .then(({ data }) => setOrderHistory((h) => ({ ...h, [orderId]: data })))
+        .catch(() => setError("Impossible de charger le suivi de cette commande."))
+    }
+  }
+
   async function loadConversations() {
     try {
       const { data } = await api.get('/messages/establishment/patients')
@@ -164,7 +179,7 @@ export default function DesktopPharmacistDashboard() {
 
       {tab === 'stats' && <PharmacyStatsCards />}
 
-      {tab === 'dashboard' && <PharmacyDashboard />}
+      {tab === 'dashboard' && <PharmacyDashboard onSelectOrder={openOrderFromDashboard} />}
 
       {tab === 'inventory' && <InventoryManager />}
 

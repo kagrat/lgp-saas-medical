@@ -8,7 +8,7 @@ import { StatusBadge } from './OrderStatus'
  * "Statistiques"), puis en dessous un raccourci des commandes en cours
  * de traitement (nombre limite, pas la liste complete).
  */
-export default function PharmacyDashboard() {
+export default function PharmacyDashboard({ onSelectOrder }) {
   const [stats, setStats] = useState(null)
   const [summary, setSummary] = useState(null)
   const [error, setError] = useState('')
@@ -43,7 +43,11 @@ export default function PharmacyDashboard() {
       ) : (
         <div className="space-y-2">
           {summary.map((o) => (
-            <div key={o.id} className="rounded-xl border border-forest-100 bg-white p-3 flex justify-between items-center flex-wrap gap-2">
+            <button
+              key={o.id}
+              onClick={() => onSelectOrder && onSelectOrder(o.id)}
+              className="w-full text-left rounded-xl border border-forest-100 bg-white p-3 flex justify-between items-center flex-wrap gap-2 hover:border-forest-300 transition"
+            >
               <div>
                 <p className="text-forest-900 font-medium text-sm">{o.order_number} - {o.patient_name}</p>
                 <p className="text-xs text-forest-700">{new Date(o.created_at).toLocaleString('fr-FR')}</p>
@@ -52,7 +56,7 @@ export default function PharmacyDashboard() {
                 {o.total_amount !== null && <span className="text-sm text-forest-900 font-medium">{o.total_amount.toLocaleString('fr-FR')} FCFA</span>}
                 <StatusBadge status={o.status} />
               </div>
-            </div>
+            </button>
           ))}
         </div>
       )}
