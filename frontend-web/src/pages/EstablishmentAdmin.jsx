@@ -648,119 +648,132 @@ export default function EstablishmentAdmin() {
       {tab === 'orders' && !isLab && (
         <div>
           <FilterTabs options={orderFilterOptions} active={orderFilter} onChange={setOrderFilter} counts={orderCounts} />
-          <div className="space-y-3">
-            {filteredOrders.length === 0 && <p className="text-forest-700">Aucune commande dans cette catégorie.</p>}
+
+          {/* CORRIGE (demande explicite de M. Faustin: cet ecran - compte
+              Admin d'etablissement - utilisait encore l'ancienne
+              presentation, toutes les commandes affichant leurs details
+              simultanement, sans bouton "Voir" ni comportement accordeon.
+              Remplace par exactement la meme structure que le tableau de
+              bord Pharmacien dedie, pour une coherence totale entre les
+              deux comptes: ligne d'entete + liste compacte + un SEUL
+              detail ouvert a la fois. */}
+          <div className="hidden sm:grid sm:grid-cols-[1fr_1fr_1fr_1fr_auto] gap-3 px-4 py-2 text-xs font-medium text-forest-700 uppercase tracking-wide">
+            <span>N° commande</span>
+            <span>Patient</span>
+            <span>Date</span>
+            <span>Statut</span>
+            <span>Action</span>
+          </div>
+
+          <div className="space-y-2">
+            {filteredOrders.length === 0 && <p className="text-forest-700 px-4">Aucune commande dans cette catégorie.</p>}
             {filteredOrders.map((o) => (
-              o.status === 'delivered' ? (
-                // NOUVEAU (demande M. Faustin, appliquee partout pour
-                // coherence): une commande deja livree n'a plus besoin du
-                // parcours detaille en 7 etapes - juste une ligne compacte,
-                // avec le detail complet disponible via "Voir le suivi".
-                <div key={o.id} className="rounded-xl border border-forest-100 bg-white p-4">
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <p className="text-forest-900 font-medium">
-                        {o.items.map((item) => item.medication_name).join(', ')}
-                      </p>
-                      <p className="text-sm text-forest-700 mt-0.5">
-                        Livree - {o.delivery_mode === 'delivery' ? 'Livraison' : 'Retrait sur place'}
-                      </p>
+              <div key={o.id} className="rounded-xl border border-forest-100 bg-white p-4">
+                <div className="grid sm:grid-cols-[1fr_1fr_1fr_1fr_auto] gap-3 items-center">
+                  <span className="text-sm text-forest-900 font-medium">{o.order_number}</span>
+                  <span className="text-sm text-forest-900">{o.patient_name}</span>
+                  <span className="text-sm text-forest-700">{new Date(o.created_at).toLocaleDateString('fr-FR')}</span>
+                  <StatusBadge status={o.status} />
+                  <button onClick={() => toggleOrderHistory(o.id)}
+                    className="text-sm rounded-full border border-forest-300 px-4 py-1.5 hover:bg-forest-50 transition justify-self-start sm:justify-self-end">
+                    {expandedOrderId === o.id ? 'Fermer' : 'Voir'}
+                  </button>
+                </div>
+
+                {expandedOrderId === o.id && (
+                  <div className="mt-4 pt-4 border-t border-forest-100">
+                    <div className="grid sm:grid-cols-2 gap-2 mb-4 text-sm">
+                      <p><span className="text-forest-700">N° commande:</span> <span className="text-forest-900 font-medium">{o.order_number}</span></p>
+                      <p><span className="text-forest-700">Reçue le:</span> <span className="text-forest-900 font-medium">{new Date(o.created_at).toLocaleString('fr-FR')}</span></p>
+                      <p><span className="text-forest-700">Patient:</span> <span className="text-forest-900 font-medium">{o.patient_name}</span></p>
+                      <p><span className="text-forest-700">Téléphone:</span> <span className="text-forest-900 font-medium">{o.patient_phone || 'Non renseigné'}</span></p>
                     </div>
-                    <button onClick={() => toggleOrderHistory(o.id)} className="text-xs text-amber-600 hover:underline shrink-0 ml-3">
-                      {expandedOrderId === o.id ? 'Masquer le suivi' : 'Voir le suivi'}
-                    </button>
-                  </div>
-                  {expandedOrderId === o.id && orderHistory[o.id] && (
-                    <div className="mt-3 pt-3 border-t border-forest-100 space-y-2">
-                      {orderHistory[o.id].map((h) => (
-                        <div key={h.id} className="flex items-center gap-3 text-sm">
-                          <StatusBadge status={h.status} />
-                          <span className="text-forest-700">{new Date(h.created_at).toLocaleString('fr-FR')}</span>
-                          {h.note && <span className="text-forest-700 italic">- {h.note}</span>}
-                        </div>
+                    {o.prescription_document_id && (
+                      <span className="inline-block text-xs px-2 py-0.5 rounded-full bg-amber-500/10 text-amber-600 font-medium mb-3">
+                        Issue d'une ordonnance
+                      </span>
+                    )}
+
+                    <div className="space-y-1 mb-3">
+                      {o.items.map((item) => (
+                        <p key={item.id} className="text-forest-900 font-medium text-sm">
+                          {item.quantity}x {item.medication_name} <span className="text-xs text-forest-700 font-normal">({item.medication_reference})</span>
+                        </p>
                       ))}
                     </div>
-                  )}
-                </div>
-              ) : (
-              <div key={o.id} className="rounded-xl border border-forest-100 bg-white p-4">
-                <div className="mb-3">
-                  {o.prescription_document_id && (
-                    <span className="inline-block text-xs px-2 py-0.5 rounded-full bg-amber-500/10 text-amber-600 font-medium mb-2">
-                      Issue d'une ordonnance
-                    </span>
-                  )}
-                  <div className="space-y-1 mb-2">
-                    {o.items.map((item) => (
-                      <p key={item.id} className="text-forest-900 font-medium">
-                        {item.quantity}x {item.medication_name} <span className="text-xs text-forest-700 font-normal">({item.medication_reference})</span>
-                      </p>
-                    ))}
-                  </div>
-                  <p className="text-sm text-forest-700 mb-3">
-                    {o.delivery_mode === 'delivery' ? 'Livraison' : 'Retrait sur place'}
-                  </p>
-                  <StatusStepper steps={RESERVATION_STEPS} currentValue={o.status} labels={RESERVATION_STATUS_LABELS} />
-                </div>
+                    <p className="text-sm text-forest-700 mb-3">
+                      {o.delivery_mode === 'delivery' ? 'Livraison' : 'Retrait sur place'}
+                    </p>
 
-                {o.status === 'pending' && (
-                  <ReservationReviewForm reservation={o} onDone={loadAll} />
-                )}
+                    {o.status !== 'delivered' && <StatusStepper steps={RESERVATION_STEPS} currentValue={o.status} labels={RESERVATION_STATUS_LABELS} />}
 
-                {o.status === 'awaiting_confirmation' && (
-                  <div className="mt-3 pt-3 border-t border-forest-100">
-                    <p className="text-sm text-amber-600 font-medium">En attente de la confirmation du patient</p>
-                    {o.items.map((item) => (
-                      <p key={item.id} className="text-sm text-forest-700">
-                        {item.medication_name}: {item.confirmed_quantity} x {item.confirmed_unit_price?.toLocaleString('fr-FR')} FCFA
-                      </p>
-                    ))}
-                    {o.total_amount !== null && o.total_amount !== undefined && (
-                      <p className="text-sm text-forest-900 font-medium mt-1">Total: {o.total_amount.toLocaleString('fr-FR')} FCFA</p>
+                    {o.status === 'pending' && <ReservationReviewForm reservation={o} onDone={loadAll} />}
+
+                    {o.status === 'awaiting_confirmation' && (
+                      <div className="mt-3 pt-3 border-t border-forest-100">
+                        <p className="text-sm text-amber-600 font-medium">En attente de la confirmation du patient</p>
+                        {o.items.map((item) => (
+                          <p key={item.id} className="text-sm text-forest-700">
+                            {item.medication_name}: {item.confirmed_quantity} x {item.confirmed_unit_price?.toLocaleString('fr-FR')} FCFA
+                          </p>
+                        ))}
+                        {o.total_amount !== null && o.total_amount !== undefined && (
+                          <p className="text-sm text-forest-900 font-medium mt-1">Total: {o.total_amount.toLocaleString('fr-FR')} FCFA</p>
+                        )}
+                      </div>
+                    )}
+
+                    {STAFF_ACTIONABLE_STATUSES.includes(o.status) && (
+                      <div className="mt-3 pt-3 border-t border-forest-100 flex flex-wrap gap-2 items-end">
+                        <div>
+                          <label className="block text-xs text-forest-700 mb-1">Nouveau statut</label>
+                          <select
+                            value={orderUpdateForm[o.id]?.status || o.status}
+                            onChange={(e) => updateOrderForm(o.id, 'status', e.target.value)}
+                            className="rounded-lg border border-forest-100 px-3 py-1.5 text-sm bg-white"
+                          >
+                            {STAFF_UPDATABLE_STATUSES.map((s) => <option key={s} value={s}>{RESERVATION_STATUS_LABELS[s]}</option>)}
+                          </select>
+                        </div>
+                        <div>
+                          <label className="block text-xs text-forest-700 mb-1">Prêt estimé (optionnel)</label>
+                          <input type="datetime-local"
+                            value={orderUpdateForm[o.id]?.estimated_ready_at || ''}
+                            onChange={(e) => updateOrderForm(o.id, 'estimated_ready_at', e.target.value)}
+                            className="rounded-lg border border-forest-100 px-3 py-1.5 text-sm" />
+                        </div>
+                        <div className="flex-1 min-w-[200px]">
+                          <label className="block text-xs text-forest-700 mb-1">Note pour le patient (optionnel)</label>
+                          <input type="text"
+                            value={orderUpdateForm[o.id]?.note || ''}
+                            onChange={(e) => updateOrderForm(o.id, 'note', e.target.value)}
+                            placeholder="Ex: en rupture temporaire, disponible demain"
+                            className="w-full rounded-lg border border-forest-100 px-3 py-1.5 text-sm" />
+                        </div>
+                        <button
+                          onClick={() => submitOrderUpdate(o.id)}
+                          disabled={updatingOrderId === o.id}
+                          className="rounded-full bg-[var(--portal-accent)] text-white px-5 py-1.5 text-sm font-medium hover:brightness-90 transition disabled:opacity-50"
+                        >
+                          {updatingOrderId === o.id ? 'Mise a jour...' : 'Mettre a jour'}
+                        </button>
+                      </div>
+                    )}
+
+                    {o.status === 'delivered' && orderHistory[o.id] && (
+                      <div className="space-y-2">
+                        {orderHistory[o.id].map((h) => (
+                          <div key={h.id} className="flex items-center gap-3 text-sm">
+                            <StatusBadge status={h.status} />
+                            <span className="text-forest-700">{new Date(h.created_at).toLocaleString('fr-FR')}</span>
+                            {h.note && <span className="text-forest-700 italic">- {h.note}</span>}
+                          </div>
+                        ))}
+                      </div>
                     )}
                   </div>
                 )}
-
-                {STAFF_ACTIONABLE_STATUSES.includes(o.status) && (
-                  <div className="mt-3 pt-3 border-t border-forest-100 flex flex-wrap gap-2 items-end">
-                    <div>
-                      <label className="block text-xs text-forest-700 mb-1">Nouveau statut</label>
-                      <select
-                        value={orderUpdateForm[o.id]?.status || o.status}
-                        onChange={(e) => updateOrderForm(o.id, 'status', e.target.value)}
-                        className="rounded-lg border border-forest-100 px-3 py-1.5 text-sm bg-white"
-                      >
-                        {STAFF_UPDATABLE_STATUSES.map((s) => (
-                          <option key={s} value={s}>{RESERVATION_STATUS_LABELS[s]}</option>
-                        ))}
-                      </select>
-                    </div>
-                    <div>
-                      <label className="block text-xs text-forest-700 mb-1">Prêt estimé (optionnel)</label>
-                      <input type="datetime-local"
-                        value={orderUpdateForm[o.id]?.estimated_ready_at || ''}
-                        onChange={(e) => updateOrderForm(o.id, 'estimated_ready_at', e.target.value)}
-                        className="rounded-lg border border-forest-100 px-3 py-1.5 text-sm" />
-                    </div>
-                    <div className="flex-1 min-w-[200px]">
-                      <label className="block text-xs text-forest-700 mb-1">Note pour le patient (optionnel)</label>
-                      <input type="text"
-                        value={orderUpdateForm[o.id]?.note || ''}
-                        onChange={(e) => updateOrderForm(o.id, 'note', e.target.value)}
-                        placeholder="Ex: en rupture temporaire, disponible demain"
-                        className="w-full rounded-lg border border-forest-100 px-3 py-1.5 text-sm" />
-                    </div>
-                    <button
-                      onClick={() => submitOrderUpdate(o.id)}
-                      disabled={updatingOrderId === o.id}
-                      className="rounded-full bg-[var(--portal-accent)] text-white px-5 py-1.5 text-sm font-medium hover:brightness-90 transition disabled:opacity-50"
-                    >
-                      {updatingOrderId === o.id ? 'Mise a jour...' : 'Mettre a jour'}
-                    </button>
-                  </div>
-                )}
               </div>
-              )
             ))}
           </div>
         </div>
