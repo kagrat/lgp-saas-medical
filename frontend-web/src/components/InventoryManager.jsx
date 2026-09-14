@@ -1,5 +1,16 @@
 import { useEffect, useState } from 'react'
+import { Pill } from 'lucide-react'
 import api, { getErrorMessage } from '../api/client'
+
+// NOUVEAU (demande explicite de M. Faustin: icone coloree par produit,
+// comme sur sa capture d'ecran) - couleur derivee du nom du produit, pour
+// que le meme medicament garde toujours la meme couleur.
+const PRODUCT_ICON_COLORS = ['bg-primary-500', 'bg-clay-500', 'bg-secondary-500', 'bg-success-600', 'bg-amber-500']
+function hashToIndex(text) {
+  let hash = 0
+  for (let i = 0; i < text.length; i++) hash = (hash * 31 + text.charCodeAt(i)) >>> 0
+  return hash % PRODUCT_ICON_COLORS.length
+}
 
 const BATCH_STATUS_LABELS = {
   disponible: 'Disponible',
@@ -8,8 +19,8 @@ const BATCH_STATUS_LABELS = {
 }
 const BATCH_STATUS_COLORS = {
   disponible: 'bg-success-500/10 text-success-700',
-  expire_bientot: 'bg-clay-500/10 text-clay-600',
-  stock_faible: 'bg-amber-500/10 text-amber-600',
+  expire_bientot: 'bg-amber-500/10 text-amber-600',
+  stock_faible: 'bg-clay-500/10 text-clay-600',
 }
 
 /**
@@ -172,16 +183,43 @@ export default function InventoryManager() {
           </form>
 
           <p className="text-sm font-medium text-forest-900 mb-2">Catalogue ({products.length})</p>
-          <div className="space-y-2">
-            {products.map((p) => (
-              <div key={p.id} className="rounded-xl border border-forest-100 bg-white p-3">
-                <p className="text-forest-900 font-medium text-sm">{p.medication_name} <span className="text-xs text-forest-700 font-normal">({p.reference})</span></p>
-                <p className="text-xs text-forest-700">
-                  {[p.dci, p.dosage, p.form, p.manufacturer].filter(Boolean).join(' - ')}
-                </p>
-              </div>
-            ))}
-          </div>
+          {products.length === 0 ? (
+            <p className="text-forest-700 text-sm">Aucun produit enregistré.</p>
+          ) : (
+            <div className="overflow-x-auto rounded-xl border border-forest-100 bg-white">
+              <table className="w-full text-sm">
+                <thead>
+                  <tr className="border-b border-forest-100 text-left text-forest-700">
+                    <th className="px-4 py-3 font-medium">Produit</th>
+                    <th className="px-4 py-3 font-medium">Référence</th>
+                    <th className="px-4 py-3 font-medium">DCI</th>
+                    <th className="px-4 py-3 font-medium">Dosage</th>
+                    <th className="px-4 py-3 font-medium">Forme</th>
+                    <th className="px-4 py-3 font-medium">Fabricant</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {products.map((p) => (
+                    <tr key={p.id} className="border-b border-forest-100 last:border-0">
+                      <td className="px-4 py-3">
+                        <div className="flex items-center gap-2">
+                          <span className={`w-6 h-6 rounded-full flex items-center justify-center shrink-0 ${PRODUCT_ICON_COLORS[hashToIndex(p.medication_name)]}`}>
+                            <Pill size={13} className="text-white" />
+                          </span>
+                          <span className="text-forest-900 font-medium">{p.medication_name}</span>
+                        </div>
+                      </td>
+                      <td className="px-4 py-3 text-forest-700">{p.reference}</td>
+                      <td className="px-4 py-3 text-forest-700">{p.dci || '—'}</td>
+                      <td className="px-4 py-3 text-forest-700">{p.dosage || '—'}</td>
+                      <td className="px-4 py-3 text-forest-700">{p.form || '—'}</td>
+                      <td className="px-4 py-3 text-forest-700">{p.manufacturer || '—'}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
         </div>
       )}
 
@@ -223,6 +261,9 @@ export default function InventoryManager() {
         </div>
       )}
 
+      {/* NOUVEAU (demande explicite de M. Faustin: presenter la
+          consultation du stock exactement comme sa capture d'ecran -
+          vrai tableau avec colonnes, pas une liste de cartes). */}
       {subTab === 'consultation' && (
         <div>
           {batches === null ? (
@@ -230,20 +271,42 @@ export default function InventoryManager() {
           ) : batches.length === 0 ? (
             <p className="text-forest-700 text-sm">Aucun lot enregistré pour le moment.</p>
           ) : (
-            <div className="space-y-2">
-              {batches.map((b) => (
-                <div key={b.id} className="rounded-xl border border-forest-100 bg-white p-4 flex justify-between items-center flex-wrap gap-2">
-                  <div>
-                    <p className="text-forest-900 font-medium text-sm">{b.medication_name} <span className="text-xs text-forest-700 font-normal">- Lot {b.lot_number}</span></p>
-                    <p className="text-xs text-forest-700">
-                      Expire le {new Date(b.expiration_date).toLocaleDateString('fr-FR')} - {b.quantity_received} unités reçues - {b.unit_price.toLocaleString('fr-FR')} FCFA
-                    </p>
-                  </div>
-                  <span className={`text-xs px-3 py-1 rounded-full font-medium ${BATCH_STATUS_COLORS[b.status]}`}>
-                    {BATCH_STATUS_LABELS[b.status]}
-                  </span>
-                </div>
-              ))}
+            <div className="overflow-x-auto rounded-xl border border-forest-100 bg-white">
+              <table className="w-full text-sm">
+                <thead>
+                  <tr className="border-b border-forest-100 text-left text-forest-700">
+                    <th className="px-4 py-3 font-medium">Produit</th>
+                    <th className="px-4 py-3 font-medium">Lot</th>
+                    <th className="px-4 py-3 font-medium">Expiration</th>
+                    <th className="px-4 py-3 font-medium">Stock</th>
+                    <th className="px-4 py-3 font-medium">Prix vente</th>
+                    <th className="px-4 py-3 font-medium">État</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {batches.map((b) => (
+                    <tr key={b.id} className="border-b border-forest-100 last:border-0">
+                      <td className="px-4 py-3">
+                        <div className="flex items-center gap-2">
+                          <span className={`w-6 h-6 rounded-full flex items-center justify-center shrink-0 ${PRODUCT_ICON_COLORS[hashToIndex(b.medication_name)]}`}>
+                            <Pill size={13} className="text-white" />
+                          </span>
+                          <span className="text-forest-900 font-medium">{b.medication_name}</span>
+                        </div>
+                      </td>
+                      <td className="px-4 py-3 text-forest-700">{b.lot_number}</td>
+                      <td className="px-4 py-3 text-forest-700">{new Date(b.expiration_date).toLocaleDateString('fr-FR', { month: '2-digit', year: 'numeric' })}</td>
+                      <td className="px-4 py-3 text-forest-700">{b.quantity_received}</td>
+                      <td className="px-4 py-3 text-forest-700">{b.unit_price.toLocaleString('fr-FR')} F</td>
+                      <td className="px-4 py-3">
+                        <span className={`text-xs px-3 py-1 rounded-full font-medium ${BATCH_STATUS_COLORS[b.status]}`}>
+                          {BATCH_STATUS_LABELS[b.status]}
+                        </span>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
             </div>
           )}
         </div>

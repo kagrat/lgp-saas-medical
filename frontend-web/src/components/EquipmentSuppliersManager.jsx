@@ -363,27 +363,49 @@ export default function EquipmentSuppliersManager() {
           {savingInventory ? 'Ajout...' : 'Ajouter cet article'}
         </button>
       </form>
-      <div className="space-y-2 mb-8">
-        {inventoryItems.length === 0 && <p className="text-forest-700 text-sm">Aucun article enregistré.</p>}
-        {inventoryItems.map((i) => (
-          <div key={i.id} className={`rounded-xl border p-4 flex justify-between items-center ${i.is_low_stock ? 'border-clay-300 bg-clay-500/5' : 'border-forest-100 bg-white'}`}>
-            <div>
-              <p className="text-forest-900 font-medium">
-                {i.name}
-                {i.is_low_stock && <span className="ml-2 text-xs px-2 py-0.5 rounded-full bg-clay-500/10 text-clay-600 font-medium">Stock bas</span>}
-              </p>
-              <p className="text-sm text-forest-700">
-                {i.category ? `${i.category} - ` : ''}{i.quantity} {i.unit || 'unités'} (seuil: {i.alert_threshold})
-              </p>
-            </div>
-            <div className="flex items-center gap-2">
-              <button onClick={() => adjustInventoryQuantity(i.id, i.quantity - 1)} className="w-7 h-7 rounded-full border border-forest-100 text-forest-700 hover:bg-forest-50 transition">−</button>
-              <button onClick={() => adjustInventoryQuantity(i.id, i.quantity + 1)} className="w-7 h-7 rounded-full border border-forest-100 text-forest-700 hover:bg-forest-50 transition">+</button>
-              <button onClick={() => deleteInventoryItem(i.id)} className="text-sm text-clay-600 hover:underline ml-2">Supprimer</button>
-            </div>
-          </div>
-        ))}
-      </div>
+      {/* NOUVEAU (demande explicite de M. Faustin: meme presentation en
+          tableau que la consultation de stock pharmacie, pour rester
+          coherent partout dans le systeme). */}
+      {inventoryItems.length === 0 ? (
+        <p className="text-forest-700 text-sm mb-8">Aucun article enregistré.</p>
+      ) : (
+        <div className="overflow-x-auto rounded-xl border border-forest-100 bg-white mb-8">
+          <table className="w-full text-sm">
+            <thead>
+              <tr className="border-b border-forest-100 text-left text-forest-700">
+                <th className="px-4 py-3 font-medium">Article</th>
+                <th className="px-4 py-3 font-medium">Catégorie</th>
+                <th className="px-4 py-3 font-medium">Quantité</th>
+                <th className="px-4 py-3 font-medium">État</th>
+                <th className="px-4 py-3 font-medium">Action</th>
+              </tr>
+            </thead>
+            <tbody>
+              {inventoryItems.map((i) => (
+                <tr key={i.id} className="border-b border-forest-100 last:border-0">
+                  <td className="px-4 py-3 text-forest-900 font-medium">{i.name}</td>
+                  <td className="px-4 py-3 text-forest-700">{i.category || '—'}</td>
+                  <td className="px-4 py-3 text-forest-700">{i.quantity} {i.unit || 'unités'} <span className="text-xs">(seuil: {i.alert_threshold})</span></td>
+                  <td className="px-4 py-3">
+                    {i.is_low_stock ? (
+                      <span className="text-xs px-3 py-1 rounded-full bg-clay-500/10 text-clay-600 font-medium">Stock bas</span>
+                    ) : (
+                      <span className="text-xs px-3 py-1 rounded-full bg-success-500/10 text-success-700 font-medium">Disponible</span>
+                    )}
+                  </td>
+                  <td className="px-4 py-3">
+                    <div className="flex items-center gap-2">
+                      <button onClick={() => adjustInventoryQuantity(i.id, i.quantity - 1)} className="w-7 h-7 rounded-full border border-forest-100 text-forest-700 hover:bg-forest-50 transition">−</button>
+                      <button onClick={() => adjustInventoryQuantity(i.id, i.quantity + 1)} className="w-7 h-7 rounded-full border border-forest-100 text-forest-700 hover:bg-forest-50 transition">+</button>
+                      <button onClick={() => deleteInventoryItem(i.id)} className="text-sm text-clay-600 hover:underline ml-1">Supprimer</button>
+                    </div>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      )}
 
       <h3 className="font-display text-lg text-forest-900 font-semibold mb-3">Bons de commande</h3>
       <form onSubmit={submitPurchaseOrder} className="grid sm:grid-cols-2 gap-3 bg-white border border-forest-100 rounded-xl p-5 mb-4">
