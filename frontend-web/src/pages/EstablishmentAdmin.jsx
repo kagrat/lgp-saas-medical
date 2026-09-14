@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { BarChart, Stethoscope, Calendar, Pill, Package, FlaskConical, Users, MessageSquare, MessageCircle, Building2, Clock, Clipboard, FileBarChart, Wrench, Receipt, BedDouble, UserCircle } from 'lucide-react'
+import { BarChart, Stethoscope, Calendar, Pill, Package, FlaskConical, Users, MessageSquare, MessageCircle, Building2, Clock, Clipboard, FileBarChart, Wrench, Receipt, BedDouble, UserCircle, LayoutDashboard } from 'lucide-react'
 import api, { getErrorMessage } from '../api/client'
 import { SPECIALTIES, DAYS_OF_WEEK } from '../constants'
 import StarRating from '../components/StarRating'
@@ -25,6 +25,7 @@ import UserProfileBadge from '../components/UserProfileBadge'
 import ReportsManager from '../components/ReportsManager'
 import InvoiceManager from '../components/InvoiceManager'
 import InventoryManager from '../components/InventoryManager'
+import PharmacyDashboard from '../components/PharmacyDashboard'
 import PharmacyReportsManager from '../components/PharmacyReportsManager'
 import RoomsManager from '../components/RoomsManager'
 import EstablishmentProfileManager from '../components/EstablishmentProfileManager'
@@ -86,7 +87,7 @@ export default function EstablishmentAdmin() {
       // NOUVEAU (demande M. Faustin): ouvrir directement sur l'onglet
       // operationnel pertinent selon le type d'etablissement, plutot que
       // sur les statistiques par defaut.
-      if (data.type === 'pharmacie') setTab('orders')
+      if (data.type === 'pharmacie') setTab('dashboard')
       else if (data.type === 'laboratoire') setTab('analyses')
       else setTab('appointments')
     } catch (err) {
@@ -332,6 +333,10 @@ export default function EstablishmentAdmin() {
       ]
     : isPharmacy
     ? [
+        // CORRIGE (M. Faustin ne voyait pas "Tableau de bord" en tant
+        // qu'admin d'etablissement - il n'existait que pour le compte
+        // Pharmacien dedie, jamais ajoute ici. Meme composant reutilise).
+        { id: 'dashboard', label: 'Tableau de bord', icon: LayoutDashboard },
         { id: 'pharmacy', label: isPharmacy ? 'Inventaire' : 'Pharmacie', icon: Pill },
         { id: 'orders', label: 'Commandes', icon: Package, badge: orders.filter((o) => o.status === 'pending').length },
       ]
@@ -621,6 +626,8 @@ export default function EstablishmentAdmin() {
           </div>
         </div>
       )}
+
+      {tab === 'dashboard' && isPharmacy && <PharmacyDashboard />}
 
       {tab === 'pharmacy' && !isLab && <InventoryManager />}
 
