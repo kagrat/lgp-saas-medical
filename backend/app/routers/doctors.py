@@ -530,10 +530,17 @@ def share_patient_record(patient_id: str, payload: PatientRecordShareCreate, db:
                           current_user: User = Depends(require_roles(UserRole.DOCTOR))):
     doctor = _current_doctor(db, current_user)
 
+    # CORRIGE (demande explicite de M. Faustin: reorienter un patient VERS
+    # un medecin externe DOIT pouvoir se faire PENDANT la consultation en
+    # cours, pas seulement une fois terminee - la restriction precedente
+    # exigeait un RDV deja "termine", ce qui bloquait exactement ce cas
+    # d'usage).
     is_own_patient = (
         db.query(Appointment)
-        .filter(Appointment.doctor_id == doctor.id, Appointment.patient_id == patient_id,
-                Appointment.status == AppointmentStatus.COMPLETED)
+        .filter(
+            Appointment.doctor_id == doctor.id, Appointment.patient_id == patient_id,
+            Appointment.status.in_([AppointmentStatus.COMPLETED, AppointmentStatus.CONFIRMED, AppointmentStatus.ARRIVED]),
+        )
         .first()
     )
     if not is_own_patient:

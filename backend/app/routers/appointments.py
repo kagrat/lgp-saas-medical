@@ -38,6 +38,7 @@ def _to_appointment_out(appointment: Appointment) -> AppointmentOut:
         status=appointment.status,
         notes=appointment.notes,
         dossier_number=appointment.patient.dossier_number if appointment.patient else None,
+        doctor_name=appointment.doctor.user.full_name if appointment.doctor else None,
     )
 
 
@@ -270,7 +271,12 @@ def cancel_appointment(appointment_id: str, db: Session = Depends(get_db),
         patient = db.query(Patient).filter(Patient.user_id == current_user.id).first()
         if not patient or appointment.patient_id != patient.id:
             raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Acces refuse")
-    elif current_user.role in (UserRole.ESTABLISHMENT_ADMIN, UserRole.SECRETARY, UserRole.DOCTOR):
+    # CORRIGE (demande explicite de M. Faustin: "le medecin ne doit pas
+    # annuler les RDV, il peut soit traiter soit reorienter vers un
+    # autre medecin") - DOCTOR retire de cette liste. Reste reserve a
+    # l'etablissement/reception, qui gardent la responsabilite
+    # administrative d'un RDV annule.
+    elif current_user.role in (UserRole.ESTABLISHMENT_ADMIN, UserRole.SECRETARY):
         if appointment.establishment_id != current_user.establishment_id:
             raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Acces refuse")
     else:

@@ -56,7 +56,9 @@ export default function EstablishmentAdmin() {
   const [arrivingId, setArrivingId] = useState(null)
   const [cancellingId, setCancellingId] = useState(null)
   const [reschedulingId, setReschedulingId] = useState(null)
-  const [rescheduleValue, setRescheduleValue] = useState('')
+  const [rescheduleDate, setRescheduleDate] = useState('')
+  const [rescheduleSlots, setRescheduleSlots] = useState(null)
+  const [loadingRescheduleSlots, setLoadingRescheduleSlots] = useState(false)
   const [expandedAppointmentId, setExpandedAppointmentId] = useState(null)
   const [docForm, setDocForm] = useState({ document_type: 'consultation_note', title: '', content: '' })
   const [savingDoc, setSavingDoc] = useState(false)
@@ -265,17 +267,39 @@ export default function EstablishmentAdmin() {
 
   function toggleReschedule(appointmentId) {
     setReschedulingId(reschedulingId === appointmentId ? null : appointmentId)
-    setRescheduleValue('')
+    setRescheduleDate('')
+    setRescheduleSlots(null)
   }
 
-  async function submitReschedule(appointmentId) {
-    if (!rescheduleValue) return
+  async function checkRescheduleSlots(doctorId, e) {
+    if (e) e.preventDefault()
+    if (!rescheduleDate || !doctorId) return
+    setLoadingRescheduleSlots(true)
+    setError('')
+    try {
+      const { data } = await api.get('/appointments/available-slots', {
+        params: { doctor_id: doctorId, target_date: rescheduleDate },
+      })
+      setRescheduleSlots(data.slots)
+    } catch (err) {
+      setError(getErrorMessage(err, 'Impossible de charger les creneaux libres.'))
+    } finally {
+      setLoadingRescheduleSlots(false)
+    }
+  }
+
+  // CORRIGE (demande explicite de M. Faustin, deja appliquee cote
+  // medecin: le report se faisait par une saisie de date/heure a
+  // l'aveugle, sans jamais verifier qu'un creneau soit reellement libre
+  // - remplace par le choix parmi les creneaux reels du medecin).
+  async function submitReschedule(appointmentId, newDateTime) {
     setError('')
     try {
       await api.patch(`/appointments/${appointmentId}/reschedule`, {
-        new_scheduled_at: new Date(rescheduleValue).toISOString(),
+        new_scheduled_at: newDateTime,
       })
       setReschedulingId(null)
+      setRescheduleSlots(null)
       await loadAll()
     } catch (err) {
       setError(getErrorMessage(err, 'Impossible de reporter ce rendez-vous.'))
@@ -403,12 +427,11 @@ export default function EstablishmentAdmin() {
     { id: 'billing', label: 'Facturation', icon: Receipt },
     { id: 'reports', label: 'Rapports', icon: FileBarChart },
     // NOUVEAU (equipement + fournisseurs, dernier chantier du cahier des
-    // charges): disponible pour hopital/clinique et laboratoire.
-    // EXCLU pour la pharmacie (demande explicite de M. Faustin): son
-    // propre "Inventaire" (medicaments, lots, peremption) couvre deja son
-    // besoin - un onglet "Equipement" separe avec un "stock general"
-    // distinct aurait fait doublon et pretait a confusion.
-    ...(isPharmacy ? [] : [{ id: 'equipment', label: 'Equipement', icon: Wrench }]),
+    // charges): CORRIGE (demande explicite de M. Faustin: "faut enlever
+    // la partie equipement" pour le portail Hopital) - desormais
+    // reserve au laboratoire uniquement (equipements de labo, toujours
+    // pertinents), retire pour hopital/clinique ET pharmacie.
+    ...(isLab ? [{ id: 'equipment', label: 'Equipement', icon: Wrench }] : []),
     // NOUVEAU (demande M. Faustin): Statistiques desormais en toute
     // derniere position du menu, plus en tete - l'onglet operationnel
     // (rendez-vous/commandes/analyses) doit primer visuellement.
@@ -528,111 +551,152 @@ export default function EstablishmentAdmin() {
       {tab === 'appointments' && !isLab && !isPharmacy && (
         <div>
           <FilterTabs options={appointmentFilterOptions} active={appointmentFilter} onChange={setAppointmentFilter} />
+
+          {/* CORRIGE (bug reel confirme par capture: la liste n'affichait
+              AUCUNE information - ni patient, ni dossier, ni medecin,
+              juste la date). Ajoute aussi le medecin aupres de qui le
+              RDV est pris (plusieurs medecins dans un meme
+              etablissement) - et le meme accordeon "Ouvrir" que partout
+              ailleurs dans le systeme (un seul detail ouvert a la fois). */}
+          <div className="hidden sm:grid sm:grid-cols-[1.3fr_1fr_1fr_0.8fr_1.2fr_auto_auto] gap-3 px-4 py-2 text-xs font-medium text-forest-700 uppercase tracking-wide">
+            <span>Nom du patient</span>
+            <span>N° de dossier</span>
+            <span>Date</span>
+            <span>Heure</span>
+            <span>Médecin</span>
+            <span>Statut</span>
+            <span>Action</span>
+          </div>
+
           <div className="space-y-2">
-            {filteredAppointments.length === 0 && <p className="text-forest-700">Aucun rendez-vous dans cette catégorie.</p>}
+            {filteredAppointments.length === 0 && <p className="text-forest-700 px-4">Aucun rendez-vous dans cette catégorie.</p>}
             {filteredAppointments.map((a) => (
               <div key={a.id} className="rounded-xl border border-forest-100 bg-white p-4">
-                <div className="flex justify-between items-center flex-wrap gap-2">
-                  <p className="text-forest-900">
-                    {new Date(a.scheduled_at).toLocaleString('fr-FR')}
-                  </p>
-                  <div className="flex items-center gap-2 flex-wrap">
-                    <AppointmentStatusBadge status={a.status} />
-                    {a.status === 'confirmed' && (
-                      <>
+                <div className="grid sm:grid-cols-[1.3fr_1fr_1fr_0.8fr_1.2fr_auto_auto] gap-3 items-center">
+                  <span className="text-forest-900 font-medium">{a.patient_name}</span>
+                  <span className="text-sm text-forest-700">{a.dossier_number || '—'}</span>
+                  <span className="text-sm text-forest-700">{new Date(a.scheduled_at).toLocaleDateString('fr-FR')}</span>
+                  <span className="text-sm text-forest-700">{new Date(a.scheduled_at).toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' })}</span>
+                  <span className="text-sm text-forest-700">{a.doctor_name || '—'}</span>
+                  <AppointmentStatusBadge status={a.status} />
+                  <button
+                    onClick={() => toggleAppointmentExpand(a.id)}
+                    className="text-sm rounded-full bg-[var(--portal-accent)] text-white px-5 py-1.5 hover:brightness-90 transition justify-self-start sm:justify-self-end"
+                  >
+                    {expandedAppointmentId === a.id ? 'Fermer' : 'Ouvrir'}
+                  </button>
+                </div>
+
+                {expandedAppointmentId === a.id && (
+                  <div className="mt-3 pt-3 border-t border-forest-100 space-y-3">
+                    <div className="flex items-center gap-2 flex-wrap">
+                      {a.status === 'confirmed' && (
                         <button
                           onClick={() => markArrived(a.id)}
                           disabled={arrivingId === a.id}
                           className="text-sm rounded-full border border-forest-300 px-4 py-1.5 hover:bg-forest-50 transition disabled:opacity-50"
                         >
-                          {arrivingId === a.id ? '...' : 'Marquer arrive'}
+                          {arrivingId === a.id ? '...' : 'Marquer arrivé'}
                         </button>
-                        <button
-                          onClick={() => toggleReschedule(a.id)}
-                          className="text-sm rounded-full border border-amber-400 text-amber-600 px-4 py-1.5 hover:bg-amber-50 transition"
-                        >
-                          Reporter
-                        </button>
-                      </>
-                    )}
-                    {(a.status === 'confirmed' || a.status === 'arrived') && (
-                      <>
+                      )}
+                      {(a.status === 'confirmed' || a.status === 'arrived') && (
                         <button
                           onClick={() => markCompleted(a.id)}
                           disabled={completingId === a.id}
                           className="text-sm rounded-full bg-[var(--portal-accent)] text-white px-4 py-1.5 hover:brightness-90 transition disabled:opacity-50"
                         >
-                          {completingId === a.id ? 'Mise a jour...' : 'Marquer termine'}
+                          {completingId === a.id ? 'Mise à jour...' : 'Marquer terminé'}
                         </button>
+                      )}
+                      {a.status === 'confirmed' && (
+                        <button
+                          onClick={() => toggleReschedule(a.id)}
+                          className="text-sm rounded-full border border-forest-300 px-4 py-1.5 hover:bg-forest-50 transition"
+                        >
+                          Reporter
+                        </button>
+                      )}
+                      {(a.status === 'confirmed' || a.status === 'arrived') && (
                         <button
                           onClick={() => cancelAppointment(a.id)}
                           disabled={cancellingId === a.id}
-                          className="text-sm rounded-full border border-clay-500 text-clay-600 px-4 py-1.5 hover:bg-clay-500 hover:text-white transition disabled:opacity-50"
+                          className="text-sm rounded-full border border-transparent text-clay-600 px-4 py-1.5 hover:bg-clay-500/10 transition disabled:opacity-50"
                         >
                           {cancellingId === a.id ? '...' : 'Annuler'}
                         </button>
-                      </>
+                      )}
+                    </div>
+
+                    {/* CORRIGE (meme mecanisme que cote medecin: report
+                        parmi de vrais creneaux libres du medecin choisi,
+                        plus jamais une date/heure saisie a l'aveugle). */}
+                    {reschedulingId === a.id && (
+                      <div className="pt-3 border-t border-forest-100">
+                        <div className="flex items-end gap-2 mb-3">
+                          <div>
+                            <label className="block text-xs text-forest-700 mb-1">Nouvelle date</label>
+                            <input type="date" required value={rescheduleDate} min={new Date().toISOString().slice(0, 10)}
+                              onChange={(e) => setRescheduleDate(e.target.value)}
+                              className="rounded-lg border border-forest-100 px-3 py-1.5 text-sm" />
+                          </div>
+                          <button onClick={(e) => checkRescheduleSlots(a.doctor_id, e)} disabled={loadingRescheduleSlots}
+                            className="rounded-full border border-forest-300 px-4 py-1.5 text-sm hover:bg-forest-50 transition disabled:opacity-50">
+                            {loadingRescheduleSlots ? '...' : 'Voir les creneaux libres'}
+                          </button>
+                        </div>
+                        {rescheduleSlots && (
+                          rescheduleSlots.length === 0 ? (
+                            <p className="text-sm text-forest-700">Aucun creneau libre a cette date.</p>
+                          ) : (
+                            <div className="grid grid-cols-4 sm:grid-cols-6 gap-2">
+                              {rescheduleSlots.map((slot, idx) => (
+                                <button key={idx} onClick={() => submitReschedule(a.id, slot.slot_start)}
+                                  className="rounded-lg border border-forest-100 bg-white py-2 text-sm font-medium text-forest-900 hover:border-primary-500 hover:bg-primary-50 transition">
+                                  {new Date(slot.slot_start).toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' })}
+                                </button>
+                              ))}
+                            </div>
+                          )
+                        )}
+                      </div>
                     )}
+
                     {a.status === 'completed' && (
-                      <button
-                        onClick={() => toggleAppointmentExpand(a.id)}
-                        className="text-sm rounded-full border border-forest-300 px-4 py-1.5 hover:bg-forest-50 transition"
-                      >
-                        {expandedAppointmentId === a.id ? 'Fermer' : 'Ajouter au dossier'}
-                      </button>
+                      <div className="pt-3 border-t border-forest-100">
+                        {docMessage && <p className="text-forest-900 bg-forest-50 border border-forest-300 rounded-xl p-3 mb-3 text-sm">{docMessage}</p>}
+                        <div className="grid sm:grid-cols-2 gap-3 mb-3">
+                          <select
+                            value={docForm.document_type}
+                            onChange={(e) => setDocForm({ ...docForm, document_type: e.target.value })}
+                            className="rounded-lg border border-forest-100 px-3 py-2 text-sm bg-white"
+                          >
+                            {SELECTABLE_DOCUMENT_TYPES.map((t) => <option key={t} value={t}>{DOCUMENT_TYPE_LABELS[t]}</option>)}
+                          </select>
+                          <input
+                            placeholder="Titre (ex: Ordonnance du 21 mai)"
+                            value={docForm.title}
+                            onChange={(e) => setDocForm({ ...docForm, title: e.target.value })}
+                            className="rounded-lg border border-forest-100 px-3 py-2 text-sm"
+                          />
+                        </div>
+                        <textarea
+                          placeholder="Contenu (traitement prescrit, résultat, observations...)"
+                          value={docForm.content}
+                          onChange={(e) => setDocForm({ ...docForm, content: e.target.value })}
+                          rows={3}
+                          className="w-full rounded-lg border border-forest-100 px-3 py-2 text-sm mb-3"
+                        />
+                        <button
+                          onClick={() => submitDocument(a.id)}
+                          disabled={savingDoc || !docForm.title || !docForm.content}
+                          className="rounded-full bg-[var(--portal-accent)] text-white px-5 py-1.5 text-sm font-semibold hover:brightness-90 transition disabled:opacity-50"
+                        >
+                          {savingDoc ? 'Ajout...' : 'Ajouter au dossier du patient'}
+                        </button>
+
+                        <LabReferralForm appointmentId={a.id} onDone={() => {}} />
+                      </div>
                     )}
-                  </div>
-                </div>
-
-                {reschedulingId === a.id && (
-                  <div className="mt-3 pt-3 border-t border-forest-100 flex flex-wrap gap-2 items-end">
-                    <div>
-                      <label className="block text-xs text-forest-700 mb-1">Nouvelle date et heure</label>
-                      <input type="datetime-local" value={rescheduleValue}
-                        onChange={(e) => setRescheduleValue(e.target.value)}
-                        className="rounded-lg border border-forest-100 px-3 py-1.5 text-sm" />
-                    </div>
-                    <button onClick={() => submitReschedule(a.id)}
-                      className="rounded-full bg-[var(--portal-accent)] text-white px-4 py-1.5 text-sm font-semibold hover:brightness-90 transition">
-                      Confirmer le report
-                    </button>
-                  </div>
-                )}
-
-                {expandedAppointmentId === a.id && (
-                  <div className="mt-4 pt-4 border-t border-forest-100">
-                    {docMessage && <p className="text-forest-900 bg-forest-50 border border-forest-300 rounded-xl p-3 mb-3 text-sm">{docMessage}</p>}
-                    <div className="grid sm:grid-cols-2 gap-3 mb-3">
-                      <select
-                        value={docForm.document_type}
-                        onChange={(e) => setDocForm({ ...docForm, document_type: e.target.value })}
-                        className="rounded-lg border border-forest-100 px-3 py-2 text-sm bg-white"
-                      >
-                        {SELECTABLE_DOCUMENT_TYPES.map((t) => <option key={t} value={t}>{DOCUMENT_TYPE_LABELS[t]}</option>)}
-                      </select>
-                      <input
-                        placeholder="Titre (ex: Ordonnance du 21 mai)"
-                        value={docForm.title}
-                        onChange={(e) => setDocForm({ ...docForm, title: e.target.value })}
-                        className="rounded-lg border border-forest-100 px-3 py-2 text-sm"
-                      />
-                    </div>
-                    <textarea
-                      placeholder="Contenu (traitement prescrit, résultat, observations...)"
-                      value={docForm.content}
-                      onChange={(e) => setDocForm({ ...docForm, content: e.target.value })}
-                      rows={3}
-                      className="w-full rounded-lg border border-forest-100 px-3 py-2 text-sm mb-3"
-                    />
-                    <button
-                      onClick={() => submitDocument(a.id)}
-                      disabled={savingDoc || !docForm.title || !docForm.content}
-                      className="rounded-full bg-[var(--portal-accent)] text-white px-5 py-1.5 text-sm font-semibold hover:brightness-90 transition disabled:opacity-50"
-                    >
-                      {savingDoc ? 'Ajout...' : 'Ajouter au dossier du patient'}
-                    </button>
-
-                    <LabReferralForm appointmentId={a.id} onDone={() => {}} />
                   </div>
                 )}
               </div>
@@ -905,7 +969,7 @@ export default function EstablishmentAdmin() {
 
       {tab === 'reports' && (isPharmacy ? <PharmacyReportsManager /> : <ReportsManager />)}
 
-      {tab === 'equipment' && !isPharmacy && <EquipmentSuppliersManager />}
+      {tab === 'equipment' && isLab && <EquipmentSuppliersManager />}
     </SidebarLayout>
   )
 }

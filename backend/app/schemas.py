@@ -331,9 +331,13 @@ class AppointmentOut(BaseModel):
     duration_minutes: int
     status: AppointmentStatus
     notes: Optional[str] = None
-    # NOUVEAU (demande explicite de M. Faustin: liste des RDV restructuree
-    # - numero de dossier visible directement sur la ligne).
     dossier_number: Optional[str] = None
+    # NOUVEAU (demande explicite de M. Faustin: "faut que les RDV
+    # affichent les informations avec le medecin aupres de qui le RDV
+    # est pris" - la liste des RDV du portail etablissement n'affichait
+    # AUCUNE information, ni patient ni medecin, un bug reel confirme par
+    # capture).
+    doctor_name: Optional[str] = None
 
     model_config = {"from_attributes": True}
 

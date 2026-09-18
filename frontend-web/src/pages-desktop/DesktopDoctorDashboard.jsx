@@ -9,6 +9,7 @@ import InternalMessaging from '../components/InternalMessaging'
 import AdmitPatientShortcut from '../components/AdmitPatientShortcut'
 import UserProfileBadge from '../components/UserProfileBadge'
 import QuickMessageBox from '../components/QuickMessageBox'
+import ExternalReferralForm from '../components/ExternalReferralForm'
 import MyPatients from '../components/MyPatients'
 import Hospitalizations from '../components/Hospitalizations'
 import PrescriptionItemsEditor from '../components/PrescriptionItemsEditor'
@@ -31,7 +32,6 @@ export default function DesktopDoctorDashboard() {
 
   const [completingId, setCompletingId] = useState(null)
   const [arrivingId, setArrivingId] = useState(null)
-  const [cancellingId, setCancellingId] = useState(null)
   const [reschedulingId, setReschedulingId] = useState(null)
   const [rescheduleValue, setRescheduleValue] = useState('')
   const [rescheduleDate, setRescheduleDate] = useState('')
@@ -126,18 +126,6 @@ export default function DesktopDoctorDashboard() {
     }
   }
 
-  async function cancelAppointment(appointmentId) {
-    setCancellingId(appointmentId)
-    setError('')
-    try {
-      await api.post(`/appointments/${appointmentId}/cancel`)
-      await loadAppointments()
-    } catch (err) {
-      setError(getErrorMessage(err, "Impossible d'annuler ce rendez-vous."))
-    } finally {
-      setCancellingId(null)
-    }
-  }
 
   function toggleReschedule(appointmentId) {
     setReschedulingId(reschedulingId === appointmentId ? null : appointmentId)
@@ -378,15 +366,19 @@ export default function DesktopDoctorDashboard() {
                           </button>
                         </>
                       )}
+                      {/* NOUVEAU (demande explicite de M. Faustin:
+                          "reorienter vers un medecin externe si
+                          l'hopital ne dispose pas en interne"). */}
                       {(a.status === 'confirmed' || a.status === 'arrived') && (
-                        <button
-                          onClick={() => cancelAppointment(a.id)}
-                          disabled={cancellingId === a.id}
-                          className="text-sm rounded-full border border-transparent text-clay-600 px-4 py-1.5 hover:bg-clay-500/10 transition disabled:opacity-50"
-                        >
-                          {cancellingId === a.id ? '...' : 'Annuler'}
-                        </button>
+                        <ExternalReferralForm patientId={a.patient_id} />
                       )}
+                      {/* CORRIGE (demande explicite de M. Faustin: "le
+                          medecin ne doit pas annuler les RDV, il peut
+                          soit traiter soit reorienter vers un autre
+                          medecin interne ou externe") - bouton Annuler
+                          retire du portail medecin. Reste disponible
+                          cote etablissement/reception, qui gardent la
+                          responsabilite administrative d'un RDV annule. */}
                     </div>
                   </div>
 
