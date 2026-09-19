@@ -12,8 +12,8 @@ from sqlalchemy.orm import Session
 
 from app.database import get_db
 from app.models import Shift, LeaveRequest, Department, User, UserRole
-from app.schemas import ShiftCreate, ShiftOut, LeaveRequestCreate, LeaveRequestReview, LeaveRequestOut
-from app.deps import require_roles
+from app.schemas import ShiftCreate, ShiftOut, LeaveRequestCreate, LeaveRequestReview, LeaveRequestOut, ShiftSelfCreate
+from app.deps import require_roles, get_current_user
 
 router = APIRouter(prefix="/scheduling", tags=["planning"])
 
@@ -67,6 +67,35 @@ def create_shift(payload: ShiftCreate, db: Session = Depends(get_db),
         department_id=payload.department_id, shift_date=payload.shift_date,
         start_time=payload.start_time, end_time=payload.end_time, notes=payload.notes,
         created_by_user_id=current_user.id,
+    )
+    db.add(shift)
+    db.commit()
+    db.refresh(shift)
+    return _to_shift_out(shift)
+
+
+@router.post("/shifts/mine", response_model=ShiftOut, status_code=status.HTTP_201_CREATED)
+def create_my_shift(payload: ShiftSelfCreate, db: Session = Depends(get_db),
+                     current_user: User = Depends(get_current_user)):
+    """
+    NOUVEAU (demande explicite de M. Faustin: "en attendant" que
+    DRH/etablissement programment entierement la disponibilite des
+    medecins, chaque utilisateur peut temporairement programmer SES
+    PROPRES gardes depuis "Mon planning"). Toujours pour SOI-MEME - on ne
+    peut jamais programmer la garde de quelqu'un d'autre par cette voie.
+    Aucune limite de date: une garde peut etre programmee des mois a
+    l'avance (repond a "la programmation doit pouvoir se faire sur une
+    periode de 1 mois").
+    """
+    if not current_user.establishment_id:
+        raise HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_ENTITY, detail="Compte non rattache a un etablissement")
+    if payload.end_time <= payload.start_time:
+        raise HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_ENTITY, detail="L'heure de fin doit etre apres l'heure de debut")
+
+    shift = Shift(
+        id=str(uuid.uuid4()), establishment_id=current_user.establishment_id, user_id=current_user.id,
+        shift_date=payload.shift_date, start_time=payload.start_time, end_time=payload.end_time,
+        notes=payload.notes, created_by_user_id=current_user.id,
     )
     db.add(shift)
     db.commit()

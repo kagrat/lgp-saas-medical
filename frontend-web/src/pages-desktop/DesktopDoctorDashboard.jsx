@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { Calendar, Users, BedDouble, Clock, MessageSquare, MessageCircle, CalendarCheck, Star } from 'lucide-react'
+import { Calendar, Users, BedDouble, Clock, MessageSquare, MessageCircle, Star } from 'lucide-react'
 import api, { getErrorMessage } from '../api/client'
 import { AppointmentStatusBadge } from '../components/AppointmentStatusUI'
 import { SELECTABLE_DOCUMENT_TYPES, DOCUMENT_TYPE_LABELS } from '../components/DocumentType'
@@ -15,7 +15,6 @@ import Hospitalizations from '../components/Hospitalizations'
 import PrescriptionItemsEditor from '../components/PrescriptionItemsEditor'
 import MySchedule from '../components/MySchedule'
 import LabReferralForm from '../components/LabReferralForm'
-import DoctorAvailabilityManager from '../components/DoctorAvailabilityManager'
 import DoctorReviewsList from '../components/DoctorReviewsList'
 import NotificationBell from '../components/NotificationBell'
 import SidebarLayout from '../components/SidebarLayout'
@@ -248,7 +247,11 @@ export default function DesktopDoctorDashboard() {
     { id: 'appointments', label: 'Mes rendez-vous', icon: Calendar },
     { id: 'patients', label: 'Patients', icon: Users },
     { id: 'hospitalizations', label: 'Hospitalisations', icon: BedDouble },
-    { id: 'availability', label: 'Ma disponibilité', icon: CalendarCheck },
+    // CORRIGE (demande explicite de M. Faustin: "c'est DRH ou l'ETS qui
+    // doivent programmer la disponibilite des medecins, faut supprimer
+    // 'ma disponibilite'"). En attendant que cette gestion soit
+    // entierement cote DRH/ETS, le medecin programme ses gardes via
+    // "Mon planning" a la place (voir MySchedule.jsx).
     { id: 'reviews', label: 'Mes avis', icon: Star },
     { id: 'schedule', label: 'Mon planning', icon: Clock },
     { id: 'messages', label: 'Messages', icon: MessageSquare },
@@ -528,10 +531,6 @@ export default function DesktopDoctorDashboard() {
       {tab === 'patients' && <MyPatients />}
 
       {tab === 'hospitalizations' && <Hospitalizations />}
-
-      {tab === 'availability' && (
-        myDoctorId ? <DoctorAvailabilityManager doctorId={myDoctorId} /> : <p className="text-forest-700">Chargement...</p>
-      )}
 
       {tab === 'reviews' && (
         myDoctorId ? <DoctorReviewsList doctorId={myDoctorId} /> : <p className="text-forest-700">Chargement...</p>

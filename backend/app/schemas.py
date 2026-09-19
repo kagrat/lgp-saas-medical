@@ -886,6 +886,20 @@ class ShiftCreate(BaseModel):
     notes: Optional[str] = Field(default=None, max_length=300)
 
 
+class ShiftSelfCreate(BaseModel):
+    """NOUVEAU (demande explicite de M. Faustin: "en attendant" que
+    DRH/ETS gerent entierement la disponibilite des medecins, "ajouter
+    l'option de programmation au niveau de mon planning pour permettre
+    aux medecins de se programmer ses gardes"). Pas de user_id: toujours
+    la garde de l'utilisateur CONNECTE, jamais celle d'un autre - solution
+    temporaire, distincte de la creation par les RH (create_shift), qui
+    reste la voie definitive prevue."""
+    shift_date: date
+    start_time: time
+    end_time: time
+    notes: Optional[str] = Field(default=None, max_length=300)
+
+
 class ShiftOut(BaseModel):
     id: str
     user_id: str

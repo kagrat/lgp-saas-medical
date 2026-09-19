@@ -23,6 +23,22 @@ export default function MySchedule() {
   const [form, setForm] = useState({ start_date: '', end_date: '', reason: '' })
   const [submitting, setSubmitting] = useState(false)
 
+  // NOUVEAU (demande explicite de M. Faustin: "en attendant" que DRH/ETS
+  // gerent entierement la disponibilite, "ajouter l'option de
+  // programmation au niveau de mon planning pour permettre aux medecins
+  // de se programmer ses gardes" - sur une periode d'au moins 1 mois).
+  const [showShiftForm, setShowShiftForm] = useState(false)
+  const [shiftForm, setShiftForm] = useState({ shift_date: '', start_time: '08:00', end_time: '16:00', notes: '' })
+  const [savingShift, setSavingShift] = useState(false)
+  const [shiftMessage, setShiftMessage] = useState('')
+
+  const [showQuickSetup, setShowQuickSetup] = useState(false)
+  const [quickSetup, setQuickSetup] = useState({
+    days: [], from_date: '', to_date: '', start_time: '08:00', end_time: '16:00',
+  })
+  const [savingQuickSetup, setSavingQuickSetup] = useState(false)
+  const [quickSetupMessage, setQuickSetupMessage] = useState('')
+
   useEffect(() => {
     load()
   }, [])
@@ -59,11 +75,164 @@ export default function MySchedule() {
     }
   }
 
+  async function submitShift(e) {
+    e.preventDefault()
+    setSavingShift(true)
+    setShiftMessage('')
+    setError('')
+    try {
+      await api.post('/scheduling/shifts/mine', {
+        shift_date: shiftForm.shift_date, start_time: shiftForm.start_time,
+        end_time: shiftForm.end_time, notes: shiftForm.notes || null,
+      })
+      setShiftMessage('Garde programmee.')
+      setShiftForm({ shift_date: '', start_time: '08:00', end_time: '16:00', notes: '' })
+      await load()
+    } catch (err) {
+      setError(getErrorMessage(err, 'Impossible de programmer cette garde.'))
+    } finally {
+      setSavingShift(false)
+    }
+  }
+
+  function toggleQuickDay(dayIndex) {
+    setQuickSetup((q) => ({
+      ...q,
+      days: q.days.includes(dayIndex) ? q.days.filter((d) => d !== dayIndex) : [...q.days, dayIndex],
+    }))
+  }
+
+  // NOUVEAU (demande explicite de M. Faustin: "la programmation doit
+  // pouvoir se faire sur une periode de 1 mois") - au lieu d'ajouter
+  // chaque garde une par une, choisis les jours de la semaine et une
+  // plage de dates (jusqu'a 1 mois ou plus): toutes les gardes
+  // correspondantes sont creees en une seule action.
+  async function submitQuickSetup(e) {
+    e.preventDefault()
+    if (quickSetup.days.length === 0 || !quickSetup.from_date || !quickSetup.to_date) return
+    setSavingQuickSetup(true)
+    setQuickSetupMessage('')
+    setError('')
+    try {
+      const start = new Date(quickSetup.from_date)
+      const end = new Date(quickSetup.to_date)
+      const dates = []
+      for (let d = new Date(start); d <= end; d.setDate(d.getDate() + 1)) {
+        if (quickSetup.days.includes(d.getDay())) {
+          dates.push(new Date(d).toISOString().slice(0, 10))
+        }
+      }
+      for (const shift_date of dates) {
+        await api.post('/scheduling/shifts/mine', {
+          shift_date, start_time: quickSetup.start_time, end_time: quickSetup.end_time,
+        })
+      }
+      setQuickSetupMessage(`${dates.length} garde(s) programmee(s).`)
+      setQuickSetup({ days: [], from_date: '', to_date: '', start_time: '08:00', end_time: '16:00' })
+      await load()
+    } catch (err) {
+      setError(getErrorMessage(err, "Impossible d'appliquer cette programmation."))
+    } finally {
+      setSavingQuickSetup(false)
+    }
+  }
+
   const upcomingShifts = shifts.filter((s) => new Date(s.shift_date) >= new Date(new Date().toDateString()))
 
   return (
     <div>
       {error && <p className="text-clay-600 mb-4">{error}</p>}
+
+      {/* NOUVEAU (demande explicite de M. Faustin - solution temporaire
+          "en attendant" que DRH/ETS gerent entierement la disponibilite). */}
+      <div className="flex gap-2 mb-4">
+        <button onClick={() => { setShowShiftForm((v) => !v); setShowQuickSetup(false) }}
+          className="text-sm rounded-full border border-forest-300 px-4 py-1.5 hover:bg-forest-50 transition">
+          {showShiftForm ? 'Fermer' : '+ Programmer une garde'}
+        </button>
+        <button onClick={() => { setShowQuickSetup((v) => !v); setShowShiftForm(false) }}
+          className="text-sm rounded-full border border-forest-300 px-4 py-1.5 hover:bg-forest-50 transition">
+          {showQuickSetup ? 'Fermer' : '+ Programmer sur une periode'}
+        </button>
+      </div>
+
+      {showShiftForm && (
+        <form onSubmit={submitShift} className="bg-white border border-forest-100 rounded-xl p-5 mb-4">
+          {shiftMessage && <p className="text-forest-900 bg-forest-50 border border-forest-300 rounded-lg p-2 mb-3 text-sm">{shiftMessage}</p>}
+          <div className="grid sm:grid-cols-3 gap-3 mb-3">
+            <div>
+              <label className="block text-xs text-forest-700 mb-1">Date</label>
+              <input required type="date" value={shiftForm.shift_date} min={new Date().toISOString().slice(0, 10)}
+                onChange={(e) => setShiftForm({ ...shiftForm, shift_date: e.target.value })}
+                className="w-full rounded-lg border border-forest-100 px-3 py-2 text-sm" />
+            </div>
+            <div>
+              <label className="block text-xs text-forest-700 mb-1">Début</label>
+              <input required type="time" value={shiftForm.start_time}
+                onChange={(e) => setShiftForm({ ...shiftForm, start_time: e.target.value })}
+                className="w-full rounded-lg border border-forest-100 px-3 py-2 text-sm" />
+            </div>
+            <div>
+              <label className="block text-xs text-forest-700 mb-1">Fin</label>
+              <input required type="time" value={shiftForm.end_time}
+                onChange={(e) => setShiftForm({ ...shiftForm, end_time: e.target.value })}
+                className="w-full rounded-lg border border-forest-100 px-3 py-2 text-sm" />
+            </div>
+          </div>
+          <input placeholder="Notes (optionnel)" value={shiftForm.notes}
+            onChange={(e) => setShiftForm({ ...shiftForm, notes: e.target.value })}
+            className="w-full rounded-lg border border-forest-100 px-3 py-2 text-sm mb-3" />
+          <button type="submit" disabled={savingShift}
+            className="rounded-full bg-[var(--portal-accent)] text-white px-5 py-2 text-sm font-medium hover:brightness-90 transition disabled:opacity-50">
+            {savingShift ? 'Enregistrement...' : 'Programmer cette garde'}
+          </button>
+        </form>
+      )}
+
+      {showQuickSetup && (
+        <form onSubmit={submitQuickSetup} className="bg-white border border-forest-100 rounded-xl p-5 mb-4">
+          {quickSetupMessage && <p className="text-forest-900 bg-forest-50 border border-forest-300 rounded-lg p-2 mb-3 text-sm">{quickSetupMessage}</p>}
+          <p className="text-sm text-forest-700 mb-2">Choisis les jours de la semaine, une plage de dates (au moins 1 mois conseille), et l'horaire.</p>
+          <div className="flex gap-1 mb-3 flex-wrap">
+            {['Dim', 'Lun', 'Mar', 'Mer', 'Jeu', 'Ven', 'Sam'].map((label, idx) => (
+              <button key={idx} type="button" onClick={() => toggleQuickDay(idx)}
+                className={`text-sm px-3 py-1.5 rounded-full border transition ${quickSetup.days.includes(idx) ? 'bg-[var(--portal-accent)] text-white border-transparent' : 'border-forest-300 text-forest-700 hover:bg-forest-50'}`}>
+                {label}
+              </button>
+            ))}
+          </div>
+          <div className="grid sm:grid-cols-4 gap-3 mb-3">
+            <div>
+              <label className="block text-xs text-forest-700 mb-1">Du</label>
+              <input required type="date" value={quickSetup.from_date} min={new Date().toISOString().slice(0, 10)}
+                onChange={(e) => setQuickSetup({ ...quickSetup, from_date: e.target.value })}
+                className="w-full rounded-lg border border-forest-100 px-3 py-2 text-sm" />
+            </div>
+            <div>
+              <label className="block text-xs text-forest-700 mb-1">Au</label>
+              <input required type="date" value={quickSetup.to_date} min={quickSetup.from_date || new Date().toISOString().slice(0, 10)}
+                onChange={(e) => setQuickSetup({ ...quickSetup, to_date: e.target.value })}
+                className="w-full rounded-lg border border-forest-100 px-3 py-2 text-sm" />
+            </div>
+            <div>
+              <label className="block text-xs text-forest-700 mb-1">Début</label>
+              <input required type="time" value={quickSetup.start_time}
+                onChange={(e) => setQuickSetup({ ...quickSetup, start_time: e.target.value })}
+                className="w-full rounded-lg border border-forest-100 px-3 py-2 text-sm" />
+            </div>
+            <div>
+              <label className="block text-xs text-forest-700 mb-1">Fin</label>
+              <input required type="time" value={quickSetup.end_time}
+                onChange={(e) => setQuickSetup({ ...quickSetup, end_time: e.target.value })}
+                className="w-full rounded-lg border border-forest-100 px-3 py-2 text-sm" />
+            </div>
+          </div>
+          <button type="submit" disabled={savingQuickSetup || quickSetup.days.length === 0}
+            className="rounded-full bg-[var(--portal-accent)] text-white px-5 py-2 text-sm font-medium hover:brightness-90 transition disabled:opacity-50">
+            {savingQuickSetup ? 'Application...' : 'Programmer toutes ces gardes'}
+          </button>
+        </form>
+      )}
 
       <h3 className="font-display text-lg text-forest-900 font-semibold mb-3">Mes prochaines gardes</h3>
       <div className="space-y-2 mb-8">
