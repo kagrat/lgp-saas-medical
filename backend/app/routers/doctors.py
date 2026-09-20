@@ -407,46 +407,84 @@ def my_patients(search: Optional[str] = None, db: Session = Depends(get_db),
 
 @router.get("/me/patients/{patient_id}", response_model=DoctorPatientDetailOut)
 def my_patient_detail(patient_id: str, db: Session = Depends(get_db),
-                       current_user: User = Depends(require_roles(UserRole.DOCTOR))):
-    doctor = _current_doctor(db, current_user)
+                       current_user: User = Depends(require_roles(UserRole.DOCTOR, UserRole.ESTABLISHMENT_ADMIN))):
+    """
+    CORRIGE (demande explicite de M. Faustin: "les dossiers au niveau de
+    la partie Patients [cote etablissement] donnent la main comme au
+    niveau des medecins" - meme richesse d'affichage, JAMAIS le meme
+    droit d'ecriture: can_add_document reste toujours False pour un
+    admin, exactement la meme regle deja appliquee a un confrere avec un
+    dossier partage - decision cliniques reservee au medecin traitant.
+    """
     patient = db.query(Patient).filter(Patient.id == patient_id).first()
     if not patient:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Patient introuvable")
 
-    own_appointments = (
-        db.query(Appointment)
-        .filter(Appointment.doctor_id == doctor.id, Appointment.patient_id == patient_id,
-                Appointment.status == AppointmentStatus.COMPLETED)
-        .order_by(Appointment.scheduled_at.desc())
-        .all()
-    )
+    currently_with_doctor = None
 
-    viewed_via_share_from = None
-    if own_appointments:
-        source_appointments = own_appointments
-        can_add_document = True
-    else:
-        # Pas son propre patient: n'autorise la consultation que si un
-        # confrere lui a explicitement partage ce dossier (lecture seule -
-        # completer le dossier reste reserve au medecin traitant, voir
-        # MedicalDocument et son principe de tracabilite par rendez-vous).
-        share = (
-            db.query(PatientRecordShare)
-            .filter(PatientRecordShare.to_doctor_id == doctor.id, PatientRecordShare.patient_id == patient_id)
-            .order_by(PatientRecordShare.created_at.desc())
-            .first()
-        )
-        if not share:
-            raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Ce patient ne fait pas partie de tes patients")
+    if current_user.role == UserRole.ESTABLISHMENT_ADMIN:
+        # Tout patient ayant deja eu un rendez-vous DANS cet etablissement -
+        # lecture seule, jamais d'ajout clinique (voir can_add_document).
         source_appointments = (
             db.query(Appointment)
-            .filter(Appointment.doctor_id == share.from_doctor_id, Appointment.patient_id == patient_id,
+            .filter(Appointment.establishment_id == current_user.establishment_id, Appointment.patient_id == patient_id,
                     Appointment.status == AppointmentStatus.COMPLETED)
             .order_by(Appointment.scheduled_at.desc())
             .all()
         )
+        has_any_relationship = source_appointments or db.query(Appointment).filter(
+            Appointment.establishment_id == current_user.establishment_id, Appointment.patient_id == patient_id,
+        ).first()
+        if not has_any_relationship:
+            raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Ce patient ne fait pas partie de ton etablissement")
         can_add_document = False
-        viewed_via_share_from = share.from_doctor.user.full_name
+        viewed_via_share_from = None
+        # Information (pas un blocage): un medecin est-il EN CE MOMENT
+        # avec ce patient (rendez-vous "arrive", pas encore termine) ?
+        active = (
+            db.query(Appointment)
+            .filter(Appointment.establishment_id == current_user.establishment_id, Appointment.patient_id == patient_id,
+                    Appointment.status == AppointmentStatus.ARRIVED)
+            .first()
+        )
+        if active:
+            currently_with_doctor = active.doctor.user.full_name
+    else:
+        doctor = _current_doctor(db, current_user)
+        own_appointments = (
+            db.query(Appointment)
+            .filter(Appointment.doctor_id == doctor.id, Appointment.patient_id == patient_id,
+                    Appointment.status == AppointmentStatus.COMPLETED)
+            .order_by(Appointment.scheduled_at.desc())
+            .all()
+        )
+
+        viewed_via_share_from = None
+        if own_appointments:
+            source_appointments = own_appointments
+            can_add_document = True
+        else:
+            # Pas son propre patient: n'autorise la consultation que si un
+            # confrere lui a explicitement partage ce dossier (lecture seule -
+            # completer le dossier reste reserve au medecin traitant, voir
+            # MedicalDocument et son principe de tracabilite par rendez-vous).
+            share = (
+                db.query(PatientRecordShare)
+                .filter(PatientRecordShare.to_doctor_id == doctor.id, PatientRecordShare.patient_id == patient_id)
+                .order_by(PatientRecordShare.created_at.desc())
+                .first()
+            )
+            if not share:
+                raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Ce patient ne fait pas partie de tes patients")
+            source_appointments = (
+                db.query(Appointment)
+                .filter(Appointment.doctor_id == share.from_doctor_id, Appointment.patient_id == patient_id,
+                        Appointment.status == AppointmentStatus.COMPLETED)
+                .order_by(Appointment.scheduled_at.desc())
+                .all()
+            )
+            can_add_document = False
+            viewed_via_share_from = share.from_doctor.user.full_name
 
     appointment_ids = [a.id for a in source_appointments]
     documents = (
@@ -478,6 +516,7 @@ def my_patient_detail(patient_id: str, db: Session = Depends(get_db),
         clinical_flags=[ClinicalFlagOut(id=f.id, flag_type=f.flag_type, label=f.label, created_at=f.created_at) for f in clinical_flags],
         can_add_document=can_add_document,
         viewed_via_share_from=viewed_via_share_from,
+        currently_with_doctor=currently_with_doctor,
     )
 
 

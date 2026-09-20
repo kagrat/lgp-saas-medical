@@ -995,6 +995,11 @@ class DoctorPatientDetailOut(BaseModel):
     clinical_flags: list[ClinicalFlagOut] = []
     can_add_document: bool
     viewed_via_share_from: Optional[str] = None
+    # NOUVEAU (demande explicite de M. Faustin: donner la main a
+    # l'etablissement "lorsque le dossier n'est pas... pris en charge en
+    # cours chez un medecin") - information, pas un blocage: signale si
+    # un medecin est actuellement EN CONSULTATION avec ce patient.
+    currently_with_doctor: Optional[str] = None
 
 
 class PatientRecordShareCreate(BaseModel):
