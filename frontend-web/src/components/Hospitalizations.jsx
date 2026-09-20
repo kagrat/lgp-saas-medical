@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import api, { getErrorMessage } from '../api/client'
+import api, { getErrorMessage, getRole } from '../api/client'
 
 /**
  * NOUVEAU (hospitalisation, demande confirmee par M. Faustin): le medecin
@@ -17,8 +17,15 @@ export default function Hospitalizations() {
   const [showAdmitForm, setShowAdmitForm] = useState(false)
   const [patientQuery, setPatientQuery] = useState('')
   const [patientResults, setPatientResults] = useState([])
-  const [admitForm, setAdmitForm] = useState({ patient_id: '', patient_name: '', department_id: '', room_id: '', diagnosis: '', expected_discharge_date: '' })
+  const [admitForm, setAdmitForm] = useState({ patient_id: '', patient_name: '', department_id: '', room_id: '', bed_id: '', diagnosis: '', expected_discharge_date: '', admitting_doctor_id: '' })
   const [admitting, setAdmitting] = useState(false)
+  // CORRIGE (demande explicite de M. Faustin: "l'hospitalisation doit
+  // etre disponible pour l'ETS, et pour le personnel qui aura des liens
+  // avec les Patients") - le serveur exige DEJA que l'infirmier/admin
+  // precise le medecin admettant, mais ce formulaire ne proposait jamais
+  // ce choix, rendant l'admission par ces roles impossible en pratique.
+  const [doctors, setDoctors] = useState([])
+  const isDoctor = getRole() === 'doctor'
 
   const [selectedId, setSelectedId] = useState(null)
   const [detail, setDetail] = useState(null)
@@ -52,12 +59,15 @@ export default function Hospitalizations() {
 
   async function loadReferenceData() {
     try {
-      const [deptRes, roomRes] = await Promise.all([
+      const calls = [
         api.get('/establishments/departments'),
         api.get('/services/rooms/mine'),
-      ])
-      setDepartments(deptRes.data)
-      setRooms(roomRes.data)
+      ]
+      if (!isDoctor) calls.push(api.get('/doctors/establishment'))
+      const results = await Promise.all(calls)
+      setDepartments(results[0].data)
+      setRooms(results[1].data)
+      if (!isDoctor) setDoctors(results[2].data)
     } catch {
       // secondaire, pas bloquant
     }
@@ -92,11 +102,13 @@ export default function Hospitalizations() {
         patient_id: admitForm.patient_id,
         department_id: admitForm.department_id || null,
         room_id: admitForm.room_id || null,
+        bed_id: admitForm.bed_id || null,
         diagnosis: admitForm.diagnosis || null,
         expected_discharge_date: admitForm.expected_discharge_date || null,
+        admitting_doctor_id: admitForm.admitting_doctor_id || null,
       })
       setShowAdmitForm(false)
-      setAdmitForm({ patient_id: '', patient_name: '', department_id: '', room_id: '', diagnosis: '', expected_discharge_date: '' })
+      setAdmitForm({ patient_id: '', patient_name: '', department_id: '', room_id: '', bed_id: '', diagnosis: '', expected_discharge_date: '', admitting_doctor_id: '' })
       setPatientQuery('')
       await load()
       await loadReferenceData()
@@ -206,17 +218,40 @@ export default function Hospitalizations() {
           )}
           {admitForm.patient_id && <p className="text-sm text-forest-900 font-medium mb-3">Patient choisi: {admitForm.patient_name}</p>}
 
+          {!isDoctor && (
+            <div className="mb-3">
+              <label className="block text-xs text-forest-700 mb-1">Médecin admettant (obligatoire)</label>
+              <select required value={admitForm.admitting_doctor_id}
+                onChange={(e) => setAdmitForm({ ...admitForm, admitting_doctor_id: e.target.value })}
+                className="w-full rounded-lg border border-forest-100 px-3 py-2 text-sm bg-white">
+                <option value="">Choisir le médecin qui admet ce patient...</option>
+                {doctors.map((d) => <option key={d.id} value={d.id}>{d.full_name} - {d.specialty}</option>)}
+              </select>
+            </div>
+          )}
+
           <div className="grid sm:grid-cols-2 gap-3 mb-3">
             <select value={admitForm.department_id} onChange={(e) => setAdmitForm({ ...admitForm, department_id: e.target.value })}
               className="rounded-lg border border-forest-100 px-3 py-2 text-sm bg-white">
               <option value="">Departement (optionnel)</option>
               {departments.map((d) => <option key={d.id} value={d.id}>{d.name}</option>)}
             </select>
-            <select value={admitForm.room_id} onChange={(e) => setAdmitForm({ ...admitForm, room_id: e.target.value })}
+            <select value={admitForm.room_id} onChange={(e) => setAdmitForm({ ...admitForm, room_id: e.target.value, bed_id: '' })}
               className="rounded-lg border border-forest-100 px-3 py-2 text-sm bg-white">
               <option value="">Chambre (optionnel)</option>
               {rooms.filter((r) => !r.is_occupied).map((r) => <option key={r.id} value={r.id}>{r.name}{r.department_name ? ` - ${r.department_name}` : ''}</option>)}
             </select>
+            {/* NOUVEAU (demande explicite de M. Faustin: "choisir la
+                chambre ET le lit lors de l'hospitalisation"). */}
+            {admitForm.room_id && (
+              <select value={admitForm.bed_id} onChange={(e) => setAdmitForm({ ...admitForm, bed_id: e.target.value })}
+                className="rounded-lg border border-forest-100 px-3 py-2 text-sm bg-white">
+                <option value="">Lit (optionnel)</option>
+                {(rooms.find((r) => r.id === admitForm.room_id)?.beds || []).filter((b) => !b.is_occupied).map((b) => (
+                  <option key={b.id} value={b.id}>{b.label}</option>
+                ))}
+              </select>
+            )}
           </div>
           <textarea placeholder="Diagnostic (optionnel)" value={admitForm.diagnosis}
             onChange={(e) => setAdmitForm({ ...admitForm, diagnosis: e.target.value })}

@@ -17,7 +17,7 @@ from sqlalchemy.orm import Session
 from app.database import get_db
 from app.models import (
     Admission, VitalSigns, AdmissionTransfer, MedicalDocument, DocumentType,
-    Patient, Doctor, Department, Room, User, UserRole, AuditLog, MedicationAdministration,
+    Patient, Doctor, Department, Room, Bed, User, UserRole, AuditLog, MedicationAdministration,
 )
 from app.schemas import (
     AdmissionCreate, AdmissionOut, AdmissionSummaryOut, AdmissionTransferCreate,
@@ -51,6 +51,7 @@ def _to_summary_out(admission: Admission) -> AdmissionSummaryOut:
         admitting_doctor_name=admission.admitting_doctor.user.full_name,
         department_name=admission.department.name if admission.department else None,
         room_name=admission.room.name if admission.room else None,
+        bed_label=admission.bed.label if admission.bed else None,
         status=admission.status, admission_date=admission.admission_date,
         expected_discharge_date=admission.expected_discharge_date,
     )
@@ -78,6 +79,7 @@ def _to_full_out(db: Session, admission: Admission) -> AdmissionOut:
         admitting_doctor_name=admission.admitting_doctor.user.full_name,
         department_id=admission.department_id, department_name=admission.department.name if admission.department else None,
         room_id=admission.room_id, room_name=admission.room.name if admission.room else None,
+        bed_id=admission.bed_id, bed_label=admission.bed.label if admission.bed else None,
         status=admission.status, diagnosis=admission.diagnosis,
         admission_date=admission.admission_date, expected_discharge_date=admission.expected_discharge_date,
         actual_discharge_date=admission.actual_discharge_date, discharge_summary=admission.discharge_summary,
@@ -112,10 +114,39 @@ def _to_full_out(db: Session, admission: Admission) -> AdmissionOut:
 
 @router.post("", response_model=AdmissionOut, status_code=status.HTTP_201_CREATED)
 def admit_patient(payload: AdmissionCreate, db: Session = Depends(get_db),
-                   current_user: User = Depends(require_roles(UserRole.DOCTOR))):
-    """Le medecin decide l'admission d'un patient - pas necessairement issue
-    d'un rendez-vous programme (admission d'urgence possible)."""
-    doctor = _current_doctor(db, current_user)
+                   current_user: User = Depends(require_roles(
+                       UserRole.DOCTOR, UserRole.ESTABLISHMENT_ADMIN, UserRole.NURSE))):
+    """
+    CORRIGE (demande explicite de M. Faustin: "l'hospitalisation doit
+    etre disponible pour l'ETS, et pour le personnel qui aura des liens
+    avec les Patients") - avant, seul le medecin pouvait admettre un
+    patient, alors que l'admin d'etablissement et l'infirmier avaient
+    deja acces en LECTURE aux hospitalisations (incoherence reelle).
+    L'infirmier ET l'admin peuvent desormais aussi creer une admission -
+    le medecin admettant n'est plus forcement l'auteur de la demande
+    (voir resolution ci-dessous).
+    """
+    if current_user.role == UserRole.DOCTOR:
+        doctor = _current_doctor(db, current_user)
+        # Un medecin peut neanmoins admettre au nom d'un confrere si precise.
+        if payload.admitting_doctor_id and payload.admitting_doctor_id != doctor.id:
+            other_doctor = db.query(Doctor).filter(
+                Doctor.id == payload.admitting_doctor_id, Doctor.establishment_id == current_user.establishment_id,
+            ).first()
+            if not other_doctor:
+                raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Medecin admettant introuvable dans ton etablissement")
+            doctor = other_doctor
+    else:
+        # Infirmier ou admin d'etablissement: doivent obligatoirement
+        # preciser QUEL medecin admet cliniquement le patient.
+        if not payload.admitting_doctor_id:
+            raise HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_ENTITY, detail="Precise le medecin qui admet ce patient")
+        doctor = db.query(Doctor).filter(
+            Doctor.id == payload.admitting_doctor_id, Doctor.establishment_id == current_user.establishment_id,
+        ).first()
+        if not doctor:
+            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Medecin admettant introuvable dans ton etablissement")
+
     patient = db.query(Patient).filter(Patient.id == payload.patient_id).first()
     if not patient:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Patient introuvable")
@@ -128,14 +159,28 @@ def admit_patient(payload: AdmissionCreate, db: Session = Depends(get_db),
         room = db.query(Room).filter(Room.id == payload.room_id, Room.establishment_id == current_user.establishment_id).first()
         if not room:
             raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Chambre introuvable")
-        occupied = db.query(Admission).filter(Admission.room_id == payload.room_id, Admission.status == "active").first()
+
+    # CORRIGE (bug reel: cette verification bloquait toute la CHAMBRE des
+    # qu'UN lit etait occupe, empechant de fait plusieurs patients dans
+    # une chambre a plusieurs lits - alors que l'affichage (RoomOut)
+    # calculait deja l'occupation lit par lit. Verifie maintenant le LIT
+    # precis, et exige un lit pour toute chambre qui en a).
+    if payload.bed_id:
+        bed = db.query(Bed).filter(Bed.id == payload.bed_id, Bed.room_id == payload.room_id).first()
+        if not bed:
+            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Lit introuvable dans cette chambre")
+        occupied = db.query(Admission).filter(Admission.bed_id == payload.bed_id, Admission.status == "active").first()
         if occupied:
-            raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail="Cette chambre est deja occupee")
+            raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail="Ce lit est deja occupe")
+    elif payload.room_id:
+        has_beds = db.query(Bed).filter(Bed.room_id == payload.room_id).first()
+        if has_beds:
+            raise HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_ENTITY, detail="Cette chambre a des lits individuels: precise lequel choisir")
 
     admission = Admission(
         id=str(uuid.uuid4()), establishment_id=current_user.establishment_id,
         patient_id=payload.patient_id, admitting_doctor_id=doctor.id,
-        department_id=payload.department_id, room_id=payload.room_id,
+        department_id=payload.department_id, room_id=payload.room_id, bed_id=payload.bed_id,
         status="active", diagnosis=payload.diagnosis,
         admission_date=datetime.utcnow(), expected_discharge_date=payload.expected_discharge_date,
     )

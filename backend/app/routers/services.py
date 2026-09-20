@@ -12,8 +12,8 @@ from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
 
 from app.database import get_db
-from app.models import Service, Room, User, UserRole, Admission, Department
-from app.schemas import ServiceCreate, ServiceOut, RoomCreate, RoomOut
+from app.models import Service, Room, User, UserRole, Admission, Department, Bed
+from app.schemas import ServiceCreate, ServiceOut, RoomCreate, RoomOut, BedOut
 from app.deps import require_roles
 
 router = APIRouter(prefix="/services", tags=["services-ressources"])
@@ -56,14 +56,38 @@ def delete_service(service_id: str, db: Session = Depends(get_db),
 
 
 def _to_room_out(db: Session, room: Room) -> RoomOut:
-    # NOUVEAU (hospitalisation): occupation calculee a la volee, jamais
-    # stockee, pour eviter toute desynchronisation avec la realite.
-    active_admission = db.query(Admission).filter(Admission.room_id == room.id, Admission.status == "active").first()
+    # CORRIGE (bug reel: occupation verifiee au niveau de la CHAMBRE
+    # entiere, empechant plusieurs patients dans une meme chambre a
+    # plusieurs lits) - calculee desormais lit par lit.
+    beds = db.query(Bed).filter(Bed.room_id == room.id).all()
+    active_admissions = {
+        a.bed_id: a for a in db.query(Admission).filter(Admission.room_id == room.id, Admission.status == "active").all()
+        if a.bed_id
+    }
+    bed_outs = []
+    for bed in beds:
+        admission = active_admissions.get(bed.id)
+        bed_outs.append(BedOut(
+            id=bed.id, label=bed.label,
+            is_occupied=admission is not None,
+            current_patient_name=admission.patient.user.full_name if admission else None,
+        ))
+
+    # Chambre sans lits generes (ancienne chambre creee avant ce
+    # changement, ou capacite non renseignee): retombe sur l'ancien
+    # comportement (occupation au niveau de la chambre entiere).
+    if not beds:
+        active_admission = db.query(Admission).filter(Admission.room_id == room.id, Admission.status == "active").first()
+        is_occupied = active_admission is not None
+        current_patient_name = active_admission.patient.user.full_name if active_admission else None
+    else:
+        is_occupied = all(b.is_occupied for b in bed_outs)
+        current_patient_name = None
+
     return RoomOut(
         id=room.id, name=room.name, room_type=room.room_type, capacity=room.capacity,
         department_id=room.department_id, department_name=room.department.name if room.department else None,
-        is_occupied=active_admission is not None,
-        current_patient_name=active_admission.patient.user.full_name if active_admission else None,
+        is_occupied=is_occupied, current_patient_name=current_patient_name, beds=bed_outs,
     )
 
 
@@ -81,6 +105,14 @@ def create_room(payload: RoomCreate, db: Session = Depends(get_db),
         department_id=payload.department_id,
     )
     db.add(room)
+    db.flush()
+
+    # NOUVEAU (demande explicite de M. Faustin: choisir la chambre ET le
+    # lit) - un lit selectionnable par unite de capacite declaree.
+    if payload.capacity:
+        for i in range(1, payload.capacity + 1):
+            db.add(Bed(id=str(uuid.uuid4()), room_id=room.id, label=f"Lit {i}"))
+
     db.commit()
     db.refresh(room)
     return _to_room_out(db, room)

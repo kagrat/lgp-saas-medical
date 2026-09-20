@@ -148,7 +148,11 @@ def doctor_public_profile(doctor_id: str, db: Session = Depends(get_db)):
 @router.get("/establishment", response_model=list[DoctorOut])
 def list_establishment_doctors(db: Session = Depends(get_db),
                                 current_user: User = Depends(require_roles(
-                                    UserRole.ESTABLISHMENT_ADMIN, UserRole.SECRETARY))):
+                                    # CORRIGE (demande explicite de M. Faustin: l'infirmier
+                                    # doit pouvoir admettre un patient, ce qui exige de
+                                    # choisir le medecin admettant - NURSE ajoute ici, une
+                                    # simple liste de noms/specialites, rien de sensible.
+                                    UserRole.ESTABLISHMENT_ADMIN, UserRole.SECRETARY, UserRole.NURSE))):
     doctors = db.query(Doctor).filter(Doctor.establishment_id == current_user.establishment_id).all()
     return [_to_doctor_out(db, d) for d in doctors]
 

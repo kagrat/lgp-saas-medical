@@ -14,7 +14,7 @@ export default function AdmitPatientShortcut({ patientId, patientName, onAdmitte
   const [open, setOpen] = useState(false)
   const [departments, setDepartments] = useState([])
   const [rooms, setRooms] = useState([])
-  const [form, setForm] = useState({ department_id: '', room_id: '', diagnosis: '', expected_discharge_date: '' })
+  const [form, setForm] = useState({ department_id: '', room_id: '', bed_id: '', diagnosis: '', expected_discharge_date: '' })
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState('')
   const [message, setMessage] = useState('')
@@ -36,11 +36,12 @@ export default function AdmitPatientShortcut({ patientId, patientName, onAdmitte
         patient_id: patientId,
         department_id: form.department_id || null,
         room_id: form.room_id || null,
+        bed_id: form.bed_id || null,
         diagnosis: form.diagnosis || null,
         expected_discharge_date: form.expected_discharge_date || null,
       })
       setMessage(`${patientName} admis(e) en hospitalisation.`)
-      setForm({ department_id: '', room_id: '', diagnosis: '', expected_discharge_date: '' })
+      setForm({ department_id: '', room_id: '', bed_id: '', diagnosis: '', expected_discharge_date: '' })
       if (onAdmitted) onAdmitted()
     } catch (err) {
       setError(getErrorMessage(err, "Impossible d'admettre ce patient."))
@@ -72,11 +73,23 @@ export default function AdmitPatientShortcut({ patientId, patientName, onAdmitte
           <option value="">Departement (optionnel)</option>
           {departments.map((d) => <option key={d.id} value={d.id}>{d.name}</option>)}
         </select>
-        <select value={form.room_id} onChange={(e) => setForm({ ...form, room_id: e.target.value })}
+        <select value={form.room_id} onChange={(e) => setForm({ ...form, room_id: e.target.value, bed_id: '' })}
           className="rounded-lg border border-forest-100 px-3 py-2 text-sm bg-white">
           <option value="">Chambre (optionnel)</option>
           {rooms.filter((r) => !r.is_occupied).map((r) => <option key={r.id} value={r.id}>{r.name}</option>)}
         </select>
+        {/* NOUVEAU (demande explicite de M. Faustin: "choisir la chambre
+            ET le lit lors de l'hospitalisation") - liste les lits de la
+            chambre choisie, seuls les libres selectionnables. */}
+        {form.room_id && (
+          <select value={form.bed_id} onChange={(e) => setForm({ ...form, bed_id: e.target.value })}
+            className="rounded-lg border border-forest-100 px-3 py-2 text-sm bg-white">
+            <option value="">Lit (optionnel)</option>
+            {(rooms.find((r) => r.id === form.room_id)?.beds || []).filter((b) => !b.is_occupied).map((b) => (
+              <option key={b.id} value={b.id}>{b.label}</option>
+            ))}
+          </select>
+        )}
         <input placeholder="Diagnostic (optionnel)" value={form.diagnosis}
           onChange={(e) => setForm({ ...form, diagnosis: e.target.value })}
           className="sm:col-span-2 rounded-lg border border-forest-100 px-3 py-2 text-sm" />

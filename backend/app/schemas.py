@@ -692,8 +692,15 @@ class AdmissionCreate(BaseModel):
     patient_id: str
     department_id: Optional[str] = None
     room_id: Optional[str] = None
+    # CORRIGE (bug reel trouve lors d'une relecture rigoureuse: le
+    # modele Admission avait deja bed_id, RoomOut calculait deja
+    # l'occupation lit par lit, mais AdmissionCreate n'exposait jamais ce
+    # champ - impossible de reellement choisir un lit malgre toute
+    # l'infrastructure deja en place).
+    bed_id: Optional[str] = None
     diagnosis: Optional[str] = Field(default=None, max_length=2000)
     expected_discharge_date: Optional[datetime] = None
+    admitting_doctor_id: Optional[str] = None
 
 
 class AdmissionTransferCreate(BaseModel):
@@ -727,6 +734,8 @@ class AdmissionOut(BaseModel):
     department_name: Optional[str] = None
     room_id: Optional[str] = None
     room_name: Optional[str] = None
+    bed_id: Optional[str] = None
+    bed_label: Optional[str] = None
     status: str
     diagnosis: Optional[str] = None
     admission_date: datetime
@@ -748,6 +757,7 @@ class AdmissionSummaryOut(BaseModel):
     admitting_doctor_name: str
     department_name: Optional[str] = None
     room_name: Optional[str] = None
+    bed_label: Optional[str] = None
     status: str
     admission_date: datetime
     expected_discharge_date: Optional[datetime] = None
@@ -1445,6 +1455,16 @@ class RoomCreate(BaseModel):
     department_id: Optional[str] = None
 
 
+class BedOut(BaseModel):
+    """NOUVEAU (demande explicite de M. Faustin: choisir la chambre ET le
+    lit lors de l'hospitalisation) - occupation calculee en temps reel,
+    jamais stockee, meme principe que pour la chambre."""
+    id: str
+    label: str
+    is_occupied: bool = False
+    current_patient_name: Optional[str] = None
+
+
 class RoomOut(BaseModel):
     id: str
     name: str
@@ -1452,11 +1472,12 @@ class RoomOut(BaseModel):
     capacity: Optional[int] = None
     department_id: Optional[str] = None
     department_name: Optional[str] = None
-    # NOUVEAU (hospitalisation): occupation calculee en temps reel a partir
-    # des admissions actives - jamais stockee, pour eviter tout risque de
-    # desynchronisation entre ce champ et la realite.
+    # CORRIGE (bug reel identifie: is_occupied passait a True des qu'UN
+    # SEUL lit etait pris, bloquant les autres lits libres de la meme
+    # chambre - signifie desormais "TOUS les lits sont pris").
     is_occupied: bool = False
     current_patient_name: Optional[str] = None
+    beds: list[BedOut] = []
 
     model_config = {"from_attributes": True}
 

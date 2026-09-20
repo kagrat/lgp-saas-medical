@@ -6,6 +6,7 @@ import AppointmentCheckIn from '../components/AppointmentCheckIn'
 import SidebarLayout from '../components/SidebarLayout'
 import InternalMessaging from '../components/InternalMessaging'
 import PatientMessaging from '../components/PatientMessaging'
+import Hospitalizations from '../components/Hospitalizations'
 import NotificationBell from '../components/NotificationBell'
 import UserProfileBadge from '../components/UserProfileBadge'
 
@@ -165,6 +166,15 @@ export default function DesktopNurseDashboard() {
 
       {tab === 'patients' && (
         <div>
+      {/* NOUVEAU (demande explicite de M. Faustin: "l'hospitalisation
+          doit etre disponible... pour le personnel qui aura des liens
+          avec les Patients") - l'infirmier gerait deja les constantes
+          des patients admis, mais n'avait aucun moyen d'ADMETTRE un
+          nouveau patient (le serveur l'autorise deja, jamais expose
+          ici). */}
+      <Hospitalizations />
+      <div className="border-t border-forest-100 my-8"></div>
+      <h3 className="font-display text-lg text-forest-900 font-semibold mb-3">Suivi quotidien (constantes)</h3>
       {selectedId && (
         <div className="rounded-xl border border-forest-300 bg-forest-50 p-5 mb-6">
           {loadingDetail && <p className="text-sm text-forest-700">Chargement...</p>}

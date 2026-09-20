@@ -142,6 +142,11 @@ class Admission(Base):
     admitting_doctor_id = Column(UUID(as_uuid=False), ForeignKey("doctors.id"), nullable=False)
     department_id = Column(UUID(as_uuid=False), ForeignKey("departments.id"), nullable=True)
     room_id = Column(UUID(as_uuid=False), ForeignKey("rooms.id"), nullable=True)
+    # NOUVEAU (demande explicite de M. Faustin: choisir la chambre ET le
+    # lit lors de l'hospitalisation) - l'occupation se verifie desormais
+    # au niveau du LIT, pas de la chambre entiere (une chambre a
+    # plusieurs lits peut donc heberger plusieurs patients a la fois).
+    bed_id = Column(UUID(as_uuid=False), ForeignKey("beds.id"), nullable=True)
     status = Column(String(20), nullable=False, default="active")
     diagnosis = Column(Text, nullable=True)
     admission_date = Column(DateTime, nullable=False, default=datetime.utcnow)
@@ -155,6 +160,7 @@ class Admission(Base):
     admitting_doctor = relationship("Doctor")
     department = relationship("Department")
     room = relationship("Room")
+    bed = relationship("Bed")
     vital_signs = relationship("VitalSigns", back_populates="admission", order_by="VitalSigns.recorded_at.desc()")
     transfers = relationship("AdmissionTransfer", back_populates="admission", order_by="AdmissionTransfer.created_at.desc()")
 
@@ -1022,6 +1028,25 @@ class Room(Base):
 
     establishment = relationship("Establishment")
     department = relationship("Department")
+
+
+class Bed(Base):
+    """
+    NOUVEAU (demande explicite de M. Faustin: "permettre lors de
+    l'hospitalisation de choisir la chambre ET le lit") - avant, une
+    chambre n'avait qu'un nombre de lits DECLARATIF ("capacite"), sans
+    lits individuels selectionnables: l'occupation etait verifiee au
+    niveau de la CHAMBRE entiere, empechant de fait plus d'un patient a
+    la fois meme dans une chambre a plusieurs lits. Un lit genere
+    automatiquement par lit declare dans la capacite de la chambre.
+    """
+    __tablename__ = "beds"
+
+    id = Column(UUID(as_uuid=False), primary_key=True, default=gen_uuid)
+    room_id = Column(UUID(as_uuid=False), ForeignKey("rooms.id"), nullable=False)
+    label = Column(String(50), nullable=False)  # "Lit 1", "Lit 2"...
+
+    room = relationship("Room")
 
 
 class PlatformSetting(Base):

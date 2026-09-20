@@ -26,6 +26,7 @@ import ReportsManager from '../components/ReportsManager'
 import InvoiceManager from '../components/InvoiceManager'
 import InventoryManager from '../components/InventoryManager'
 import PharmacyDashboard from '../components/PharmacyDashboard'
+import Hospitalizations from '../components/Hospitalizations'
 import PharmacyReportsManager from '../components/PharmacyReportsManager'
 import RoomsManager from '../components/RoomsManager'
 import EstablishmentProfileManager from '../components/EstablishmentProfileManager'
@@ -386,6 +387,10 @@ export default function EstablishmentAdmin() {
         // sont desormais aussi bloques pour ce type (voir pharmacy.py).
         { id: 'doctors', label: 'Médecins', icon: Stethoscope },
         { id: 'appointments', label: 'Rendez-vous', icon: Calendar },
+        // NOUVEAU (demande explicite de M. Faustin: "l'hospitalisation
+        // doit etre disponible pour l'ETS" - le backend l'autorisait
+        // deja pour ESTABLISHMENT_ADMIN, jamais expose cote interface).
+        { id: 'hospitalizations', label: 'Hospitalisations', icon: BedDouble },
       ]
   // NOUVEAU (demande explicite de M. Faustin): l'ancien onglet "Services"
   // melangeait 4 choses distinctes - prestations facturables, chambres,
@@ -706,6 +711,8 @@ export default function EstablishmentAdmin() {
       )}
 
       {tab === 'dashboard' && isPharmacy && <PharmacyDashboard onSelectOrder={openOrderFromDashboard} />}
+
+      {tab === 'hospitalizations' && !isLab && !isPharmacy && <Hospitalizations />}
 
       {tab === 'pharmacy' && !isLab && <InventoryManager />}
 
