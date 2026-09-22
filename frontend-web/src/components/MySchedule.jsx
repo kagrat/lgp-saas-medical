@@ -14,10 +14,13 @@ const LEAVE_STATUS_COLORS = {
  * medecin, un infirmier, un secretaire, etc. voient tous leur PROPRE
  * planning et peuvent demander un conge de la meme facon.
  */
+const SHIFTS_COLLAPSED_LIMIT = 5
+
 export default function MySchedule() {
   const [shifts, setShifts] = useState([])
   const [leaveRequests, setLeaveRequests] = useState([])
   const [error, setError] = useState('')
+  const [shiftsExpanded, setShiftsExpanded] = useState(false)
 
   const [showForm, setShowForm] = useState(false)
   const [form, setForm] = useState({ start_date: '', end_date: '', reason: '' })
@@ -234,10 +237,22 @@ export default function MySchedule() {
         </form>
       )}
 
-      <h3 className="font-display text-lg text-forest-900 font-semibold mb-3">Mes prochaines gardes</h3>
+      <div className="flex items-center justify-between mb-3">
+        <h3 className="font-display text-lg text-forest-900 font-semibold">Mes prochaines gardes</h3>
+        {/* CORRIGE (demande explicite de M. Faustin, capture jointe: "il
+            faut pouvoir reduire lorsque la programmation est deja
+            effectuee sur plusieurs semaines") - avant, TOUTES les gardes
+            s'affichaient d'un coup (une programmation sur 1 mois pouvant
+            en generer des dizaines), rendant la page interminable. */}
+        {upcomingShifts.length > SHIFTS_COLLAPSED_LIMIT && (
+          <button onClick={() => setShiftsExpanded((v) => !v)} className="text-sm text-forest-700 font-medium hover:underline">
+            {shiftsExpanded ? 'Réduire' : `Voir toutes les gardes (${upcomingShifts.length})`}
+          </button>
+        )}
+      </div>
       <div className="space-y-2 mb-8">
         {upcomingShifts.length === 0 && <p className="text-forest-700 text-sm">Aucune garde planifiee pour le moment.</p>}
-        {upcomingShifts.map((s) => (
+        {(shiftsExpanded ? upcomingShifts : upcomingShifts.slice(0, SHIFTS_COLLAPSED_LIMIT)).map((s) => (
           <div key={s.id} className="rounded-xl border border-forest-100 bg-white p-4">
             <p className="text-forest-900 font-medium">
               {new Date(s.shift_date).toLocaleDateString('fr-FR', { weekday: 'long', day: 'numeric', month: 'long' })}
