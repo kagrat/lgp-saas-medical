@@ -533,6 +533,17 @@ class PharmacyReservation(Base):
     # pas un encaissement reellement verifie. Pret a etre branche sur un
     # vrai prestataire de paiement plus tard (voir pharmacy.py::pay_reservation).
     is_paid = Column(Boolean, default=False)
+    # NOUVEAU (demande explicite de M. Faustin: "un patient qui n'a pas
+    # pris la plateforme mais veut payer les medicaments avec
+    # ordonnance" - lors de la commande, une partie pour uploader
+    # l'image de l'ordonnance directement). is_guest_order marque une
+    # commande d'un compte cree automatiquement pour cette occasion
+    # (jamais de mot de passe utilisable - pas un vrai compte pour se
+    # connecter), guest_prescription_image stocke l'image en base64,
+    # separement du mecanisme normal (prescription_document_id) qui
+    # suppose un rendez-vous existant, absent ici par definition.
+    is_guest_order = Column(Boolean, default=False, nullable=False)
+    guest_prescription_image = Column(Text, nullable=True)
     paid_at = Column(DateTime, nullable=True)
 
     items = relationship("PharmacyOrderItem", back_populates="reservation", cascade="all, delete-orphan")

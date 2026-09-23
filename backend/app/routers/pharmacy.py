@@ -19,6 +19,7 @@ Nouveau flux:
    qui refuse desormais PENDING/CONFIRMED/AWAITING_CONFIRMATION.
 """
 import uuid
+import secrets
 from datetime import datetime, timedelta
 from typing import Optional
 
@@ -27,6 +28,7 @@ from sqlalchemy import func
 from sqlalchemy.orm import Session
 
 from app.database import get_db
+from app.security import hash_password
 from app.models import (
     PharmacyStock, PharmacyReservation, PharmacyOrderItem, PharmacyReservationStatusHistory,
     Patient, User, UserRole, ReservationStatus, EstablishmentType, Establishment, AuditLog,
@@ -37,6 +39,7 @@ from app.schemas import (
     ReservationStatusUpdate, ReservationHistoryOut, PharmacyStatsOut, ReservationReview,
     PharmacySearchResult, PrescriptionMatchOut, PharmacyOrderSummaryOut,
     PharmacyBatchCreate, PharmacyBatchOut, PharmacyReportOut, PharmacyDailyRevenueOut,
+    GuestReservationCreate, ReservationAddItem,
 )
 from app.deps import require_roles, require_establishment_types
 from app.services.geo import resolve_city_coordinates, haversine_km
@@ -131,6 +134,7 @@ def _to_reservation_out(reservation: PharmacyReservation, db: Session) -> Reserv
         patient_name=patient.user.full_name if patient else "Inconnu",
         patient_phone=patient.user.phone if patient else None,
         is_paid=reservation.is_paid, paid_at=reservation.paid_at,
+        is_guest_order=reservation.is_guest_order, guest_prescription_image=reservation.guest_prescription_image,
     )
 
 
@@ -509,6 +513,77 @@ def reservation_history(reservation_id: str, db: Session = Depends(get_db),
         ReservationHistoryOut(id=h.id, status=h.status, note=h.note, created_at=h.created_at)
         for h in history
     ]
+
+
+@router.post("/reservations/guest", response_model=ReservationOut, status_code=status.HTTP_201_CREATED)
+def create_guest_reservation(payload: GuestReservationCreate, db: Session = Depends(get_db)):
+    """
+    NOUVEAU (demande explicite de M. Faustin: "un patient qui n'a pas
+    pris la plateforme mais veut payer les medicaments avec ordonnance...
+    lors de commande a la pharmacie il aura une partie ou il faut juste
+    upload image de l'ordonnance"). AUCUNE authentification requise - un
+    compte "invite" est cree automatiquement (email synthetique unique,
+    mot de passe aleatoire jamais communique - ce compte ne sert qu'a
+    satisfaire le modele de donnees existant, jamais a se connecter). La
+    commande part SANS articles: le pharmacien les ajoute lui-meme apres
+    avoir lu l'image de l'ordonnance (voir add_reservation_item).
+    """
+    establishment = db.query(Establishment).filter(
+        Establishment.id == payload.establishment_id, Establishment.type == EstablishmentType.PHARMACIE,
+        Establishment.is_active == True,
+    ).first()
+    if not establishment:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Pharmacie introuvable")
+
+    guest_email = f"invite-{secrets.token_hex(8)}@sans-compte.speedsante.local"
+    guest_user = User(
+        id=str(uuid.uuid4()), email=guest_email, hashed_password=hash_password(secrets.token_urlsafe(32)),
+        full_name=payload.full_name, phone=payload.phone, role=UserRole.PATIENT, is_active=True,
+    )
+    db.add(guest_user)
+    db.flush()
+    guest_patient = Patient(id=str(uuid.uuid4()), user_id=guest_user.id, dossier_number=f"INV-{secrets.token_hex(4).upper()}")
+    db.add(guest_patient)
+    db.flush()
+
+    reservation = PharmacyReservation(
+        id=str(uuid.uuid4()), establishment_id=establishment.id, patient_id=guest_patient.id,
+        delivery_mode=payload.delivery_mode, status=ReservationStatus.PENDING,
+        is_guest_order=True, guest_prescription_image=payload.prescription_image,
+    )
+    db.add(reservation)
+    db.commit()
+    db.refresh(reservation)
+    return _to_reservation_out(reservation, db)
+
+
+@router.post("/reservations/{reservation_id}/items", response_model=ReservationOut, status_code=status.HTTP_201_CREATED)
+def add_reservation_item(reservation_id: str, payload: ReservationAddItem, db: Session = Depends(get_db),
+                          current_user: User = Depends(require_roles(UserRole.PHARMACIST, UserRole.ESTABLISHMENT_ADMIN))):
+    """NOUVEAU (necessaire pour les commandes invite: aucun article a la
+    creation, le pharmacien les ajoute ici apres lecture de
+    l'ordonnance). Reserve aux commandes encore PENDING - une fois la
+    verification commencee, la liste est figee comme pour une commande
+    normale."""
+    reservation = db.query(PharmacyReservation).filter(PharmacyReservation.id == reservation_id).first()
+    if not reservation:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Commande introuvable")
+    if reservation.establishment_id != current_user.establishment_id:
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Acces refuse")
+    if reservation.status != ReservationStatus.PENDING:
+        raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail="Cette commande n'est plus modifiable")
+
+    stock_item = db.query(PharmacyStock).filter(
+        PharmacyStock.id == payload.medication_id, PharmacyStock.establishment_id == current_user.establishment_id,
+    ).first()
+    if not stock_item:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Medicament introuvable dans ta pharmacie")
+
+    item = PharmacyOrderItem(id=str(uuid.uuid4()), reservation_id=reservation.id, medication_id=stock_item.id, quantity=payload.quantity)
+    db.add(item)
+    db.commit()
+    db.refresh(reservation)
+    return _to_reservation_out(reservation, db)
 
 
 @router.post("/reservations", response_model=ReservationOut, status_code=status.HTTP_201_CREATED)

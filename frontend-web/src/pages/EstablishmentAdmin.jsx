@@ -20,6 +20,7 @@ import LabReferralForm from '../components/LabReferralForm'
 import DoctorAvailabilityManager from '../components/DoctorAvailabilityManager'
 import DoctorReviewsList from '../components/DoctorReviewsList'
 import ReservationReviewForm from '../components/ReservationReviewForm'
+import GuestOrderPrescriptionPanel from '../components/GuestOrderPrescriptionPanel'
 import NotificationBell from '../components/NotificationBell'
 import UserProfileBadge from '../components/UserProfileBadge'
 import ReportsManager from '../components/ReportsManager'
@@ -763,6 +764,9 @@ export default function EstablishmentAdmin() {
                       <span className="inline-block text-xs px-2 py-0.5 rounded-full bg-amber-500/10 text-amber-600 font-medium mb-3">
                         Issue d'une ordonnance
                       </span>
+                    )}
+                    {o.is_guest_order && (
+                      <GuestOrderPrescriptionPanel reservation={o} onItemAdded={loadAll} />
                     )}
 
                     <div className="space-y-1 mb-3">

@@ -1,6 +1,7 @@
 import { Link, useNavigate } from 'react-router-dom'
 import { UserRound } from 'lucide-react'
 import { getRole, clearSession, getLastRoleBeforeExpiry } from '../api/client'
+import logo from '../assets/logo-transparent.png'
 
 export default function Navbar() {
   const navigate = useNavigate()
@@ -18,9 +19,8 @@ export default function Navbar() {
   return (
     <header className="border-b border-forest-100 bg-paper/95 backdrop-blur sticky top-0 z-10">
       <div className="max-w-6xl mx-auto flex items-center justify-between px-6 py-4">
-        <Link to="/" className="flex items-center gap-2">
-          <span className="w-2.5 h-2.5 rounded-full bg-amber-500" aria-hidden="true"></span>
-          <span className="font-display text-xl font-semibold text-forest-900">SpeedSanté+</span>
+        <Link to="/" className="flex items-center">
+          <img src={logo} alt="SpeedSanté+" className="h-8 w-auto" />
         </Link>
         <nav className="flex items-center gap-6 text-sm font-medium text-forest-700">
           {!isStaffRole && (

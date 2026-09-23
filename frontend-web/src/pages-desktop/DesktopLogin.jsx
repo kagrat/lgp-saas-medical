@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import api, { saveSession, getErrorMessage, consumeSessionExpiredFlag } from '../api/client'
 import ForgotPasswordForm from '../components/ForgotPasswordForm'
+import logo from '../assets/logo-transparent.png'
 
 const ROLE_ROUTES = {
   super_admin: '/super-admin',
@@ -81,9 +82,12 @@ export default function DesktopLogin() {
   return (
     <div className="min-h-screen bg-primary-900 flex items-center justify-center px-6">
       <div className="w-full max-w-md">
-        <div className="flex items-center gap-2 mb-8 justify-center">
-          <span className="w-3 h-3 rounded-full bg-amber-500" aria-hidden="true"></span>
-          <span className="font-display text-2xl font-semibold text-white">SpeedSanté+</span>
+        <div className="flex items-center justify-center mb-8">
+          {/* NOUVEAU (demande explicite de M. Faustin: "voici le logo de
+              speedsante+ que tu vas utiliser dans le systeme"). */}
+          <div className="bg-white rounded-xl px-4 py-2.5 inline-block">
+            <img src={logo} alt="SpeedSanté+" className="h-9 w-auto" />
+          </div>
         </div>
         <div className="bg-white rounded-2xl p-8">
           <h1 className="font-display text-2xl text-forest-900 font-semibold mb-1">Espace établissement</h1>

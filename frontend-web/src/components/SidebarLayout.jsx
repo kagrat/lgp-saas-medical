@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { LogOut, Menu, X } from 'lucide-react'
 import { clearSession } from '../api/client'
+import logo from '../assets/logo-transparent.png'
 
 // CORRECTIF (meme categorie de bug que celui trouve dans api/client.js):
 // ce composant est utilise par TOUS les tableaux de bord du personnel,
@@ -92,9 +93,14 @@ export default function SidebarLayout({
       >
         <div className="px-6 py-6 border-b border-white/10 flex items-center justify-between">
           <div>
-            <div className="flex items-center gap-2 mb-1">
-              <span className="w-2.5 h-2.5 rounded-full bg-amber-500" aria-hidden="true"></span>
-              <span className="font-display text-lg font-semibold">SpeedSanté+</span>
+            {/* NOUVEAU (demande explicite de M. Faustin: "voici le logo
+                de speedsante+ que tu vas utiliser dans le systeme").
+                Cadre blanc derriere le logo: certains portails ont un
+                fond fonce proche des couleurs du logo lui-meme (vert
+                fonce du texte "Speed" sur un fond teal), ce qui nuirait
+                a la lisibilite sans ce fond neutre. */}
+            <div className="bg-white rounded-lg px-2.5 py-1.5 inline-block mb-1">
+              <img src={logo} alt="SpeedSanté+" className="h-6 w-auto" />
             </div>
             {portalLabel && <p className="text-xs text-white/70 uppercase tracking-wide">{portalLabel}</p>}
           </div>

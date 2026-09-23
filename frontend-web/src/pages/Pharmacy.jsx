@@ -31,6 +31,14 @@ export default function Pharmacy() {
   const [confirmation, setConfirmation] = useState(null)
   const role = getRole()
 
+  // NOUVEAU (demande explicite de M. Faustin: "un patient qui n'a pas
+  // pris la plateforme mais veut payer les medicaments avec ordonnance
+  // - juste upload image de l'ordonnance").
+  const [guestMode, setGuestMode] = useState(false)
+  const [guestForm, setGuestForm] = useState({ full_name: '', phone: '', prescription_image: '' })
+  const [guestSubmitting, setGuestSubmitting] = useState(false)
+  const [guestConfirmation, setGuestConfirmation] = useState(null)
+
   // NOUVEAU (lien ordonnance -> pharmacie): si le patient arrive depuis le
   // bouton "Commander en pharmacie" de son dossier de sante.
   const [prescriptionDocumentId] = useState(incomingPrescription.prescriptionDocumentId || null)
@@ -55,13 +63,49 @@ export default function Pharmacy() {
 
   async function choosePharmacy(pharmacy) {
     setSelectedPharmacy(pharmacy)
+    setError('')
+    if (guestMode) {
+      setStep('guest-form')
+      return
+    }
     setCart([])
     setProductQuery('')
-    setError('')
     setStep(2)
     await browseStock(pharmacy.id, '')
     if (prescriptionDocumentId) {
       await loadPrescriptionMatches(pharmacy.id)
+    }
+  }
+
+  function handleGuestImageChange(e) {
+    const file = e.target.files?.[0]
+    if (!file) return
+    const reader = new FileReader()
+    reader.onload = () => setGuestForm((f) => ({ ...f, prescription_image: reader.result }))
+    reader.readAsDataURL(file)
+  }
+
+  async function submitGuestOrder(e) {
+    e.preventDefault()
+    if (!guestForm.prescription_image) {
+      setError("Ajoute une photo de l'ordonnance avant d'envoyer.")
+      return
+    }
+    setGuestSubmitting(true)
+    setError('')
+    try {
+      const { data } = await api.post('/pharmacy/reservations/guest', {
+        establishment_id: selectedPharmacy.id,
+        full_name: guestForm.full_name,
+        phone: guestForm.phone,
+        delivery_mode: deliveryMode,
+        prescription_image: guestForm.prescription_image,
+      })
+      setGuestConfirmation(data)
+    } catch (err) {
+      setError(getErrorMessage(err, "Impossible d'envoyer cette commande."))
+    } finally {
+      setGuestSubmitting(false)
     }
   }
 
@@ -170,7 +214,7 @@ export default function Pharmacy() {
         Choisis ta pharmacie, compose ton panier.
       </h1>
 
-      {step < 3 && (
+      {step !== 'guest-form' && step < 3 && (
         <StepIndicator current={step} total={2} label={step === 1 ? 'Choisis une pharmacie' : 'Ajoute des medicaments a ton panier'} />
       )}
 
@@ -187,6 +231,17 @@ export default function Pharmacy() {
         </div>
       ) : step === 1 ? (
         <>
+          {/* NOUVEAU (demande explicite de M. Faustin: commander avec
+              une ordonnance sans avoir de compte sur la plateforme). */}
+          <div className="mb-6">
+            <button
+              onClick={() => setGuestMode((v) => !v)}
+              className={`text-sm rounded-full border px-4 py-2 font-medium transition ${guestMode ? 'bg-[var(--portal-accent)] text-white border-transparent' : 'border-forest-300 text-forest-700 hover:bg-forest-50'}`}
+            >
+              {guestMode ? '✓ Commande avec ordonnance, sans compte' : "Je n'ai pas de compte - commander avec une ordonnance"}
+            </button>
+          </div>
+
           <form onSubmit={searchPharmacies} className="grid sm:grid-cols-2 gap-4 bg-white rounded-2xl p-6 border border-forest-100 shadow-sm mb-6">
             <div>
               <label className="block text-sm font-medium text-forest-900 mb-1">Ta ville (pour trier par proximité)</label>
@@ -368,6 +423,55 @@ export default function Pharmacy() {
               </p>
             )}
           </div>
+        </div>
+      ) : step === 'guest-form' ? (
+        <div className="max-w-lg">
+          {guestConfirmation ? (
+            <div className="bg-white rounded-2xl border border-forest-100 p-6 text-center">
+              <p className="font-display text-xl text-forest-900 font-semibold mb-2">Commande envoyée !</p>
+              <p className="text-forest-700 text-sm mb-1">Numéro : {guestConfirmation.order_number}</p>
+              <p className="text-forest-700 text-sm">
+                La pharmacie va lire ton ordonnance et te contactera au {guestForm.phone} pour confirmer les médicaments et le prix.
+              </p>
+            </div>
+          ) : (
+            <form onSubmit={submitGuestOrder} className="bg-white rounded-2xl p-6 border border-forest-100 shadow-sm space-y-4">
+              <p className="text-sm text-forest-700">
+                Commande chez <span className="font-medium text-forest-900">{selectedPharmacy?.name}</span> avec une ordonnance - aucun compte requis.
+              </p>
+              <div>
+                <label className="block text-sm font-medium text-forest-900 mb-1">Ton nom complet</label>
+                <input required value={guestForm.full_name}
+                  onChange={(e) => setGuestForm({ ...guestForm, full_name: e.target.value })}
+                  className="w-full rounded-lg border border-forest-100 px-4 py-2.5" />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-forest-900 mb-1">Ton numéro de téléphone</label>
+                <input required value={guestForm.phone}
+                  onChange={(e) => setGuestForm({ ...guestForm, phone: e.target.value })}
+                  placeholder="+229..."
+                  className="w-full rounded-lg border border-forest-100 px-4 py-2.5" />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-forest-900 mb-1">Mode de réception</label>
+                <select value={deliveryMode} onChange={(e) => setDeliveryMode(e.target.value)}
+                  className="w-full rounded-lg border border-forest-100 px-4 py-2.5 bg-white">
+                  <option value="pickup">Retrait sur place</option>
+                  <option value="delivery">Livraison</option>
+                </select>
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-forest-900 mb-1">Photo de l'ordonnance</label>
+                <input required type="file" accept="image/png,image/jpeg" onChange={handleGuestImageChange}
+                  className="w-full text-sm" />
+                {guestForm.prescription_image && <p className="text-xs text-primary-700 mt-1">✓ Photo ajoutée</p>}
+              </div>
+              <button type="submit" disabled={guestSubmitting}
+                className="w-full rounded-full bg-primary-700 text-white px-8 py-3 font-medium hover:bg-primary-900 transition disabled:opacity-50">
+                {guestSubmitting ? 'Envoi...' : 'Envoyer ma commande'}
+              </button>
+            </form>
+          )}
         </div>
       ) : null}
 

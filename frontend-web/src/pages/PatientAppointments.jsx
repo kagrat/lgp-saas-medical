@@ -116,31 +116,44 @@ export default function PatientAppointments() {
             {reviewable.map((d) => (
               <div key={d.doctor_id} className="rounded-xl border border-forest-100 bg-white p-4">
                 <p className="text-forest-900 font-medium mb-2">{d.doctor_name} <span className="text-sm text-forest-700 font-normal">({d.specialty})</span></p>
-                <div className="flex items-center gap-3 mb-2">
-                  <select
-                    value={reviewForms[d.doctor_id]?.rating || 5}
-                    onChange={(e) => updateReviewForm(d.doctor_id, 'rating', e.target.value)}
-                    className="rounded-lg border border-forest-100 px-3 py-1.5 text-sm bg-white"
-                  >
-                    {[5, 4, 3, 2, 1].map((n) => (
-                      <option key={n} value={n}>{'★'.repeat(n)}{'☆'.repeat(5 - n)} ({n}/5)</option>
-                    ))}
-                  </select>
-                </div>
-                <textarea
-                  value={reviewForms[d.doctor_id]?.comment || ''}
-                  onChange={(e) => updateReviewForm(d.doctor_id, 'comment', e.target.value)}
-                  placeholder="Ton commentaire (optionnel)"
-                  rows={2}
-                  className="w-full rounded-lg border border-forest-100 px-3 py-2 text-sm mb-2"
-                />
-                <button
-                  onClick={() => submitReview(d.doctor_id)}
-                  disabled={savingReviewFor === d.doctor_id}
-                  className="rounded-full bg-primary-700 text-white px-5 py-1.5 text-sm font-semibold hover:bg-primary-900 transition disabled:opacity-50"
-                >
-                  {savingReviewFor === d.doctor_id ? 'Envoi...' : d.existing_rating ? "Modifier mon avis" : "Envoyer mon avis"}
-                </button>
+                {/* CORRIGE (demande explicite de M. Faustin: "après cette
+                    note l'option disparaît") - une fois un avis deja
+                    donne, le formulaire interactif disparait, remplace
+                    par une simple confirmation en lecture seule. */}
+                {d.existing_rating ? (
+                  <p className="text-sm text-forest-700">
+                    <span className="text-amber-500">{'★'.repeat(d.existing_rating)}{'☆'.repeat(5 - d.existing_rating)}</span>
+                    {' '}({d.existing_rating}/5) - Avis déjà envoyé, merci !
+                  </p>
+                ) : (
+                  <>
+                    <div className="flex items-center gap-3 mb-2">
+                      <select
+                        value={reviewForms[d.doctor_id]?.rating || 5}
+                        onChange={(e) => updateReviewForm(d.doctor_id, 'rating', e.target.value)}
+                        className="rounded-lg border border-forest-100 px-3 py-1.5 text-sm bg-white"
+                      >
+                        {[5, 4, 3, 2, 1].map((n) => (
+                          <option key={n} value={n}>{'★'.repeat(n)}{'☆'.repeat(5 - n)} ({n}/5)</option>
+                        ))}
+                      </select>
+                    </div>
+                    <textarea
+                      value={reviewForms[d.doctor_id]?.comment || ''}
+                      onChange={(e) => updateReviewForm(d.doctor_id, 'comment', e.target.value)}
+                      placeholder="Ton commentaire (optionnel)"
+                      rows={2}
+                      className="w-full rounded-lg border border-forest-100 px-3 py-2 text-sm mb-2"
+                    />
+                    <button
+                      onClick={() => submitReview(d.doctor_id)}
+                      disabled={savingReviewFor === d.doctor_id}
+                      className="rounded-full bg-primary-700 text-white px-5 py-1.5 text-sm font-semibold hover:bg-primary-900 transition disabled:opacity-50"
+                    >
+                      {savingReviewFor === d.doctor_id ? 'Envoi...' : 'Envoyer mon avis'}
+                    </button>
+                  </>
+                )}
               </div>
             ))}
           </div>

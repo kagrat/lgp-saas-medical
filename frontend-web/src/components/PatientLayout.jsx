@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { NavLink, Outlet, useNavigate, useLocation } from 'react-router-dom'
 import { Home, Calendar, CalendarPlus, Pill, Package, FlaskConical, Microscope, MessageCircle, Receipt, UserRound, LogOut, Menu, X, FileText, ClipboardList } from 'lucide-react'
 import { clearSession } from '../api/client'
+import logo from '../assets/logo-transparent.png'
 
 const MENU_ITEMS = [
   { to: '/espace-patient', label: 'Accueil', icon: Home },
@@ -63,9 +64,10 @@ export function PatientSidebarChrome({ children }) {
       >
         <div className="px-6 py-6 border-b border-white/10 flex items-center justify-between">
           <div>
-            <div className="flex items-center gap-2 mb-1">
-              <span className="w-2.5 h-2.5 rounded-full bg-amber-500" aria-hidden="true"></span>
-              <span className="font-display text-lg font-semibold">SpeedSanté+</span>
+            {/* NOUVEAU (demande explicite de M. Faustin: "voici le logo
+                de speedsante+ que tu vas utiliser dans le systeme"). */}
+            <div className="bg-white rounded-lg px-2.5 py-1.5 inline-block mb-1">
+              <img src={logo} alt="SpeedSanté+" className="h-6 w-auto" />
             </div>
             <p className="text-xs text-white/70 uppercase tracking-wide">Portail Patient</p>
           </div>

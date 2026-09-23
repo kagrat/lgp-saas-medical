@@ -479,6 +479,37 @@ class ReservationCreate(BaseModel):
     prescription_document_id: Optional[str] = None
 
 
+class GuestReservationCreate(BaseModel):
+    """NOUVEAU (demande explicite de M. Faustin: "un patient qui n'a pas
+    pris la plateforme mais veut payer les medicaments avec ordonnance" -
+    juste uploader l'image de l'ordonnance). Aucune authentification
+    requise - un compte "invite" est cree automatiquement en coulisses,
+    sans mot de passe utilisable. Pas de liste d'articles a la creation
+    (le patient n'a pas acces au catalogue) - le pharmacien les ajoute
+    apres avoir lu l'ordonnance."""
+    establishment_id: str
+    full_name: str = Field(min_length=2, max_length=200)
+    phone: str = Field(min_length=6, max_length=30)
+    delivery_mode: DeliveryMode = DeliveryMode.PICKUP
+    prescription_image: str = Field(max_length=8_000_000)
+
+    @field_validator("prescription_image")
+    @classmethod
+    def valid_image(cls, v: str) -> str:
+        if not v.startswith("data:image/"):
+            raise ValueError("L'ordonnance doit etre une image valide (PNG ou JPEG)")
+        return v
+
+
+class ReservationAddItem(BaseModel):
+    """NOUVEAU (necessaire pour les commandes invite: le pharmacien lit
+    l'ordonnance uploadee puis ajoute lui-meme les medicaments demandes,
+    le patient invite n'ayant pas acces au catalogue pour les choisir
+    lui-meme)."""
+    medication_id: str
+    quantity: int = Field(gt=0)
+
+
 class ReservationItemOut(BaseModel):
     id: str
     medication_id: str
@@ -524,6 +555,9 @@ class ReservationOut(BaseModel):
     # preparation UNIQUEMENT en cas de livraison (voir pharmacy.py).
     is_paid: bool = False
     paid_at: Optional[datetime] = None
+    # NOUVEAU (commande invite - sans compte, ordonnance uploadee).
+    is_guest_order: bool = False
+    guest_prescription_image: Optional[str] = None
 
     model_config = {"from_attributes": True}
 

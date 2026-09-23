@@ -9,6 +9,7 @@ import { RESERVATION_STATUSES, RESERVATION_STATUS_LABELS, RESERVATION_STEPS, STA
 import FilterTabs from '../components/FilterTabs'
 import StatusStepper from '../components/StatusStepper'
 import ReservationReviewForm from '../components/ReservationReviewForm'
+import GuestOrderPrescriptionPanel from '../components/GuestOrderPrescriptionPanel'
 import ChatWindow from '../components/ChatWindow'
 import StartConversation from '../components/StartConversation'
 import MySchedule from '../components/MySchedule'
@@ -231,6 +232,9 @@ export default function DesktopPharmacistDashboard() {
                       <span className="inline-block text-xs px-2 py-0.5 rounded-full bg-amber-500/10 text-amber-600 font-medium mb-3">
                         Issue d'une ordonnance
                       </span>
+                    )}
+                    {o.is_guest_order && (
+                      <GuestOrderPrescriptionPanel reservation={o} onItemAdded={loadOrders} />
                     )}
 
                     <div className="space-y-1 mb-3">
