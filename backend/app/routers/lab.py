@@ -19,6 +19,7 @@ from sqlalchemy.orm import Session
 from app.database import get_db
 from app.models import (
     LabTestRequest, LabTestStatus, Establishment, EstablishmentType, Patient, Doctor, Appointment, User, UserRole,
+    MedicalDocument,
 )
 from app.schemas import (
     LabTestRequestCreate, LabTestRequestOut, LabTestStatusUpdate, LabOut,
@@ -88,10 +89,26 @@ def request_test(payload: LabTestRequestCreate, db: Session = Depends(get_db),
     if not patient:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Dossier patient introuvable")
 
+    # CORRIGE (demande explicite de M. Faustin: le patient utilise une
+    # ordonnance pour commander lui-meme ses analyses) - verifie que ce
+    # document appartient bien A CE patient avant de le lier, pour
+    # eviter qu'un ID invente ou vole permette de referencer le dossier
+    # de quelqu'un d'autre.
+    if payload.source_document_id:
+        source_doc = (
+            db.query(MedicalDocument)
+            .join(Appointment, MedicalDocument.appointment_id == Appointment.id)
+            .filter(MedicalDocument.id == payload.source_document_id, Appointment.patient_id == patient.id)
+            .first()
+        )
+        if not source_doc:
+            raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Cette ordonnance ne fait pas partie de ton dossier")
+
     lab_test = LabTestRequest(
         id=str(uuid.uuid4()), establishment_id=lab.id, patient_id=patient.id,
         test_name=payload.test_name, sample_type=payload.sample_type,
         scheduled_sample_at=payload.scheduled_sample_at,
+        source_document_id=payload.source_document_id,
     )
     db.add(lab_test)
     # NOUVEAU (demande explicite de M. Faustin: "le laboratoire est

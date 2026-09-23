@@ -22,8 +22,8 @@ from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
 
 from app.database import get_db
-from app.models import MedicalDocument, Appointment, Patient, Doctor, User, UserRole, AuditLog, PrescriptionItem
-from app.schemas import MedicalDocumentCreate, MedicalDocumentOut, PrescriptionItemOut
+from app.models import MedicalDocument, Appointment, Patient, Doctor, User, UserRole, AuditLog, PrescriptionItem, PrescriptionLabItem
+from app.schemas import MedicalDocumentCreate, MedicalDocumentOut, PrescriptionItemOut, PrescriptionLabItemOut
 from app.deps import require_roles
 
 router = APIRouter(prefix="/health-records", tags=["dossier-sante"])
@@ -49,6 +49,10 @@ def _to_document_out(doc: MedicalDocument) -> MedicalDocumentOut:
         prescription_items=[
             PrescriptionItemOut(id=i.id, medication_name=i.medication_name, quantity=i.quantity, dosage_instructions=i.dosage_instructions)
             for i in doc.prescription_items
+        ],
+        prescription_lab_items=[
+            PrescriptionLabItemOut(id=i.id, test_name=i.test_name, sample_type=i.sample_type)
+            for i in doc.prescription_lab_items
         ],
     )
 
@@ -88,6 +92,13 @@ def create_document(payload: MedicalDocumentCreate, db: Session = Depends(get_db
                 id=str(uuid.uuid4()), document_id=document.id,
                 medication_name=item.medication_name, quantity=item.quantity,
                 dosage_instructions=item.dosage_instructions,
+            ))
+
+    if payload.prescription_lab_items:
+        for item in payload.prescription_lab_items:
+            db.add(PrescriptionLabItem(
+                id=str(uuid.uuid4()), document_id=document.id,
+                test_name=item.test_name, sample_type=item.sample_type,
             ))
 
     db.add(AuditLog(user_id=current_user.id, establishment_id=appointment.establishment_id,

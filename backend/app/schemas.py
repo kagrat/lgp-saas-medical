@@ -634,6 +634,20 @@ class PrescriptionItemOut(BaseModel):
     quantity: int
     dosage_instructions: Optional[str] = None
 
+
+class PrescriptionLabItemCreate(BaseModel):
+    """NOUVEAU (demande explicite de M. Faustin: le patient doit pouvoir
+    utiliser une ordonnance pour commander ses analyses, exact miroir de
+    PrescriptionItemCreate pour les medicaments)."""
+    test_name: str = Field(min_length=1, max_length=200)
+    sample_type: Optional[str] = Field(default=None, max_length=100)
+
+
+class PrescriptionLabItemOut(BaseModel):
+    id: str
+    test_name: str
+    sample_type: Optional[str] = None
+
     model_config = {"from_attributes": True}
 
 
@@ -647,6 +661,7 @@ class MedicalDocumentCreate(BaseModel):
     # document_type=prescription mais accepte quel que soit le type, sans
     # validation forcee ici (souplesse).
     prescription_items: Optional[list[PrescriptionItemCreate]] = None
+    prescription_lab_items: Optional[list[PrescriptionLabItemCreate]] = None
 
 
 class ProgressNoteCreate(BaseModel):
@@ -668,6 +683,7 @@ class MedicalDocumentOut(BaseModel):
     content: str
     created_at: datetime
     prescription_items: list[PrescriptionItemOut] = []
+    prescription_lab_items: list[PrescriptionLabItemOut] = []
 
     model_config = {"from_attributes": True}
 
@@ -1064,6 +1080,9 @@ class LabTestRequestCreate(BaseModel):
     test_name: str = Field(min_length=2, max_length=200)
     sample_type: Optional[str] = None
     scheduled_sample_at: Optional[datetime] = None
+    # NOUVEAU (demande explicite de M. Faustin: le patient utilise une
+    # ordonnance pour commander ses analyses lui-meme).
+    source_document_id: Optional[str] = None
 
 
 class LabTestRequestOut(BaseModel):

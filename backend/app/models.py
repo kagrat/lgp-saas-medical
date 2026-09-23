@@ -668,6 +668,7 @@ class MedicalDocument(Base):
     author = relationship("User")
     establishment = relationship("Establishment")
     prescription_items = relationship("PrescriptionItem", back_populates="document", cascade="all, delete-orphan")
+    prescription_lab_items = relationship("PrescriptionLabItem", back_populates="document", cascade="all, delete-orphan")
 
 
 class PrescriptionItem(Base):
@@ -691,6 +692,26 @@ class PrescriptionItem(Base):
     dosage_instructions = Column(String(300), nullable=True)
 
     document = relationship("MedicalDocument", back_populates="prescription_items")
+
+
+class PrescriptionLabItem(Base):
+    """
+    NOUVEAU (demande explicite de M. Faustin: "vu que le docteur peut le
+    commander les analyses avec ordonnance, le patient doit avoir la
+    main pour utiliser ces ordonnances pour commander ces analyses").
+    Exact miroir de PrescriptionItem, mais pour une analyse de
+    laboratoire au lieu d'un medicament - meme principe: nom en texte
+    libre (l'ordonnance ne connait pas a l'avance quel laboratoire sera
+    choisi), le rapprochement se fait au moment de la commande.
+    """
+    __tablename__ = "prescription_lab_items"
+
+    id = Column(UUID(as_uuid=False), primary_key=True, default=gen_uuid)
+    document_id = Column(UUID(as_uuid=False), ForeignKey("medical_documents.id"), nullable=False)
+    test_name = Column(String(200), nullable=False)
+    sample_type = Column(String(100), nullable=True)
+
+    document = relationship("MedicalDocument", back_populates="prescription_lab_items")
 
 
 class ClinicalFlagType(str, enum.Enum):
@@ -778,6 +799,13 @@ class LabTestRequest(Base):
     # une pratique universelle en laboratoire reel - un prelevement "STAT"
     # doit etre traite avant les autres, pas dans l'ordre d'arrivee).
     priority = Column(String(20), nullable=False, default="routine")
+    # NOUVEAU (demande explicite de M. Faustin: "le patient doit avoir la
+    # main pour utiliser ces ordonnances pour commander ces analyses") -
+    # trace l'ordonnance d'origine quand c'est le PATIENT lui-meme qui
+    # choisit le laboratoire (par opposition a referred_by_doctor_id,
+    # quand c'est le MEDECIN qui choisit directement) - meme principe que
+    # prescription_document_id sur PharmacyReservation.
+    source_document_id = Column(UUID(as_uuid=False), ForeignKey("medical_documents.id"), nullable=True)
 
     establishment = relationship("Establishment", foreign_keys=[establishment_id])
     patient = relationship("Patient")

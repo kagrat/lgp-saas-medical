@@ -77,6 +77,22 @@ export default function PatientPrescriptions() {
                 </button>
               </div>
             )}
+            {/* NOUVEAU (demande explicite de M. Faustin: "vu que le
+                docteur peut commander les analyses avec ordonnance, le
+                patient doit avoir la main pour utiliser ces ordonnances
+                pour commander ces analyses"). Meme principe que la
+                pharmacie, pour les analyses de laboratoire prescrites. */}
+            {doc.prescription_lab_items && doc.prescription_lab_items.length > 0 && (
+              <div className="mt-3 pt-3 border-t border-forest-100">
+                <p className="text-xs text-forest-700 mb-2">{doc.prescription_lab_items.map((i) => i.test_name).join(', ')}</p>
+                <button
+                  onClick={() => navigate('/laboratoire', { state: { prescriptionDocumentId: doc.id, prescriptionLabItems: doc.prescription_lab_items } })}
+                  className="rounded-full bg-amber-500 text-forest-900 px-4 py-1.5 text-sm font-semibold hover:bg-amber-400 transition"
+                >
+                  Commander cette analyse
+                </button>
+              </div>
+            )}
           </div>
         ))}
       </div>

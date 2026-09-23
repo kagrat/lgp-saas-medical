@@ -91,6 +91,20 @@ export default function PatientRecords() {
                     </button>
                   </div>
                 )}
+                {/* NOUVEAU (demande explicite de M. Faustin: le patient
+                    doit pouvoir utiliser une ordonnance d'analyses pour
+                    les commander lui-meme). */}
+                {doc.document_type === 'prescription' && doc.prescription_lab_items && doc.prescription_lab_items.length > 0 && (
+                  <div className="mt-3 pt-3 border-t border-forest-100">
+                    <p className="text-xs text-forest-700 mb-2">{doc.prescription_lab_items.map((i) => i.test_name).join(', ')}</p>
+                    <button
+                      onClick={() => navigate('/laboratoire', { state: { prescriptionDocumentId: doc.id, prescriptionLabItems: doc.prescription_lab_items } })}
+                      className="rounded-full bg-amber-500 text-forest-900 px-4 py-1.5 text-sm font-semibold hover:bg-amber-400 transition"
+                    >
+                      Commander cette analyse
+                    </button>
+                  </div>
+                )}
               </div>
             ))}
           </div>

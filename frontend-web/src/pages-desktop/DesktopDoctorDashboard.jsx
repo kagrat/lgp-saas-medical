@@ -13,6 +13,7 @@ import ExternalReferralForm from '../components/ExternalReferralForm'
 import MyPatients from '../components/MyPatients'
 import Hospitalizations from '../components/Hospitalizations'
 import PrescriptionItemsEditor from '../components/PrescriptionItemsEditor'
+import PrescriptionLabItemsEditor from '../components/PrescriptionLabItemsEditor'
 import MySchedule from '../components/MySchedule'
 import LabReferralForm from '../components/LabReferralForm'
 import DoctorReviewsList from '../components/DoctorReviewsList'
@@ -57,6 +58,9 @@ export default function DesktopDoctorDashboard() {
   const [loadingVitals, setLoadingVitals] = useState(false)
   const [docForm, setDocForm] = useState({ document_type: 'consultation_note', title: '', content: '' })
   const [prescriptionItems, setPrescriptionItems] = useState([])
+  // NOUVEAU (demande explicite de M. Faustin: "le patient doit avoir la
+  // main pour utiliser ces ordonnances pour commander ces analyses").
+  const [prescriptionLabItems, setPrescriptionLabItems] = useState([])
   const [savingDoc, setSavingDoc] = useState(false)
   const [docMessage, setDocMessage] = useState('')
   const [showCompleted, setShowCompleted] = useState(false)
@@ -236,6 +240,7 @@ export default function DesktopDoctorDashboard() {
     setError('')
     try {
       const validItems = prescriptionItems.filter((it) => it.medication_name.trim())
+      const validLabItems = prescriptionLabItems.filter((it) => it.test_name.trim())
       await api.post('/health-records', {
         appointment_id: appointmentId,
         document_type: docForm.document_type,
@@ -244,10 +249,14 @@ export default function DesktopDoctorDashboard() {
         prescription_items: docForm.document_type === 'prescription' && validItems.length > 0
           ? validItems.map((it) => ({ medication_name: it.medication_name, quantity: Number(it.quantity) || 1, dosage_instructions: it.dosage_instructions || null }))
           : null,
+        prescription_lab_items: docForm.document_type === 'prescription' && validLabItems.length > 0
+          ? validLabItems.map((it) => ({ test_name: it.test_name, sample_type: it.sample_type || null }))
+          : null,
       })
       setDocMessage('Ajoute au dossier de sante du patient.')
       setDocForm({ document_type: 'consultation_note', title: '', content: '' })
       setPrescriptionItems([])
+      setPrescriptionLabItems([])
     } catch (err) {
       setError(getErrorMessage(err, "Impossible d'ajouter ce document au dossier."))
     } finally {
@@ -670,7 +679,10 @@ export default function DesktopDoctorDashboard() {
                     />
                   </div>
                   {docForm.document_type === 'prescription' && (
-                    <PrescriptionItemsEditor items={prescriptionItems} onChange={setPrescriptionItems} />
+                    <>
+                      <PrescriptionItemsEditor items={prescriptionItems} onChange={setPrescriptionItems} />
+                      <PrescriptionLabItemsEditor items={prescriptionLabItems} onChange={setPrescriptionLabItems} />
+                    </>
                   )}
                   <textarea
                     placeholder="Contenu (traitement prescrit, résultat, observations...)"
