@@ -413,7 +413,6 @@ export default function EstablishmentAdmin() {
   // cote serveur dans patients.py::establishment_patient_directory).
   const showPatientsTab = !isPharmacy && !isLab
   const tabs = [
-    { id: 'profile', label: 'Profil', icon: UserCircle },
     ...baseTabs,
     ...(showPatientsTab ? [{ id: 'patients', label: 'Patients', icon: Users }] : []),
     { id: 'messages', label: 'Messages', icon: MessageSquare },
@@ -442,6 +441,10 @@ export default function EstablishmentAdmin() {
     // derniere position du menu, plus en tete - l'onglet operationnel
     // (rendez-vous/commandes/analyses) doit primer visuellement.
     { id: 'stats', label: 'Statistiques', icon: BarChart },
+    // CORRIGE (demande explicite de M. Faustin: "le fait que profil soit
+    // en haut de la liste n'est pas bon, il faut l'envoyer tout en bas")
+    // - Profil deplace de la premiere a la toute derniere position.
+    { id: 'profile', label: 'Profil', icon: UserCircle },
   ]
 
   const selectedConversation = conversations.find((c) => c.patient_id === selectedPatientId)
