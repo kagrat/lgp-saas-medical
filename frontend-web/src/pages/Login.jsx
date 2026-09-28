@@ -76,8 +76,15 @@ export default function Login() {
   }
 
   return (
-    <div className="max-w-5xl mx-auto px-6 py-16">
-      <div className="grid lg:grid-cols-2 gap-12 items-center">
+    <div className="max-w-6xl mx-auto px-6 py-16">
+      {/* CORRIGE (demande explicite de M. Faustin: remplacer la photo de
+          l'interface de connexion patient par la banniere SpeedSante+).
+          Colonne du formulaire fixee a 26rem, le reste de la largeur
+          revient a l'image: cette banniere contient du texte et un logo,
+          reduite a la moitie d'un conteneur etroit ses legendes
+          deviendraient illisibles. max-w-6xl = meme largeur que la barre
+          de navigation, pour rester aligne avec elle. */}
+      <div className="grid lg:grid-cols-[minmax(0,26rem)_minmax(0,1fr)] gap-12 items-center">
         <div className="max-w-md mx-auto lg:mx-0 w-full">
           <h1 className="font-display text-3xl font-semibold text-forest-900 mb-2">Connexion</h1>
           <p className="text-forest-700 mb-8">
@@ -147,10 +154,18 @@ export default function Login() {
         </div>
 
         <div className="hidden lg:block">
+          {/* Affichee en entier (h-auto, jamais recadree): logo en haut,
+              pictos en bas. width/height = dimensions reelles du fichier,
+              le navigateur reserve la place avant le chargement (pas de
+              saut de mise en page). Pas de lazy-loading: visible des
+              l'ouverture de la page. */}
           <img
-            src="/images/login-background.jpg"
-            alt="Établissement de santé"
-            className="w-full h-[480px] object-cover rounded-3xl shadow-lg"
+            src="/images/login-patient-banner.jpg"
+            alt="SpeedSanté+ - Votre santé, simplement. Une santé connectée à tous vos besoins : médecins et cliniques, pharmacies, laboratoires, hôpitaux."
+            width="1374"
+            height="1145"
+            decoding="async"
+            className="w-full h-auto rounded-3xl shadow-lg"
           />
         </div>
       </div>
