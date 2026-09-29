@@ -20,7 +20,7 @@ from typing import Optional
 from sqlalchemy import func
 from sqlalchemy.orm import Session
 
-from app.models import Doctor, DoctorAvailability, DoctorAbsence, Appointment, Establishment, AppointmentStatus, DoctorReview
+from app.models import Doctor, DoctorAvailability, DoctorAbsence, Appointment, Establishment, AppointmentStatus, DoctorReview, Shift
 from app.schemas import SuggestionSlot
 from app.services.geo import haversine_km, resolve_city_coordinates
 
@@ -44,14 +44,42 @@ def _free_slots_for_doctor(db: Session, doctor: Doctor, target_date: date, max_s
     if _is_doctor_absent(db, doctor.id, target_date):
         return []
 
-    day_of_week = target_date.weekday()
-    availabilities = (
-        db.query(DoctorAvailability)
-        .filter(DoctorAvailability.doctor_id == doctor.id, DoctorAvailability.day_of_week == day_of_week)
+    # CORRIGE (racine du probleme repete plusieurs fois par M. Faustin
+    # sans jamais etre visible: "la programmation [des gardes] doit
+    # pouvoir se faire sur une periode de 1 mois pour permettre aux
+    # patients de prendre des RDV selon la garde des medecins" - les
+    # gardes (Shift) etaient entierement DECONNECTEES de ce calcul, qui
+    # ne lisait QUE l'horaire hebdomadaire recurrent (DoctorAvailability).
+    # Programmer une garde ne changeait donc RIEN a ce qu'un patient
+    # pouvait reserver - exactement ce qu'il signalait. Priorite a la
+    # garde du jour precis si elle existe, sinon repli sur l'horaire
+    # hebdomadaire recurrent (compatibilite avec les medecins qui n'ont
+    # pas encore adopte les gardes).
+    doctor_shifts = (
+        db.query(Shift)
+        .filter(Shift.user_id == doctor.user_id, Shift.shift_date == target_date)
         .all()
     )
-    if not availabilities:
-        return []
+
+    default_slot_minutes = (
+        db.query(DoctorAvailability.slot_duration_minutes)
+        .filter(DoctorAvailability.doctor_id == doctor.id)
+        .first()
+    )
+    slot_duration_minutes = default_slot_minutes[0] if default_slot_minutes else 30
+
+    if doctor_shifts:
+        windows = [(s.start_time, s.end_time, slot_duration_minutes) for s in doctor_shifts]
+    else:
+        day_of_week = target_date.weekday()
+        availabilities = (
+            db.query(DoctorAvailability)
+            .filter(DoctorAvailability.doctor_id == doctor.id, DoctorAvailability.day_of_week == day_of_week)
+            .all()
+        )
+        if not availabilities:
+            return []
+        windows = [(a.start_time, a.end_time, a.slot_duration_minutes) for a in availabilities]
 
     existing_appointments = (
         db.query(Appointment)
@@ -69,10 +97,10 @@ def _free_slots_for_doctor(db: Session, doctor: Doctor, target_date: date, max_s
     ]
 
     free_slots = []
-    for avail in availabilities:
-        cursor = datetime.combine(target_date, avail.start_time)
-        end_of_window = datetime.combine(target_date, avail.end_time)
-        step = timedelta(minutes=avail.slot_duration_minutes)
+    for win_start, win_end, win_slot_minutes in windows:
+        cursor = datetime.combine(target_date, win_start)
+        end_of_window = datetime.combine(target_date, win_end)
+        step = timedelta(minutes=win_slot_minutes)
 
         while cursor + step <= end_of_window and len(free_slots) < max_slots:
             slot_end = cursor + step

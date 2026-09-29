@@ -63,7 +63,13 @@ export default function DesktopDoctorDashboard() {
   const [prescriptionLabItems, setPrescriptionLabItems] = useState([])
   const [savingDoc, setSavingDoc] = useState(false)
   const [docMessage, setDocMessage] = useState('')
-  const [showCompleted, setShowCompleted] = useState(false)
+  // CORRIGE (demande explicite de M. Faustin repetee plusieurs fois sans
+  // jamais etre visible: "apres avoir ouvert le dossier... dans la liste
+  // des RDV, le medecin doit avoir acces aux options" - la vraie cause
+  // trouvee en retracant la logique completement: les rendez-vous
+  // TERMINES etaient masques par defaut dans cette liste, la ou vivait
+  // justement la fonctionnalite demandee. Personne ne pouvait la voir.
+  const [showCompleted, setShowCompleted] = useState(true)
 
   useEffect(() => {
     loadEstablishment()
@@ -264,8 +270,8 @@ export default function DesktopDoctorDashboard() {
     }
   }
 
-  async function openFullDossier(patientId) {
-    if (dossierPatientId === patientId) {
+  async function openFullDossier(patientId, forceOpen) {
+    if (!forceOpen && dossierPatientId === patientId) {
       setDossierPatientId(null)
       setDossierDetail(null)
       return
@@ -341,7 +347,7 @@ export default function DesktopDoctorDashboard() {
         <div className="space-y-2">
           <div className="flex justify-between items-center mb-2">
             <p className="text-xs text-forest-700">
-              Les rendez-vous termines ne s'affichent plus ici par defaut - retrouve tes patients et leur dossier dans l'onglet "Patients".
+              Ouvre un rendez-vous termine pour retrouver toutes les options du dossier du patient.
             </p>
             <button
               onClick={() => setShowCompleted((v) => !v)}
@@ -379,7 +385,16 @@ export default function DesktopDoctorDashboard() {
                 <span className="text-sm text-forest-700">{new Date(a.scheduled_at).toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' })}</span>
                 <AppointmentStatusBadge status={a.status} />
                 <button
-                  onClick={() => setExpandedAppointmentId(expandedAppointmentId === a.id ? null : a.id)}
+                  onClick={() => {
+                    const opening = expandedAppointmentId !== a.id
+                    setExpandedAppointmentId(opening ? a.id : null)
+                    if (opening && a.status === 'completed') {
+                      openFullDossier(a.patient_id, true)
+                    } else {
+                      setDossierPatientId(null)
+                      setDossierDetail(null)
+                    }
+                  }}
                   className="text-sm rounded-full bg-[var(--portal-accent)] text-white px-5 py-1.5 hover:brightness-90 transition justify-self-start sm:justify-self-end"
                 >
                   {expandedAppointmentId === a.id ? 'Fermer' : 'Ouvrir'}
