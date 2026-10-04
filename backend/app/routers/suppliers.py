@@ -114,7 +114,7 @@ def receive_purchase_order(po_id: str, db: Session = Depends(get_db),
     if not po:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Bon de commande introuvable")
     if po.status != "pending":
-        raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail="Ce bon de commande a deja ete traite")
+        raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail="Ce bon de commande a déjà été traité")
 
     if po.inventory_item_id:
         item = db.query(InventoryItem).filter(InventoryItem.id == po.inventory_item_id).first()
@@ -137,7 +137,7 @@ def cancel_purchase_order(po_id: str, db: Session = Depends(get_db),
     if not po:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Bon de commande introuvable")
     if po.status != "pending":
-        raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail="Ce bon de commande a deja ete traite")
+        raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail="Ce bon de commande a déjà été traité")
 
     po.status = "cancelled"
     db.commit()

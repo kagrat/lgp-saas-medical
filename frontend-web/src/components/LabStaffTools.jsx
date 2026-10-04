@@ -18,13 +18,13 @@ export function LabStatsCards() {
     <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
       <StatBox label="Analyses totales" value={stats.total_tests} />
       <StatBox label="En attente" value={stats.pending_count} />
-      <StatBox label="A valider" value={stats.to_validate_count} />
+      <StatBox label="À valider" value={stats.to_validate_count} />
       <StatBox
-        label="Taux de realisation"
+        label="Taux de réalisation"
         value={stats.completion_rate_pct !== null ? `${stats.completion_rate_pct}%` : '-'}
       />
       {stats.average_turnaround_days !== null && (
-        <StatBox label="Delai moyen de rendu" value={`${stats.average_turnaround_days} j`} />
+        <StatBox label="Délai moyen de rendu" value={`${stats.average_turnaround_days} j`} />
       )}
     </div>
   )
@@ -81,7 +81,7 @@ export function RegisterTestByStaff({ onRegistered }) {
     setMessage('')
     const validTests = tests.filter((t) => t.test_name.trim())
     if (!selectedPatientId || validTests.length === 0) {
-      setError('Choisis un patient et precise le nom d\'au moins une analyse.')
+      setError('Choisis un patient et précise le nom d\'au moins une analyse.')
       return
     }
     setSaving(true)
@@ -90,7 +90,7 @@ export function RegisterTestByStaff({ onRegistered }) {
         patient_id: selectedPatientId,
         tests: validTests.map((t) => ({ test_name: t.test_name, sample_type: t.sample_type || null, priority: t.priority || 'routine' })),
       })
-      setMessage(`${data.length} analyse${data.length > 1 ? 's' : ''} enregistree${data.length > 1 ? 's' : ''} - prelevement marque comme effectue.`)
+      setMessage(`${data.length} analyse${data.length > 1 ? 's' : ''} enregistrée${data.length > 1 ? 's' : ''} - prélèvement marqué comme effectué.`)
       setTests([{ test_name: '', sample_type: '', priority: 'routine' }])
       if (onRegistered) onRegistered()
     } catch (err) {
@@ -125,14 +125,14 @@ export function RegisterTestByStaff({ onRegistered }) {
         </select>
       )}
 
-      <p className="text-xs text-forest-700 mb-2">Analyses a enregistrer</p>
+      <p className="text-xs text-forest-700 mb-2">Analyses à enregistrer</p>
       <div className="space-y-2 mb-2">
         {tests.map((t, idx) => (
           <div key={idx} className="grid sm:grid-cols-[1fr_1fr_auto_auto] gap-2 items-center">
             <input placeholder="Nom de l'analyse" value={t.test_name}
               onChange={(e) => updateTest(idx, 'test_name', e.target.value)}
               className="rounded-lg border border-forest-100 px-3 py-2 text-sm" />
-            <input placeholder="Type de prelevement (optionnel)" value={t.sample_type}
+            <input placeholder="Type de prélèvement (optionnel)" value={t.sample_type}
               onChange={(e) => updateTest(idx, 'sample_type', e.target.value)}
               className="rounded-lg border border-forest-100 px-3 py-2 text-sm" />
             <select value={t.priority} onChange={(e) => updateTest(idx, 'priority', e.target.value)}

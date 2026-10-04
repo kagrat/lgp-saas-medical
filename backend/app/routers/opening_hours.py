@@ -21,7 +21,7 @@ def public_opening_hours(establishment_id: str, db: Session = Depends(get_db)):
     """Public - affiche sur le profil medecin / la recherche pharmacie ou labo."""
     establishment = db.query(Establishment).filter(Establishment.id == establishment_id).first()
     if not establishment:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Etablissement introuvable")
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Établissement introuvable")
     return (
         db.query(OpeningHours)
         .filter(OpeningHours.establishment_id == establishment_id)

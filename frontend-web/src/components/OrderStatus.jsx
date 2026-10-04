@@ -1,12 +1,12 @@
 const STATUS_LABELS = {
-  pending: 'En attente de verification',
-  awaiting_confirmation: 'A confirmer par toi',
-  confirmed: 'Confirmee',
-  preparing: 'En preparation',
-  ready: 'Prete',
+  pending: 'En attente de vérification',
+  awaiting_confirmation: 'À confirmer par toi',
+  confirmed: 'Confirmée',
+  preparing: 'En préparation',
+  ready: 'Prête',
   out_for_delivery: 'En livraison',
-  delivered: 'Livree',
-  cancelled: 'Annulee',
+  delivered: 'Livrée',
+  cancelled: 'Annulée',
 }
 
 const STATUS_COLORS = {

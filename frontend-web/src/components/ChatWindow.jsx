@@ -60,7 +60,7 @@ export default function ChatWindow({ fetchUrl, sendUrl, currentSenderRole, title
       </div>
 
       <div className="flex-1 overflow-y-auto px-4 py-3 space-y-2">
-        {messages.length === 0 && <p className="text-sm text-forest-700">Aucun message pour le moment. Ecris le premier !</p>}
+        {messages.length === 0 && <p className="text-sm text-forest-700">Aucun message pour le moment. Écris le premier !</p>}
         {messages.map((m) => {
           const isMine = m.sender_role === currentSenderRole
           return (
@@ -83,7 +83,7 @@ export default function ChatWindow({ fetchUrl, sendUrl, currentSenderRole, title
       <form onSubmit={handleSend} className="border-t border-forest-100 p-3 flex gap-2">
         <input
           value={input} onChange={(e) => setInput(e.target.value)}
-          placeholder="Ecris ton message..."
+          placeholder="Écris ton message..."
           className="flex-1 rounded-full border border-forest-100 px-4 py-2 text-sm focus:border-forest-500"
         />
         <button

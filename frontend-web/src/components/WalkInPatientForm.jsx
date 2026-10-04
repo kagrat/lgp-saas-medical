@@ -31,7 +31,7 @@ export default function WalkInPatientForm() {
       setResult(data)
       setForm({ full_name: '', phone: '', email: '', date_of_birth: '', gender: '', residence: '' })
     } catch (err) {
-      setError(getErrorMessage(err, "Impossible de creer ce patient."))
+      setError(getErrorMessage(err, "Impossible de créer ce patient."))
     } finally {
       setSaving(false)
     }
@@ -40,7 +40,7 @@ export default function WalkInPatientForm() {
   return (
     <div>
       <p className="text-forest-700 text-sm mb-4">
-        Pour un patient qui se presente sans jamais etre passe par la plateforme - aucun email requis.
+        Pour un patient qui se présente sans jamais être passé par la plateforme - aucun e-mail requis.
       </p>
 
       {error && <p className="text-clay-600 mb-4">{error}</p>}
@@ -50,8 +50,8 @@ export default function WalkInPatientForm() {
           <p className="text-forest-900 font-medium">{result.full_name} - dossier {result.dossier_number}</p>
           {!result.has_real_email && (
             <p className="text-sm text-amber-600 mt-1">
-              Aucun email fourni: ce patient ne peut pas encore se connecter lui-meme a la plateforme.
-              Complete son inscription avec un vrai email des que possible pour qu'il puisse y acceder.
+              Aucun e-mail fourni: ce patient ne peut pas encore se connecter lui-même à la plateforme.
+              Complète son inscription avec un vrai e-mail dès que possible pour qu'il puisse y accéder.
             </p>
           )}
         </div>
@@ -61,10 +61,10 @@ export default function WalkInPatientForm() {
         <input required placeholder="Nom complet" value={form.full_name}
           onChange={(e) => setForm({ ...form, full_name: e.target.value })}
           className="rounded-lg border border-forest-100 px-3 py-2 text-sm sm:col-span-2" />
-        <input placeholder="Telephone" value={form.phone}
+        <input placeholder="Téléphone" value={form.phone}
           onChange={(e) => setForm({ ...form, phone: e.target.value })}
           className="rounded-lg border border-forest-100 px-3 py-2 text-sm" />
-        <input type="email" placeholder="Email (optionnel)" value={form.email}
+        <input type="email" placeholder="E-mail (optionnel)" value={form.email}
           onChange={(e) => setForm({ ...form, email: e.target.value })}
           className="rounded-lg border border-forest-100 px-3 py-2 text-sm" />
         <div>
@@ -80,12 +80,12 @@ export default function WalkInPatientForm() {
           <option value="homme">Homme</option>
           <option value="autre">Autre</option>
         </select>
-        <input placeholder="Lieu de residence (optionnel)" value={form.residence}
+        <input placeholder="Lieu de résidence (optionnel)" value={form.residence}
           onChange={(e) => setForm({ ...form, residence: e.target.value })}
           className="rounded-lg border border-forest-100 px-3 py-2 text-sm sm:col-span-2" />
         <button type="submit" disabled={saving}
           className="sm:col-span-2 rounded-full bg-[var(--portal-accent)] text-white py-2.5 text-sm font-medium hover:brightness-90 transition disabled:opacity-50">
-          {saving ? 'Creation...' : 'Creer ce patient'}
+          {saving ? 'Création...' : 'Créer ce patient'}
         </button>
       </form>
     </div>

@@ -14,8 +14,8 @@ from app.routers import settings as settings_router
 settings = get_settings()
 
 app = FastAPI(
-    title="SpeedSanté+ - Plateforme SaaS Medicale",
-    description="API multi-tenant: gestion hospitaliere, rendez-vous, pharmacie.",
+    title="SpeedSanté+ - Plateforme SaaS Médicale",
+    description="API multi-tenant: gestion hospitalière, rendez-vous, pharmacie.",
     version="1.0.0",
     # Documentation interactive desactivee en production par securite
     docs_url="/docs" if settings.environment != "production" else None,

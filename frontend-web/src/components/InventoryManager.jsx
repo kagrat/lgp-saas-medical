@@ -165,7 +165,7 @@ export default function InventoryManager({ initialSubTab = 'produits' }) {
             <input placeholder="Forme (ex: Comprimé)" value={productForm.form}
               onChange={(e) => setProductForm({ ...productForm, form: e.target.value })}
               className="rounded-lg border border-forest-100 px-3 py-2" />
-            <input placeholder="Dosage (ex: 500mg)" value={productForm.dosage}
+            <input placeholder="Dosage (ex: 500 mg)" value={productForm.dosage}
               onChange={(e) => setProductForm({ ...productForm, dosage: e.target.value })}
               className="rounded-lg border border-forest-100 px-3 py-2" />
             <input type="number" min="0" placeholder="Stock initial" value={productForm.quantity}

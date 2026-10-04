@@ -7,7 +7,7 @@ const TYPE_LABELS = {
   // CORRIGE (trouve en verifiant le nouveau correctif du compte-rendu de
   // sortie): ces 3 types existaient deja mais n'avaient jamais d'etiquette
   // francaise - la valeur technique brute s'affichait a la place.
-  daily_progress_note: 'Note medicale (tournee)',
+  daily_progress_note: 'Note médicale (tournée)',
   nursing_note: 'Note de soins',
   discharge_summary: 'Compte-rendu de sortie',
 }

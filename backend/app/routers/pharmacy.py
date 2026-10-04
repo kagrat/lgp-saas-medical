@@ -147,7 +147,7 @@ def add_stock_item(payload: StockItemCreate, db: Session = Depends(get_db),
         .first()
     )
     if existing_reference:
-        raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail="Cette reference existe deja dans ton stock")
+        raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail="Cette référence existe déjà dans ton stock")
 
     item = PharmacyStock(
         id=str(uuid.uuid4()), establishment_id=current_user.establishment_id,
@@ -158,7 +158,7 @@ def add_stock_item(payload: StockItemCreate, db: Session = Depends(get_db),
     )
     db.add(item)
     db.add(AuditLog(user_id=current_user.id, establishment_id=current_user.establishment_id,
-                     action="create_pharmacy_product", details=f"Produit cree: {item.medication_name} ({item.reference})"))
+                     action="create_pharmacy_product", details=f"Produit créé: {item.medication_name} ({item.reference})"))
     db.commit()
     db.refresh(item)
     return _to_stock_out(item)
@@ -181,7 +181,7 @@ def add_stock_batch(payload: PharmacyBatchCreate, db: Session = Depends(get_db),
         PharmacyStock.id == payload.stock_item_id, PharmacyStock.establishment_id == current_user.establishment_id,
     ).first()
     if not stock_item:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Produit introuvable dans ton etablissement")
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Produit introuvable dans ton établissement")
 
     batch = PharmacyStockBatch(
         id=str(uuid.uuid4()), stock_item_id=stock_item.id, lot_number=payload.lot_number,
@@ -195,7 +195,7 @@ def add_stock_batch(payload: PharmacyBatchCreate, db: Session = Depends(get_db),
     stock_item.quantity += payload.quantity_received
     db.add(AuditLog(user_id=current_user.id, establishment_id=current_user.establishment_id,
                      action="add_pharmacy_batch",
-                     details=f"Lot {payload.lot_number} recu pour {stock_item.medication_name}: +{payload.quantity_received} unites"))
+                     details=f"Lot {payload.lot_number} reçu pour {stock_item.medication_name}: +{payload.quantity_received} unités"))
     db.commit()
     db.refresh(batch)
 
@@ -493,15 +493,15 @@ def reservation_history(reservation_id: str, db: Session = Depends(get_db),
                              UserRole.PATIENT, UserRole.ESTABLISHMENT_ADMIN, UserRole.PHARMACIST))):
     reservation = db.query(PharmacyReservation).filter(PharmacyReservation.id == reservation_id).first()
     if not reservation:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Reservation introuvable")
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Réservation introuvable")
 
     if current_user.role == UserRole.PATIENT:
         patient = db.query(Patient).filter(Patient.user_id == current_user.id).first()
         if not patient or reservation.patient_id != patient.id:
-            raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Acces refuse")
+            raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Accès refusé")
     else:
         if reservation.establishment_id != current_user.establishment_id:
-            raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Acces refuse")
+            raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Accès refusé")
 
     history = (
         db.query(PharmacyReservationStatusHistory)
@@ -569,7 +569,7 @@ def add_reservation_item(reservation_id: str, payload: ReservationAddItem, db: S
     if not reservation:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Commande introuvable")
     if reservation.establishment_id != current_user.establishment_id:
-        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Acces refuse")
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Accès refusé")
     if reservation.status != ReservationStatus.PENDING:
         raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail="Cette commande n'est plus modifiable")
 
@@ -577,7 +577,7 @@ def add_reservation_item(reservation_id: str, payload: ReservationAddItem, db: S
         PharmacyStock.id == payload.medication_id, PharmacyStock.establishment_id == current_user.establishment_id,
     ).first()
     if not stock_item:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Medicament introuvable dans ta pharmacie")
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Médicament introuvable dans ta pharmacie")
 
     item = PharmacyOrderItem(id=str(uuid.uuid4()), reservation_id=reservation.id, medication_id=stock_item.id, quantity=payload.quantity)
     db.add(item)
@@ -602,7 +602,7 @@ def create_reservation(payload: ReservationCreate, db: Session = Depends(get_db)
     for line in payload.items:
         stock_item = db.query(PharmacyStock).filter(PharmacyStock.id == line.medication_id).first()
         if not stock_item:
-            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Medicament introuvable")
+            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Médicament introuvable")
         if stock_item.quantity < line.quantity:
             raise HTTPException(
                 status_code=status.HTTP_409_CONFLICT,
@@ -618,7 +618,7 @@ def create_reservation(payload: ReservationCreate, db: Session = Depends(get_db)
     if len(establishment_ids) > 1:
         raise HTTPException(
             status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
-            detail="Une commande ne peut contenir que des medicaments d'une seule pharmacie",
+            detail="Une commande ne peut contenir que des médicaments d'une seule pharmacie",
         )
     establishment_id = establishment_ids.pop()
 
@@ -653,7 +653,7 @@ def create_reservation(payload: ReservationCreate, db: Session = Depends(get_db)
 
     db.add(PharmacyReservationStatusHistory(
         id=str(uuid.uuid4()), reservation_id=reservation.id,
-        status=ReservationStatus.PENDING, note="Commande recue, en attente de verification", changed_by_user_id=current_user.id,
+        status=ReservationStatus.PENDING, note="Commande reçue, en attente de vérification", changed_by_user_id=current_user.id,
     ))
     db.add(AuditLog(user_id=current_user.id, establishment_id=establishment_id,
                      action="create_reservation", details="Demande: " + ", ".join(details_parts)))
@@ -670,16 +670,16 @@ def review_reservation(reservation_id: str, payload: ReservationReview, db: Sess
     transmet une proposition finale au patient."""
     reservation = db.query(PharmacyReservation).filter(PharmacyReservation.id == reservation_id).first()
     if not reservation or reservation.establishment_id != current_user.establishment_id:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Reservation introuvable")
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Réservation introuvable")
     if reservation.status != ReservationStatus.PENDING:
-        raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail="Seule une commande en attente peut etre verifiee")
+        raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail="Seule une commande en attente peut être vérifiée")
 
     items_by_id = {item.id: item for item in reservation.items}
     reviewed_ids = {line.item_id for line in payload.items}
     if reviewed_ids != set(items_by_id.keys()):
         raise HTTPException(
             status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
-            detail="Toutes les lignes de la commande doivent etre verifiees (aucune omise, aucune inconnue)",
+            detail="Toutes les lignes de la commande doivent être vérifiées (aucune omise, aucune inconnue)",
         )
 
     for line in payload.items:
@@ -688,7 +688,7 @@ def review_reservation(reservation_id: str, payload: ReservationReview, db: Sess
         if stock_item and line.confirmed_quantity > stock_item.quantity:
             raise HTTPException(
                 status_code=status.HTTP_409_CONFLICT,
-                detail=f"Quantite proposee superieure au stock disponible pour {stock_item.medication_name}",
+                detail=f"Quantité proposée supérieure au stock disponible pour {stock_item.medication_name}",
             )
         item.confirmed_quantity = line.confirmed_quantity
         item.confirmed_unit_price = line.confirmed_unit_price
@@ -718,7 +718,7 @@ def confirm_reservation(reservation_id: str, db: Session = Depends(get_db),
     patient = db.query(Patient).filter(Patient.user_id == current_user.id).first()
     reservation = db.query(PharmacyReservation).filter(PharmacyReservation.id == reservation_id).first()
     if not reservation or not patient or reservation.patient_id != patient.id:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Reservation introuvable")
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Réservation introuvable")
     if reservation.status != ReservationStatus.AWAITING_CONFIRMATION:
         raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail="Cette commande n'attend pas de confirmation")
 
@@ -748,7 +748,7 @@ def confirm_reservation(reservation_id: str, db: Session = Depends(get_db),
 
     db.add(PharmacyReservationStatusHistory(
         id=str(uuid.uuid4()), reservation_id=reservation.id,
-        status=ReservationStatus.CONFIRMED, note="Confirmee par le patient", changed_by_user_id=current_user.id,
+        status=ReservationStatus.CONFIRMED, note="Confirmée par le patient", changed_by_user_id=current_user.id,
     ))
     db.commit()
     db.refresh(reservation)
@@ -775,18 +775,18 @@ def pay_reservation(reservation_id: str, db: Session = Depends(get_db),
     patient = db.query(Patient).filter(Patient.user_id == current_user.id).first()
     reservation = db.query(PharmacyReservation).filter(PharmacyReservation.id == reservation_id).first()
     if not reservation or not patient or reservation.patient_id != patient.id:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Reservation introuvable")
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Réservation introuvable")
     if reservation.delivery_mode != DeliveryMode.DELIVERY:
         raise HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_ENTITY, detail="Le paiement en ligne n'est requis que pour une livraison")
     if reservation.status not in (ReservationStatus.CONFIRMED,):
-        raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail="Cette commande doit d'abord etre confirmee avant paiement")
+        raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail="Cette commande doit d'abord être confirmée avant paiement")
     if reservation.is_paid:
-        raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail="Cette commande est deja payee")
+        raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail="Cette commande est déjà payée")
 
     reservation.is_paid = True
     reservation.paid_at = datetime.utcnow()
     db.add(AuditLog(user_id=current_user.id, establishment_id=reservation.establishment_id,
-                     action="pay_pharmacy_order", details=f"Commande {reservation.id} declaree payee par le patient"))
+                     action="pay_pharmacy_order", details=f"Commande {reservation.id} déclarée payée par le patient"))
     db.commit()
     db.refresh(reservation)
     return _to_reservation_out(reservation, db)
@@ -799,14 +799,14 @@ def reject_reservation(reservation_id: str, db: Session = Depends(get_db),
     patient = db.query(Patient).filter(Patient.user_id == current_user.id).first()
     reservation = db.query(PharmacyReservation).filter(PharmacyReservation.id == reservation_id).first()
     if not reservation or not patient or reservation.patient_id != patient.id:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Reservation introuvable")
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Réservation introuvable")
     if reservation.status != ReservationStatus.AWAITING_CONFIRMATION:
         raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail="Cette commande n'attend pas de confirmation")
 
     reservation.status = ReservationStatus.CANCELLED
     db.add(PharmacyReservationStatusHistory(
         id=str(uuid.uuid4()), reservation_id=reservation.id,
-        status=ReservationStatus.CANCELLED, note="Refusee par le patient", changed_by_user_id=current_user.id,
+        status=ReservationStatus.CANCELLED, note="Refusée par le patient", changed_by_user_id=current_user.id,
     ))
     db.commit()
     db.refresh(reservation)
@@ -821,17 +821,17 @@ def mark_received(reservation_id: str, db: Session = Depends(get_db),
     patient = db.query(Patient).filter(Patient.user_id == current_user.id).first()
     reservation = db.query(PharmacyReservation).filter(PharmacyReservation.id == reservation_id).first()
     if not reservation or not patient or reservation.patient_id != patient.id:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Reservation introuvable")
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Réservation introuvable")
     if reservation.status not in (ReservationStatus.READY, ReservationStatus.OUT_FOR_DELIVERY):
         raise HTTPException(
             status_code=status.HTTP_409_CONFLICT,
-            detail="Cette commande n'est pas encore prete a etre recuperee ou livree",
+            detail="Cette commande n'est pas encore prête à être récupérée ou livrée",
         )
 
     reservation.status = ReservationStatus.DELIVERED
     db.add(PharmacyReservationStatusHistory(
         id=str(uuid.uuid4()), reservation_id=reservation.id,
-        status=ReservationStatus.DELIVERED, note="Reception confirmee par le patient", changed_by_user_id=current_user.id,
+        status=ReservationStatus.DELIVERED, note="Réception confirmée par le patient", changed_by_user_id=current_user.id,
     ))
     db.commit()
     db.refresh(reservation)
@@ -850,14 +850,14 @@ def update_reservation_status(reservation_id: str, payload: ReservationStatusUpd
     if payload.status in PROTECTED_STATUSES:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Ce statut se gere via la verification pharmacien (bouton dedie), pas ici.",
+            detail="Ce statut se gère via la vérification pharmacien (bouton dédié), pas ici.",
         )
 
     reservation = db.query(PharmacyReservation).filter(PharmacyReservation.id == reservation_id).first()
     if not reservation or reservation.establishment_id != current_user.establishment_id:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Reservation introuvable")
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Réservation introuvable")
     if reservation.status not in (ReservationStatus.CONFIRMED, ReservationStatus.PREPARING, ReservationStatus.READY, ReservationStatus.OUT_FOR_DELIVERY):
-        raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail="Cette commande doit d'abord etre confirmee par le patient")
+        raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail="Cette commande doit d'abord être confirmée par le patient")
 
     # NOUVEAU (demande M. Faustin): verrou REEL, pas seulement une
     # indication cote interface - la pharmacie ne peut pas commencer a
@@ -870,7 +870,7 @@ def update_reservation_status(reservation_id: str, payload: ReservationStatusUpd
     ):
         raise HTTPException(
             status_code=status.HTTP_409_CONFLICT,
-            detail="Cette commande a livrer doit d'abord etre payee par le patient avant preparation.",
+            detail="Cette commande à livrer doit d'abord être payée par le patient avant préparation.",
         )
 
     reservation.status = payload.status

@@ -13,22 +13,22 @@ import SidebarLayout from './../components/SidebarLayout'
  */
 const COPY = {
   nurse: {
-    title: 'Espace infirmier(ere)',
-    body: "Ton compte est actif. Le suivi des patients hospitalises (constantes vitales, notes de soins, tournees) arrive dans une prochaine mise a jour de la plateforme.",
+    title: 'Espace infirmier(ère)',
+    body: "Ton compte est actif. Le suivi des patients hospitalisés (constantes vitales, notes de soins, tournées) arrive dans une prochaine mise à jour de la plateforme.",
   },
   receptionist: {
     title: "Espace accueil",
-    body: "Ton compte est actif. L'enregistrement des arrivees patients et l'encaissement a la sortie arrivent dans une prochaine mise a jour de la plateforme.",
+    body: "Ton compte est actif. L'enregistrement des arrivées de patients et l'encaissement à la sortie arrivent dans une prochaine mise à jour de la plateforme.",
   },
   accountant: {
-    title: 'Espace comptabilite',
-    body: "Ton compte est actif. La facturation reelle (factures, encaissements, suivi des impayes) arrive dans une prochaine mise a jour de la plateforme.",
+    title: 'Espace comptabilité',
+    body: "Ton compte est actif. La facturation réelle (factures, encaissements, suivi des impayés) arrive dans une prochaine mise à jour de la plateforme.",
   },
 }
 
 export default function DesktopComingSoonDashboard() {
   const role = getRole()
-  const copy = COPY[role] || { title: 'Ton espace', body: "Les outils dedies a ton role arrivent prochainement." }
+  const copy = COPY[role] || { title: 'Ton espace', body: "Les outils dédiés à ton rôle arrivent prochainement." }
   const [tab, setTab] = useState('accueil')
   const tabs = [{ id: 'accueil', label: 'Accueil', icon: Home }]
 
@@ -44,7 +44,7 @@ export default function DesktopComingSoonDashboard() {
       <div className="max-w-xl">
         <p className="text-forest-700">{copy.body}</p>
         <p className="text-sm text-forest-500 mt-6">
-          En attendant, ton profil est accessible depuis le menu "Mon profil" en haut de l'ecran.
+          En attendant, ton profil est accessible depuis le menu "Mon profil" en haut de l'écran.
         </p>
       </div>
     </SidebarLayout>

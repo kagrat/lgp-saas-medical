@@ -12,7 +12,7 @@ export function downloadDocumentAsPdf({ title, subtitle, meta, content, filename
 
   doc.setFontSize(10)
   doc.setTextColor(120, 120, 120)
-  doc.text('LGP Sante', marginX, y)
+  doc.text('LGP Santé', marginX, y)
   y += 12
 
   doc.setFontSize(16)

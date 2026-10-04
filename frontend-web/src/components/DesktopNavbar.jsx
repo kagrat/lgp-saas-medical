@@ -52,7 +52,7 @@ export default function DesktopNavbar() {
             <UserRound className="w-5 h-5" strokeWidth={1.75} />
           </Link>
           <button onClick={handleLogout} className="px-4 py-1.5 rounded-full border border-forest-300 text-white hover:bg-primary-700 transition">
-            Deconnexion
+            Déconnexion
           </button>
         </nav>
       </div>

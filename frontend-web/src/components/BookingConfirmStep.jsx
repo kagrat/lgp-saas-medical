@@ -25,7 +25,7 @@ export default function BookingConfirmStep({ slot, onConfirmed, onCancel, stepTo
       })
       onConfirmed(data)
     } catch (err) {
-      setError(getErrorMessage(err, "Ce créneau vient peut-etre d'etre pris. Choisis-en un autre."))
+      setError(getErrorMessage(err, "Ce créneau vient peut-être d'être pris. Choisis-en un autre."))
     } finally {
       setConfirming(false)
     }
@@ -47,7 +47,7 @@ export default function BookingConfirmStep({ slot, onConfirmed, onCancel, stepTo
 
       {patient && (
         <div className="mb-6">
-          <p className="text-sm font-medium text-forest-900 mb-2">Informations patient</p>
+          <p className="text-sm font-medium text-forest-900 mb-2">Informations du patient</p>
           <p className="text-sm text-forest-700">{patient.full_name}</p>
           {patient.phone && <p className="text-sm text-forest-700">{patient.phone}</p>}
           <p className="text-sm text-forest-700">{patient.email}</p>

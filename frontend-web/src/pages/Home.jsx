@@ -44,11 +44,11 @@ export default function Home() {
         <div>
           <p className="text-amber-600 font-medium tracking-wide uppercase text-xs mb-4">SpeedSanté+</p>
           <h1 className="font-display text-4xl lg:text-5xl font-semibold text-forest-900 leading-tight mb-6">
-            La medecine, réservée comme un vol ou une chambre d'hotel.
+            La médecine, réservée comme un vol ou une chambre d'hôtel.
           </h1>
           <p className="text-forest-700 mb-10 text-lg">
-            Cherche un médecin par spécialité, vérifie ses disponibilités en temps reel,
-            et prends rendez-vous en un clic dans l'un des établissements adhérents au Benin.
+            Cherche un médecin par spécialité, vérifie ses disponibilités en temps réel,
+            et prends rendez-vous en un clic dans l'un des établissements adhérents au Bénin.
             Si ton médecin n'est pas libre, on te propose toujours une alternative.
           </p>
           <div className="flex flex-wrap items-center gap-4">
@@ -60,7 +60,7 @@ export default function Home() {
             </Link>
           </div>
           <p className="text-sm text-forest-700 mt-8">
-            Deja un compte ?{' '}
+            Déjà un compte ?{' '}
             <Link to="/connexion" className="text-amber-600 font-medium hover:underline">Se connecter</Link>
           </p>
         </div>
@@ -68,7 +68,7 @@ export default function Home() {
         <div className="relative">
           <img
             src="/images/hero-medical-team.jpg"
-            alt="Equipe medicale au Benin"
+            alt="Équipe médicale au Bénin"
             className="w-full h-[420px] lg:h-[520px] object-cover rounded-3xl shadow-lg"
           />
           <div className="absolute -bottom-5 -left-5 bg-white rounded-2xl shadow-lg px-5 py-4 hidden sm:block">

@@ -43,7 +43,7 @@ export default function AppointmentCheckIn() {
       await api.post(`/appointments/${appointmentId}/arrive`)
       await load()
     } catch (err) {
-      setError(getErrorMessage(err, "Impossible de marquer ce patient comme arrive."))
+      setError(getErrorMessage(err, "Impossible de marquer ce patient comme arrivé."))
     } finally {
       setArrivingId(null)
     }
@@ -89,7 +89,7 @@ export default function AppointmentCheckIn() {
 
   return (
     <div>
-      <p className="text-forest-700 text-sm mb-4">Rendez-vous du jour - marque l'arrivee et prends les constantes avant la consultation.</p>
+      <p className="text-forest-700 text-sm mb-4">Rendez-vous du jour - marque l'arrivée et prends les constantes avant la consultation.</p>
 
       {error && <p className="text-clay-600 mb-4">{error}</p>}
 
@@ -106,7 +106,7 @@ export default function AppointmentCheckIn() {
               <input type="number" step="0.1" placeholder="Poids (kg)" value={vitalsForm.weight_kg}
                 onChange={(e) => setVitalsForm({ ...vitalsForm, weight_kg: e.target.value })}
                 className="rounded-lg border border-forest-100 px-3 py-2 text-sm" />
-              <input type="number" step="0.1" placeholder="Temperature (°C)" value={vitalsForm.temperature_celsius}
+              <input type="number" step="0.1" placeholder="Température (°C)" value={vitalsForm.temperature_celsius}
                 onChange={(e) => setVitalsForm({ ...vitalsForm, temperature_celsius: e.target.value })}
                 className="rounded-lg border border-forest-100 px-3 py-2 text-sm" />
               <input placeholder="Tension (ex: 120/80)" value={vitalsForm.blood_pressure}
@@ -124,7 +124,7 @@ export default function AppointmentCheckIn() {
 
           <p className="text-sm font-medium text-forest-900 mb-2">Historique</p>
           {loadingVitals && <p className="text-sm text-forest-700">Chargement...</p>}
-          {!loadingVitals && vitalsHistory.length === 0 && <p className="text-sm text-forest-700">Aucune constante relevee pour ce rendez-vous.</p>}
+          {!loadingVitals && vitalsHistory.length === 0 && <p className="text-sm text-forest-700">Aucune constante relevée pour ce rendez-vous.</p>}
           <div className="space-y-2">
             {vitalsHistory.map((v) => (
               <div key={v.id} className="bg-white rounded-lg p-3 text-sm">
@@ -156,7 +156,7 @@ export default function AppointmentCheckIn() {
               {a.status === 'confirmed' && (
                 <button onClick={() => markArrived(a.id)} disabled={arrivingId === a.id}
                   className="text-sm bg-[var(--portal-accent)] text-white px-4 py-1.5 rounded-full font-medium hover:brightness-90 transition disabled:opacity-50">
-                  {arrivingId === a.id ? '...' : 'Marquer arrive'}
+                  {arrivingId === a.id ? '...' : 'Marquer arrivé'}
                 </button>
               )}
               {a.status === 'arrived' && (

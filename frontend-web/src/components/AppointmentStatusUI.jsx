@@ -1,8 +1,8 @@
 const STATUS_LABELS = {
-  confirmed: 'Confirme',
-  arrived: 'Arrive',
-  completed: 'Termine',
-  cancelled: 'Annule',
+  confirmed: 'Confirmé',
+  arrived: 'Arrivé',
+  completed: 'Terminé',
+  cancelled: 'Annulé',
   no_show: 'Absent',
 }
 

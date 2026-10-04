@@ -66,8 +66,13 @@ def test_establishment_admin_cannot_see_other_establishment_doctors(client, db_s
     db_session.add(admin_a)
     db_session.commit()
 
-    login = client.post("/auth/login", json={"email": "admin-a@example.com", "password": "Passw0rd123"})
-    token = login.json()["access_token"]
+    # Un admin d'établissement doit se connecter depuis l'application Desktop (règle d'accès voulue): le test
+    # doit donc s'identifier comme client Desktop, sinon la connexion est refusée (403).
+    login = client.post("/auth/login", json={"email": "admin-a@example.com", "password": "Passw0rd123"},
+                        headers={"X-Client-Type": "desktop"})
+    # Depuis la double authentification, la réponse de connexion est {requires_2fa, token: {...}}.
+    assert login.json()["requires_2fa"] is False
+    token = login.json()["token"]["access_token"]
 
     response = client.get("/doctors/establishment", headers={"Authorization": f"Bearer {token}"})
     assert response.status_code == 200

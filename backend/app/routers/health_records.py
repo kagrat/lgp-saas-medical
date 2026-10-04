@@ -64,7 +64,7 @@ def create_document(payload: MedicalDocumentCreate, db: Session = Depends(get_db
     if not appointment:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Rendez-vous introuvable")
     if appointment.establishment_id != current_user.establishment_id:
-        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Acces refuse a ce rendez-vous")
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Accès refusé à ce rendez-vous")
 
     # Un medecin ne peut documenter que ses propres consultations, pas
     # celles de ses collegues (l'admin etablissement, lui, le peut).
@@ -102,7 +102,7 @@ def create_document(payload: MedicalDocumentCreate, db: Session = Depends(get_db
             ))
 
     db.add(AuditLog(user_id=current_user.id, establishment_id=appointment.establishment_id,
-                     action="create_medical_document", details=f"Document '{payload.title}' ajoute au dossier"))
+                     action="create_medical_document", details=f"Document '{payload.title}' ajouté au dossier"))
     db.commit()
     db.refresh(document)
     return _to_document_out(document)

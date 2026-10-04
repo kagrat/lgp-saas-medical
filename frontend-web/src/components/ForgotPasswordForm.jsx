@@ -36,9 +36,9 @@ export default function ForgotPasswordForm({ onClose }) {
         <p className="text-sm text-forest-900">{message}</p>
       ) : (
         <form onSubmit={handleSubmit}>
-          <p className="text-sm font-medium text-forest-900 mb-2">Mot de passe oublie</p>
+          <p className="text-sm font-medium text-forest-900 mb-2">Mot de passe oublié</p>
           <p className="text-xs text-forest-700 mb-3">
-            Indique ton email, on t'envoie un lien pour choisir un nouveau mot de passe.
+            Indique ton e-mail, on t'envoie un lien pour choisir un nouveau mot de passe.
           </p>
           <div className="flex gap-2">
             <input
@@ -56,7 +56,7 @@ export default function ForgotPasswordForm({ onClose }) {
       )}
       {onClose && (
         <button onClick={onClose} className="text-xs text-forest-700 hover:underline mt-2">
-          Retour a la connexion
+          Retour à la connexion
         </button>
       )}
     </div>

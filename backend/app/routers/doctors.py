@@ -6,7 +6,8 @@ from datetime import datetime
 from typing import Optional
 
 from fastapi import APIRouter, Depends, HTTPException, status
-from sqlalchemy import func
+from sqlalchemy import func, or_
+from app.specialties import canonical_specialty, specialty_variants
 from sqlalchemy.orm import Session
 
 from app.database import get_db
@@ -43,7 +44,7 @@ def get_my_doctor_profile(db: Session = Depends(get_db), current_user: User = De
     """
     doctor = db.query(Doctor).filter(Doctor.user_id == current_user.id).first()
     if not doctor:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Profil medecin introuvable")
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Profil médecin introuvable")
     avg_rating, review_count = _rating_stats(db, doctor.id)
     return DoctorOut(
         id=doctor.id, full_name=current_user.full_name, phone=current_user.phone,
@@ -77,7 +78,7 @@ def create_doctor(payload: DoctorCreate, db: Session = Depends(get_db),
                    current_user: User = Depends(require_roles(UserRole.ESTABLISHMENT_ADMIN))):
     existing = db.query(User).filter(User.email == payload.email.lower()).first()
     if existing:
-        raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail="Cet email est deja utilise")
+        raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail="Cet e-mail est déjà utilisé")
 
     user = User(
         id=str(uuid.uuid4()),
@@ -95,7 +96,7 @@ def create_doctor(payload: DoctorCreate, db: Session = Depends(get_db),
         id=str(uuid.uuid4()),
         user_id=user.id,
         establishment_id=current_user.establishment_id,
-        specialty=payload.specialty,
+        specialty=canonical_specialty(payload.specialty),
         consultation_price=payload.consultation_price,
         bio=payload.bio,
     )
@@ -115,7 +116,7 @@ def search_doctors(
 ):
     query = db.query(Doctor).join(Establishment).filter(Doctor.is_active == True, Establishment.is_active == True)
     if specialty:
-        query = query.filter(Doctor.specialty.ilike(f"%{specialty}%"))
+        query = query.filter(or_(*[Doctor.specialty.ilike(f"%{v}%") for v in specialty_variants(specialty)]))
     if city:
         query = query.filter(Establishment.city.ilike(f"%{city}%"))
     if establishment_id:
@@ -131,7 +132,7 @@ def doctor_public_profile(doctor_id: str, db: Session = Depends(get_db)):
     """NOUVEAU: fiche publique complete d'un medecin (page profil patient)."""
     doctor = db.query(Doctor).filter(Doctor.id == doctor_id, Doctor.is_active == True).first()
     if not doctor:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Medecin introuvable")
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Médecin introuvable")
 
     establishment = db.query(Establishment).filter(Establishment.id == doctor.establishment_id).first()
     avg_rating, review_count = _rating_stats(db, doctor.id)
@@ -170,7 +171,7 @@ def add_availability(doctor_id: str, payload: DoctorAvailabilityCreate, db: Sess
     )
     db.add(availability)
     db.commit()
-    return {"message": "Disponibilite ajoutee"}
+    return {"message": "Disponibilité ajoutée"}
 
 
 @router.get("/{doctor_id}/availabilities", response_model=list[DoctorAvailabilityOut])
@@ -195,7 +196,7 @@ def delete_availability(doctor_id: str, availability_id: str, db: Session = Depe
         .first()
     )
     if not availability:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Disponibilite introuvable")
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Disponibilité introuvable")
     db.delete(availability)
     db.commit()
 
@@ -210,7 +211,7 @@ def add_absence(doctor_id: str, payload: DoctorAbsenceCreate, db: Session = Depe
     )
     db.add(absence)
     db.commit()
-    return {"message": "Absence enregistree"}
+    return {"message": "Absence enregistrée"}
 
 
 @router.get("/{doctor_id}/absences", response_model=list[DoctorAbsenceOut])
@@ -240,7 +241,7 @@ def create_or_update_review(doctor_id: str, payload: DoctorReviewCreate, db: Ses
                              current_user: User = Depends(require_roles(UserRole.PATIENT))):
     doctor = db.query(Doctor).filter(Doctor.id == doctor_id).first()
     if not doctor:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Medecin introuvable")
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Médecin introuvable")
 
     patient = db.query(Patient).filter(Patient.user_id == current_user.id).first()
     if not patient:
@@ -258,7 +259,7 @@ def create_or_update_review(doctor_id: str, payload: DoctorReviewCreate, db: Ses
     if not has_completed_appointment:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
-            detail="Tu ne peux laisser un avis qu'apres un rendez-vous termine avec ce medecin.",
+            detail="Tu ne peux laisser un avis qu'après un rendez-vous terminé avec ce médecin.",
         )
 
     existing_review = (
@@ -314,7 +315,7 @@ def list_reviews(doctor_id: str, db: Session = Depends(get_db),
     return [
         DoctorReviewOut(
             id=r.id, doctor_id=r.doctor_id, patient_id=r.patient_id,
-            patient_name=r.patient.user.full_name if can_see_real_name else "Patient verifie",
+            patient_name=r.patient.user.full_name if can_see_real_name else "Patient vérifié",
             rating=r.rating, comment=r.comment, created_at=r.created_at,
         )
         for r in reviews
@@ -357,16 +358,16 @@ def list_reviewable_appointments(db: Session = Depends(get_db),
 def _get_doctor_in_scope(db: Session, doctor_id: str, current_user: User) -> Doctor:
     doctor = db.query(Doctor).filter(Doctor.id == doctor_id).first()
     if not doctor:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Medecin introuvable")
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Médecin introuvable")
     if doctor.establishment_id != current_user.establishment_id:
-        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Acces refuse a ce medecin")
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Accès refusé à ce médecin")
     return doctor
 
 
 def _current_doctor(db: Session, current_user: User) -> Doctor:
     doctor = db.query(Doctor).filter(Doctor.user_id == current_user.id).first()
     if not doctor:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Profil medecin introuvable")
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Profil médecin introuvable")
     return doctor
 
 
@@ -477,7 +478,7 @@ def my_patient_detail(patient_id: str, db: Session = Depends(get_db),
             Appointment.establishment_id == current_user.establishment_id, Appointment.patient_id == patient_id,
         ).first()
         if not has_any_relationship:
-            raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Ce patient ne fait pas partie de ton etablissement")
+            raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Ce patient ne fait pas partie de ton établissement")
         can_add_document = False
         viewed_via_share_from = None
         # Information (pas un blocage): un medecin est-il EN CE MOMENT
@@ -645,7 +646,7 @@ def remove_clinical_flag(patient_id: str, flag_id: str, db: Session = Depends(ge
 
     flag = db.query(ClinicalFlag).filter(ClinicalFlag.id == flag_id, ClinicalFlag.patient_id == patient_id).first()
     if not flag:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Element clinique introuvable")
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Élément clinique introuvable")
     db.delete(flag)
     db.commit()
 
@@ -675,9 +676,9 @@ def share_patient_record(patient_id: str, payload: PatientRecordShareCreate, db:
 
     to_doctor = db.query(Doctor).filter(Doctor.id == payload.to_doctor_id, Doctor.is_active == True).first()
     if not to_doctor:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Medecin destinataire introuvable")
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Médecin destinataire introuvable")
     if to_doctor.id == doctor.id:
-        raise HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_ENTITY, detail="Tu ne peux pas t'envoyer un dossier a toi-meme")
+        raise HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_ENTITY, detail="Tu ne peux pas t'envoyer un dossier à toi-même")
 
     share = PatientRecordShare(
         id=str(uuid.uuid4()), patient_id=patient_id, from_doctor_id=doctor.id,

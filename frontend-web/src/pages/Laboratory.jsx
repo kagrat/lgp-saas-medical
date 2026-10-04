@@ -40,7 +40,7 @@ export default function Laboratory() {
       const { data } = await api.get('/lab/search', { params: { city: city || undefined, name: name || undefined } })
       setLabs(data)
     } catch (err) {
-      setSearchError(getErrorMessage(err, 'La recherche a echoue.'))
+      setSearchError(getErrorMessage(err, 'La recherche a échoué.'))
     }
   }
 
@@ -56,7 +56,7 @@ export default function Laboratory() {
     const testName = explicitTestName || requestForm[lab.id]?.test_name
     const sampleType = explicitSampleType !== undefined ? explicitSampleType : requestForm[lab.id]?.sample_type
     if (!testName) {
-      setFeedback((f) => ({ ...f, [lab.id]: { type: 'error', text: "Precise le nom de l'analyse souhaitee." } }))
+      setFeedback((f) => ({ ...f, [lab.id]: { type: 'error', text: "Précise le nom de l'analyse souhaitée." } }))
       return
     }
     setRequestingId(lab.id)
@@ -68,7 +68,7 @@ export default function Laboratory() {
         sample_type: sampleType || null,
         source_document_id: explicitPrescriptionDocId || null,
       })
-      setFeedback((f) => ({ ...f, [lab.id]: { type: 'success', text: `Demande envoyee a ${lab.name}. Tu peux suivre son avancement dans ton espace patient.` } }))
+      setFeedback((f) => ({ ...f, [lab.id]: { type: 'success', text: `Demande envoyée à ${lab.name}. Tu peux suivre son avancement dans ton espace patient.` } }))
     } catch (err) {
       setFeedback((f) => ({ ...f, [lab.id]: { type: 'error', text: getErrorMessage(err, "Impossible d'envoyer cette demande.") } }))
     } finally {
@@ -161,13 +161,13 @@ export default function Laboratory() {
 
                 <div className="grid sm:grid-cols-2 gap-3 mb-3">
                   <input
-                    placeholder="Nom de l'analyse (ex: NFS, Glycemie...)"
+                    placeholder="Nom de l'analyse (ex: NFS, Glycémie...)"
                     value={requestForm[lab.id]?.test_name || ''}
                     onChange={(e) => updateForm(lab.id, 'test_name', e.target.value)}
                     className="rounded-lg border border-forest-100 px-3 py-2 text-sm"
                   />
                   <input
-                    placeholder="Type de prelevement (optionnel)"
+                    placeholder="Type de prélèvement (optionnel)"
                     value={requestForm[lab.id]?.sample_type || ''}
                     onChange={(e) => updateForm(lab.id, 'sample_type', e.target.value)}
                     className="rounded-lg border border-forest-100 px-3 py-2 text-sm"

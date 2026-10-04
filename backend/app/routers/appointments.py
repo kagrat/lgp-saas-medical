@@ -19,6 +19,7 @@ from app.schemas import (
     VitalSignsCreate, VitalSignsOut, SuggestionSlot, AppointmentBookForPatient, AvailableSlotsResponse, AppointmentTransfer,
 )
 from app.deps import require_roles, get_current_user
+from app.specialties import canonical_specialty, specialty_variants
 from app.services.suggestion_engine import find_appointment_or_suggest, _free_slots_for_doctor, _rating_stats
 from app.services.notifications import send_confirmation_email, send_sms
 from app.routers.notifications import create_appointment_notification
@@ -49,7 +50,7 @@ def search_appointment_slots(payload: AppointmentSearchRequest, db: Session = De
     if not requested_doctor_id and payload.establishment_id and payload.preferred_time:
         doctor = (
             db.query(Doctor)
-            .filter(Doctor.establishment_id == payload.establishment_id, Doctor.specialty == payload.specialty)
+            .filter(Doctor.establishment_id == payload.establishment_id, Doctor.specialty.in_(specialty_variants(payload.specialty)))
             .first()
         )
         requested_doctor_id = doctor.id if doctor else None
@@ -87,10 +88,10 @@ def list_available_slots(doctor_id: str, target_date: str, db: Session = Depends
     from datetime import datetime as dt
     doctor = db.query(Doctor).filter(Doctor.id == doctor_id).first()
     if not doctor:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Medecin introuvable")
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Médecin introuvable")
     establishment = db.query(Establishment).filter(Establishment.id == doctor.establishment_id).first()
     if not establishment:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Etablissement introuvable")
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Établissement introuvable")
 
     try:
         parsed_date = dt.strptime(target_date, "%Y-%m-%d").date()
@@ -119,7 +120,7 @@ def create_appointment(payload: AppointmentCreate, db: Session = Depends(get_db)
                         current_user: User = Depends(require_roles(UserRole.PATIENT))):
     doctor = db.query(Doctor).filter(Doctor.id == payload.doctor_id, Doctor.is_active == True).first()
     if not doctor:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Medecin introuvable")
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Médecin introuvable")
 
     patient = db.query(Patient).filter(Patient.user_id == current_user.id).first()
     if not patient:
@@ -137,7 +138,7 @@ def create_appointment(payload: AppointmentCreate, db: Session = Depends(get_db)
     if conflict:
         raise HTTPException(
             status_code=status.HTTP_409_CONFLICT,
-            detail="Ce creneau vient d'etre pris. Merci de choisir un autre creneau suggere.",
+            detail="Ce créneau vient d'être pris. Merci de choisir un autre créneau suggéré.",
         )
 
     appointment = Appointment(
@@ -151,7 +152,7 @@ def create_appointment(payload: AppointmentCreate, db: Session = Depends(get_db)
     )
     db.add(appointment)
     db.add(AuditLog(user_id=current_user.id, establishment_id=doctor.establishment_id,
-                     action="create_appointment", details=f"RDV cree pour patient {patient.dossier_number}"))
+                     action="create_appointment", details=f"RDV créé pour patient {patient.dossier_number}"))
     # NOUVEAU (demande explicite de M. Faustin: "un medecin est alerte
     # pour un nouveau rendez-vous").
     create_appointment_notification(db, doctor.user_id, doctor.establishment_id, current_user.full_name, appointment.scheduled_at)
@@ -164,11 +165,11 @@ def create_appointment(payload: AppointmentCreate, db: Session = Depends(get_db)
     # une erreur d'envoi (SMTP/Twilio non configures, reseau...) ne doit
     # JAMAIS faire echouer la reservation elle-meme, deja validee en base.
     confirmation_text = (
-        f"Rendez-vous confirme avec {doctor.user.full_name} "
+        f"Rendez-vous confirmé avec {doctor.user.full_name} "
         f"le {appointment.scheduled_at.strftime('%d/%m/%Y a %H:%M')}."
     )
     try:
-        send_confirmation_email(current_user.email, "Rendez-vous confirme", confirmation_text)
+        send_confirmation_email(current_user.email, "Rendez-vous confirmé", confirmation_text)
     except Exception:
         pass
     if current_user.phone:
@@ -193,7 +194,7 @@ def book_appointment_for_patient(payload: AppointmentBookForPatient, db: Session
     """
     doctor = db.query(Doctor).filter(Doctor.id == payload.doctor_id, Doctor.is_active == True).first()
     if not doctor:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Medecin introuvable")
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Médecin introuvable")
 
     patient = db.query(Patient).filter(Patient.id == payload.patient_id).first()
     if not patient:
@@ -211,7 +212,7 @@ def book_appointment_for_patient(payload: AppointmentBookForPatient, db: Session
     if conflict:
         raise HTTPException(
             status_code=status.HTTP_409_CONFLICT,
-            detail="Ce creneau vient d'etre pris. Merci de choisir un autre creneau suggere.",
+            detail="Ce créneau vient d'être pris. Merci de choisir un autre créneau suggéré.",
         )
 
     appointment = Appointment(
@@ -225,7 +226,7 @@ def book_appointment_for_patient(payload: AppointmentBookForPatient, db: Session
     )
     db.add(appointment)
     db.add(AuditLog(user_id=current_user.id, establishment_id=doctor.establishment_id,
-                     action="book_appointment_for_patient", details=f"RDV cree par le personnel pour patient {patient.dossier_number}"))
+                     action="book_appointment_for_patient", details=f"RDV créé par le personnel pour patient {patient.dossier_number}"))
     create_appointment_notification(db, doctor.user_id, doctor.establishment_id, patient.user.full_name, appointment.scheduled_at)
     db.commit()
     db.refresh(appointment)
@@ -233,12 +234,12 @@ def book_appointment_for_patient(payload: AppointmentBookForPatient, db: Session
     # NOUVEAU: la confirmation part au VRAI patient (pas au personnel qui
     # a fait la reservation) - meme logique best-effort que create_appointment.
     confirmation_text = (
-        f"Rendez-vous confirme avec {doctor.user.full_name} "
+        f"Rendez-vous confirmé avec {doctor.user.full_name} "
         f"le {appointment.scheduled_at.strftime('%d/%m/%Y a %H:%M')}."
     )
     patient_user = patient.user
     try:
-        send_confirmation_email(patient_user.email, "Rendez-vous confirme", confirmation_text)
+        send_confirmation_email(patient_user.email, "Rendez-vous confirmé", confirmation_text)
     except Exception:
         pass
     if patient_user.phone:
@@ -270,7 +271,7 @@ def cancel_appointment(appointment_id: str, db: Session = Depends(get_db),
     if current_user.role == UserRole.PATIENT:
         patient = db.query(Patient).filter(Patient.user_id == current_user.id).first()
         if not patient or appointment.patient_id != patient.id:
-            raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Acces refuse")
+            raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Accès refusé")
     # CORRIGE (demande explicite de M. Faustin: "le medecin ne doit pas
     # annuler les RDV, il peut soit traiter soit reorienter vers un
     # autre medecin") - DOCTOR retire de cette liste. Reste reserve a
@@ -278,13 +279,13 @@ def cancel_appointment(appointment_id: str, db: Session = Depends(get_db),
     # administrative d'un RDV annule.
     elif current_user.role in (UserRole.ESTABLISHMENT_ADMIN, UserRole.SECRETARY):
         if appointment.establishment_id != current_user.establishment_id:
-            raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Acces refuse")
+            raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Accès refusé")
     else:
-        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Acces refuse")
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Accès refusé")
 
     appointment.status = AppointmentStatus.CANCELLED
     db.add(AuditLog(user_id=current_user.id, establishment_id=appointment.establishment_id,
-                     action="cancel_appointment", details=f"RDV {appointment.id} annule"))
+                     action="cancel_appointment", details=f"RDV {appointment.id} annulé"))
     db.commit()
     db.refresh(appointment)
     return _to_appointment_out(appointment)
@@ -299,13 +300,13 @@ def mark_arrived(appointment_id: str, db: Session = Depends(get_db),
     if not appointment:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Rendez-vous introuvable")
     if appointment.establishment_id != current_user.establishment_id:
-        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Acces refuse")
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Accès refusé")
     if appointment.status != AppointmentStatus.CONFIRMED:
-        raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail="Seul un rendez-vous confirme peut etre marque arrive")
+        raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail="Seul un rendez-vous confirmé peut être marqué arrivé")
 
     appointment.status = AppointmentStatus.ARRIVED
     db.add(AuditLog(user_id=current_user.id, establishment_id=appointment.establishment_id,
-                     action="mark_arrived", details=f"RDV {appointment.id} marque arrive"))
+                     action="mark_arrived", details=f"RDV {appointment.id} marqué arrivé"))
     db.commit()
     db.refresh(appointment)
     return _to_appointment_out(appointment)
@@ -319,9 +320,9 @@ def reschedule_appointment(appointment_id: str, payload: AppointmentReschedule, 
     if not appointment:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Rendez-vous introuvable")
     if appointment.establishment_id != current_user.establishment_id:
-        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Acces refuse")
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Accès refusé")
     if appointment.status not in (AppointmentStatus.CONFIRMED, AppointmentStatus.ARRIVED):
-        raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail="Ce rendez-vous ne peut plus etre reporte")
+        raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail="Ce rendez-vous ne peut plus être reporté")
 
     conflict = (
         db.query(Appointment)
@@ -334,14 +335,14 @@ def reschedule_appointment(appointment_id: str, payload: AppointmentReschedule, 
         .first()
     )
     if conflict:
-        raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail="Le medecin a deja un rendez-vous a ce nouveau creneau")
+        raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail="Le médecin a déjà un rendez-vous à ce nouveau créneau")
 
     old_time = appointment.scheduled_at
     appointment.scheduled_at = payload.new_scheduled_at
     appointment.status = AppointmentStatus.CONFIRMED
     db.add(AuditLog(user_id=current_user.id, establishment_id=appointment.establishment_id,
                      action="reschedule_appointment",
-                     details=f"RDV {appointment.id} reporte de {old_time} a {payload.new_scheduled_at}"))
+                     details=f"RDV {appointment.id} reporté de {old_time} a {payload.new_scheduled_at}"))
     db.commit()
     db.refresh(appointment)
     return _to_appointment_out(appointment)
@@ -362,9 +363,9 @@ def transfer_appointment(appointment_id: str, payload: AppointmentTransfer, db: 
     if not appointment:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Rendez-vous introuvable")
     if appointment.establishment_id != current_user.establishment_id:
-        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Acces refuse")
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Accès refusé")
     if appointment.status not in (AppointmentStatus.CONFIRMED, AppointmentStatus.ARRIVED):
-        raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail="Ce rendez-vous ne peut plus etre transfere")
+        raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail="Ce rendez-vous ne peut plus être transféré")
     # CORRIGE (trouve en relisant ce code pour y ajouter la trace de
     # transfert): n'importe quel medecin de l'etablissement pouvait
     # transferer le rendez-vous D'UN AUTRE medecin - seul le controle
@@ -373,16 +374,16 @@ def transfer_appointment(appointment_id: str, payload: AppointmentTransfer, db: 
     if current_user.role == UserRole.DOCTOR:
         acting_doctor = db.query(Doctor).filter(Doctor.user_id == current_user.id).first()
         if not acting_doctor or appointment.doctor_id != acting_doctor.id:
-            raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Tu ne peux transferer que tes propres rendez-vous")
+            raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Tu ne peux transférer que tes propres rendez-vous")
 
     new_doctor = db.query(Doctor).filter(
         Doctor.id == payload.new_doctor_id, Doctor.establishment_id == current_user.establishment_id,
         Doctor.is_active == True,
     ).first()
     if not new_doctor:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Medecin introuvable dans ton etablissement")
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Médecin introuvable dans ton établissement")
     if new_doctor.id == appointment.doctor_id:
-        raise HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_ENTITY, detail="Ce rendez-vous est deja avec ce medecin")
+        raise HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_ENTITY, detail="Ce rendez-vous est déjà avec ce médecin")
 
     conflict = (
         db.query(Appointment)
@@ -394,7 +395,7 @@ def transfer_appointment(appointment_id: str, payload: AppointmentTransfer, db: 
         .first()
     )
     if conflict:
-        raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail="Ce medecin a deja un rendez-vous a ce creneau")
+        raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail="Ce médecin a déjà un rendez-vous à ce créneau")
 
     old_doctor_id = appointment.doctor_id
     appointment.doctor_id = new_doctor.id
@@ -407,7 +408,7 @@ def transfer_appointment(appointment_id: str, payload: AppointmentTransfer, db: 
     ))
     db.add(AuditLog(user_id=current_user.id, establishment_id=appointment.establishment_id,
                      action="transfer_appointment",
-                     details=f"RDV {appointment.id} transfere du medecin {old_doctor_id} vers {new_doctor.id}"))
+                     details=f"RDV {appointment.id} transféré du médecin {old_doctor_id} vers {new_doctor.id}"))
     create_appointment_notification(db, new_doctor.user_id, appointment.establishment_id,
                                      appointment.patient.user.full_name if appointment.patient else "Patient", appointment.scheduled_at)
     db.commit()
@@ -423,13 +424,13 @@ def complete_appointment(appointment_id: str, db: Session = Depends(get_db),
     if not appointment:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Rendez-vous introuvable")
     if appointment.establishment_id != current_user.establishment_id:
-        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Acces refuse")
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Accès refusé")
     if appointment.status not in (AppointmentStatus.CONFIRMED, AppointmentStatus.ARRIVED):
-        raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail="Seul un rendez-vous confirme ou arrive peut etre marque termine")
+        raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail="Seul un rendez-vous confirmé ou arrivé peut être marqué terminé")
 
     appointment.status = AppointmentStatus.COMPLETED
     db.add(AuditLog(user_id=current_user.id, establishment_id=appointment.establishment_id,
-                     action="complete_appointment", details=f"RDV {appointment.id} marque termine"))
+                     action="complete_appointment", details=f"RDV {appointment.id} marqué terminé"))
     db.commit()
     db.refresh(appointment)
     return _to_appointment_out(appointment)
@@ -478,7 +479,7 @@ def record_appointment_vitals(appointment_id: str, payload: VitalSignsCreate, db
     if not appointment:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Rendez-vous introuvable")
     if appointment.establishment_id != current_user.establishment_id:
-        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Acces refuse")
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Accès refusé")
 
     vitals = VitalSigns(
         id=str(uuid.uuid4()), appointment_id=appointment.id, recorded_by_user_id=current_user.id,
@@ -506,7 +507,7 @@ def list_appointment_vitals(appointment_id: str, db: Session = Depends(get_db),
     if not appointment:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Rendez-vous introuvable")
     if appointment.establishment_id != current_user.establishment_id:
-        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Acces refuse")
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Accès refusé")
 
     vitals_list = (
         db.query(VitalSigns)

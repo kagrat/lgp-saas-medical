@@ -44,7 +44,7 @@ def get_current_user_optional(token: str = Depends(oauth2_scheme_optional), db: 
 def get_current_user(token: str = Depends(oauth2_scheme), db: Session = Depends(get_db)) -> User:
     credentials_exception = HTTPException(
         status_code=status.HTTP_401_UNAUTHORIZED,
-        detail="Identifiants invalides ou session expiree",
+        detail="Identifiants invalides ou session expirée",
         headers={"WWW-Authenticate": "Bearer"},
     )
     payload = decode_access_token(token)
@@ -70,7 +70,7 @@ def require_roles(*allowed_roles: UserRole):
         if current_user.role not in allowed_roles:
             raise HTTPException(
                 status_code=status.HTTP_403_FORBIDDEN,
-                detail="Acces refuse: privileges insuffisants pour cette action",
+                detail="Accès refusé: privilèges insuffisants pour cette action",
             )
         return current_user
     return _check
@@ -91,12 +91,12 @@ def require_establishment_types(*allowed_types: EstablishmentType):
         if current_user.role == UserRole.SUPER_ADMIN:
             return current_user
         if current_user.establishment_id is None:
-            raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Compte non rattache a un etablissement")
+            raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Compte non rattaché à un établissement")
         establishment = db.query(Establishment).filter(Establishment.id == current_user.establishment_id).first()
         if not establishment or establishment.type not in allowed_types:
             raise HTTPException(
                 status_code=status.HTTP_403_FORBIDDEN,
-                detail="Cette action n'est pas disponible pour ce type d'etablissement",
+                detail="Cette action n'est pas disponible pour ce type d'établissement",
             )
         return current_user
     return _check
@@ -114,6 +114,6 @@ def get_tenant_establishment_id(current_user: User = Depends(get_current_user)) 
     if current_user.establishment_id is None:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
-            detail="Compte non rattache a un etablissement",
+            detail="Compte non rattaché à un établissement",
         )
     return current_user.establishment_id

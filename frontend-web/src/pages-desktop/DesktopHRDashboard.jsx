@@ -27,14 +27,14 @@ export default function DesktopHRDashboard() {
         const { data } = await api.get('/establishments/me')
         setEstablishment(data)
       } catch (err) {
-        setError(getErrorMessage(err, "Impossible de charger les informations de l'etablissement."))
+        setError(getErrorMessage(err, "Impossible de charger les informations de l'établissement."))
       }
     })()
   }, [])
 
   const tabs = [
-    { id: 'team', label: 'Equipe', icon: Users },
-    { id: 'scheduling', label: 'Planning & Conges', icon: CalendarClock },
+    { id: 'team', label: 'Équipe', icon: Users },
+    { id: 'scheduling', label: 'Planning & Congés', icon: CalendarClock },
     { id: 'my-schedule', label: 'Mon planning', icon: Clock },
     { id: 'messages', label: 'Messages', icon: MessageSquare },
     { id: 'internal-messages', label: 'Messagerie interne', icon: MessageCircle },
@@ -44,7 +44,7 @@ export default function DesktopHRDashboard() {
     <SidebarLayout
       portalLabel="Portail Ressources Humaines"
       title={establishment ? establishment.name : 'Gestion du personnel'}
-      subtitle="Gere les departements, les membres de l'equipe, leur dossier employe, le planning et les conges."
+      subtitle="Gère les départements, les membres de l'équipe, leur dossier employé, le planning et les congés."
       tabs={tabs}
       activeTab={tab}
       onTabChange={(id) => { setTab(id); setError('') }}

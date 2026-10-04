@@ -24,14 +24,14 @@ def main():
     Base.metadata.create_all(bind=engine)
     db = SessionLocal()
     try:
-        email = input("Email du Super Admin (M. SOGADJI FAUSTIN): ").strip().lower()
+        email = input("E-mail du Super Admin (M. SOGADJI FAUSTIN): ").strip().lower()
         existing = db.query(User).filter(User.email == email).first()
         if existing:
-            print("Un compte existe deja avec cet email. Abandon.")
+            print("Un compte existe déjà avec cet e-mail. Abandon.")
             return
 
         full_name = input("Nom complet: ").strip()
-        password = getpass.getpass("Mot de passe (min. 8 caracteres, 1 majuscule, 1 chiffre): ")
+        password = getpass.getpass("Mot de passe (min. 8 caractères, 1 majuscule, 1 chiffre): ")
         password_confirm = getpass.getpass("Confirmer le mot de passe: ")
 
         if password != password_confirm:
@@ -51,8 +51,8 @@ def main():
         )
         db.add(user)
         db.commit()
-        print(f"\nCompte Super Admin cree avec succes pour {email}.")
-        print("Connecte-toi via POST /auth/login avec cet email et ce mot de passe.")
+        print(f"\nCompte Super Admin créé avec succès pour {email}.")
+        print("Connecte-toi via POST /auth/login avec cet e-mail et ce mot de passe.")
     finally:
         db.close()
 

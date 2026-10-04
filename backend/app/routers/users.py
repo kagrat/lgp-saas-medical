@@ -41,7 +41,7 @@ def list_all_users(role: Optional[UserRole] = None, search: Optional[str] = None
 def toggle_user_active(user_id: str, db: Session = Depends(get_db),
                         current_user: User = Depends(require_roles(UserRole.SUPER_ADMIN))):
     if user_id == current_user.id:
-        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Tu ne peux pas desactiver ton propre compte")
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Tu ne peux pas désactiver ton propre compte")
 
     user = db.query(User).filter(User.id == user_id).first()
     if not user:

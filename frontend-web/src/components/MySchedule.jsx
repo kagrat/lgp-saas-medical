@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react'
 import api, { getErrorMessage } from '../api/client'
 
-const LEAVE_STATUS_LABELS = { pending: 'En attente', approved: 'Approuve', rejected: 'Refuse' }
+const LEAVE_STATUS_LABELS = { pending: 'En attente', approved: 'Approuvé', rejected: 'Refusé' }
 const LEAVE_STATUS_COLORS = {
   pending: 'bg-amber-500/10 text-amber-600', approved: 'bg-success-500/10 text-success-700', rejected: 'bg-clay-500/10 text-clay-600',
 }
@@ -88,7 +88,7 @@ export default function MySchedule() {
         shift_date: shiftForm.shift_date, start_time: shiftForm.start_time,
         end_time: shiftForm.end_time, notes: shiftForm.notes || null,
       })
-      setShiftMessage('Garde programmee.')
+      setShiftMessage('Garde programmée.')
       setShiftForm({ shift_date: '', start_time: '08:00', end_time: '16:00', notes: '' })
       await load()
     } catch (err) {
@@ -130,7 +130,7 @@ export default function MySchedule() {
           shift_date, start_time: quickSetup.start_time, end_time: quickSetup.end_time,
         })
       }
-      setQuickSetupMessage(`${dates.length} garde(s) programmee(s).`)
+      setQuickSetupMessage(`${dates.length} garde(s) programmée(s).`)
       setQuickSetup({ days: [], from_date: '', to_date: '', start_time: '08:00', end_time: '16:00' })
       await load()
     } catch (err) {
@@ -155,7 +155,7 @@ export default function MySchedule() {
         </button>
         <button onClick={() => { setShowQuickSetup((v) => !v); setShowShiftForm(false) }}
           className="text-sm rounded-full border border-forest-300 px-4 py-1.5 hover:bg-forest-50 transition">
-          {showQuickSetup ? 'Fermer' : '+ Programmer sur une periode'}
+          {showQuickSetup ? 'Fermer' : '+ Programmer sur une période'}
         </button>
       </div>
 
@@ -195,7 +195,7 @@ export default function MySchedule() {
       {showQuickSetup && (
         <form onSubmit={submitQuickSetup} className="bg-white border border-forest-100 rounded-xl p-5 mb-4">
           {quickSetupMessage && <p className="text-forest-900 bg-forest-50 border border-forest-300 rounded-lg p-2 mb-3 text-sm">{quickSetupMessage}</p>}
-          <p className="text-sm text-forest-700 mb-2">Choisis les jours de la semaine, une plage de dates (au moins 1 mois conseille), et l'horaire.</p>
+          <p className="text-sm text-forest-700 mb-2">Choisis les jours de la semaine, une plage de dates (au moins 1 mois conseillé), et l'horaire.</p>
           <div className="flex gap-1 mb-3 flex-wrap">
             {['Dim', 'Lun', 'Mar', 'Mer', 'Jeu', 'Ven', 'Sam'].map((label, idx) => (
               <button key={idx} type="button" onClick={() => toggleQuickDay(idx)}
@@ -252,7 +252,7 @@ export default function MySchedule() {
         )}
       </div>
       <div className="space-y-2 mb-8">
-        {upcomingShifts.length === 0 && <p className="text-forest-700 text-sm">Aucune garde planifiee pour le moment.</p>}
+        {upcomingShifts.length === 0 && <p className="text-forest-700 text-sm">Aucune garde planifiée pour le moment.</p>}
         {(shiftsExpanded ? upcomingShifts : upcomingShifts.slice(0, SHIFTS_COLLAPSED_LIMIT)).map((s) => (
           <div key={s.id} className="rounded-xl border border-forest-100 bg-white p-4">
             <p className="text-forest-900 font-medium">
@@ -267,9 +267,9 @@ export default function MySchedule() {
       </div>
 
       <div className="flex justify-between items-center mb-3">
-        <h3 className="font-display text-lg text-forest-900 font-semibold">Mes demandes de conge</h3>
+        <h3 className="font-display text-lg text-forest-900 font-semibold">Mes demandes de congé</h3>
         <button onClick={() => setShowForm((v) => !v)} className="text-sm text-amber-600 font-medium hover:underline">
-          {showForm ? 'Annuler' : 'Demander un conge'}
+          {showForm ? 'Annuler' : 'Demander un congé'}
         </button>
       </div>
 
@@ -297,7 +297,7 @@ export default function MySchedule() {
       )}
 
       <div className="space-y-2">
-        {leaveRequests.length === 0 && <p className="text-forest-700 text-sm">Aucune demande de conge.</p>}
+        {leaveRequests.length === 0 && <p className="text-forest-700 text-sm">Aucune demande de congé.</p>}
         {leaveRequests.map((l) => (
           <div key={l.id} className="rounded-xl border border-forest-100 bg-white p-4">
             <div className="flex justify-between items-start">
@@ -310,7 +310,7 @@ export default function MySchedule() {
             </div>
             {l.reason && <p className="text-sm text-forest-700 italic mt-1">{l.reason}</p>}
             {l.status !== 'pending' && l.reviewed_by_name && (
-              <p className="text-xs text-forest-500 mt-2">Traite par {l.reviewed_by_name}{l.review_note ? ` - ${l.review_note}` : ''}</p>
+              <p className="text-xs text-forest-500 mt-2">Traité par {l.reviewed_by_name}{l.review_note ? ` - ${l.review_note}` : ''}</p>
             )}
           </div>
         ))}

@@ -70,7 +70,7 @@ export default function AdmitPatientShortcut({ patientId, patientName, onAdmitte
       <form onSubmit={submitAdmission} className="grid sm:grid-cols-2 gap-2">
         <select value={form.department_id} onChange={(e) => setForm({ ...form, department_id: e.target.value })}
           className="rounded-lg border border-forest-100 px-3 py-2 text-sm bg-white">
-          <option value="">Departement (optionnel)</option>
+          <option value="">Département (optionnel)</option>
           {departments.map((d) => <option key={d.id} value={d.id}>{d.name}</option>)}
         </select>
         <select value={form.room_id} onChange={(e) => setForm({ ...form, room_id: e.target.value, bed_id: '' })}
@@ -94,7 +94,7 @@ export default function AdmitPatientShortcut({ patientId, patientName, onAdmitte
           onChange={(e) => setForm({ ...form, diagnosis: e.target.value })}
           className="sm:col-span-2 rounded-lg border border-forest-100 px-3 py-2 text-sm" />
         <div>
-          <label className="block text-xs text-forest-700 mb-1">Sortie prevue (optionnel)</label>
+          <label className="block text-xs text-forest-700 mb-1">Sortie prévue (optionnel)</label>
           <input type="date" value={form.expected_discharge_date}
             onChange={(e) => setForm({ ...form, expected_discharge_date: e.target.value })}
             className="rounded-lg border border-forest-100 px-3 py-2 text-sm" />

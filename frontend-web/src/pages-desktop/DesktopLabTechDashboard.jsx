@@ -81,7 +81,7 @@ export default function DesktopLabTechDashboard() {
       })
       await loadLabTests()
     } catch (err) {
-      setError(getErrorMessage(err, "Impossible de mettre a jour cette analyse."))
+      setError(getErrorMessage(err, "Impossible de mettre à jour cette analyse."))
     } finally {
       setUpdatingLabId(null)
     }
@@ -129,12 +129,12 @@ export default function DesktopLabTechDashboard() {
                   </p>
                   {t.referred_by_establishment_name && (
                     <p className="text-xs text-amber-600">
-                      Orientee par {t.referred_by_doctor_name || 'un medecin'} - {t.referred_by_establishment_name}
+                      Orientée par {t.referred_by_doctor_name || 'un médecin'} - {t.referred_by_establishment_name}
                     </p>
                   )}
-                  {t.sample_type && <p className="text-sm text-forest-700">Prelevement: {t.sample_type}</p>}
+                  {t.sample_type && <p className="text-sm text-forest-700">Prélèvement: {t.sample_type}</p>}
                   {t.sample_collected_at && (
-                    <p className="text-xs text-forest-700 mb-3">Preleve le {new Date(t.sample_collected_at).toLocaleString('fr-FR')}</p>
+                    <p className="text-xs text-forest-700 mb-3">Prélevé le {new Date(t.sample_collected_at).toLocaleString('fr-FR')}</p>
                   )}
                   <StatusStepper steps={LAB_STEPS} currentValue={t.status} labels={LAB_STATUS_LABELS} />
                 </div>
@@ -154,7 +154,7 @@ export default function DesktopLabTechDashboard() {
                   />
                 </div>
                 <textarea
-                  placeholder="Résultats (a remplir quand l'analyse est validee)"
+                  placeholder="Résultats (à remplir quand l'analyse est validée)"
                   value={labUpdateForm[t.id]?.results_text || ''}
                   onChange={(e) => updateLabForm(t.id, 'results_text', e.target.value)}
                   rows={2}
@@ -165,7 +165,7 @@ export default function DesktopLabTechDashboard() {
                   disabled={updatingLabId === t.id}
                   className="rounded-full bg-[var(--portal-accent)] text-white px-5 py-1.5 text-sm font-medium hover:brightness-90 transition disabled:opacity-50"
                 >
-                  {updatingLabId === t.id ? 'Mise a jour...' : 'Mettre a jour'}
+                  {updatingLabId === t.id ? 'Mise à jour...' : 'Mettre à jour'}
                 </button>
               </div>
             ))}

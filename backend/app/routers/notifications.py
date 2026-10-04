@@ -30,7 +30,7 @@ def create_stock_alert(db: Session, establishment_id: str, item_name: str, quant
     notification = Notification(
         id=str(uuid.uuid4()), establishment_id=establishment_id, user_id=None,
         notification_type="stock_alert", title="Stock bas",
-        message=f"{item_name}: il ne reste que {quantity} unite(s) (seuil d'alerte: {threshold}).",
+        message=f"{item_name}: il ne reste que {quantity} unité(s) (seuil d'alerte: {threshold}).",
     )
     db.add(notification)
 
@@ -41,8 +41,8 @@ def create_maintenance_alert(db: Session, establishment_id: str, equipment_name:
     d'equipement echue ou a echeance."""
     notification = Notification(
         id=str(uuid.uuid4()), establishment_id=establishment_id, user_id=None,
-        notification_type="maintenance_alert", title="Maintenance a prevoir",
-        message=f"{equipment_name}: maintenance preventive prevue le {due_date.strftime('%d/%m/%Y')}.",
+        notification_type="maintenance_alert", title="Maintenance à prévoir",
+        message=f"{equipment_name}: maintenance préventive prévue le {due_date.strftime('%d/%m/%Y')}.",
     )
     db.add(notification)
 
@@ -69,7 +69,7 @@ def create_dossier_share_notification(db: Session, recipient_doctor_user_id: str
     """
     notification = Notification(
         id=str(uuid.uuid4()), establishment_id=establishment_id, user_id=recipient_doctor_user_id,
-        notification_type="dossier_share", title="Dossier partage par un confrere",
+        notification_type="dossier_share", title="Dossier partagé par un confrère",
         message=f"Dr {sender_doctor_name} t'a transmis le dossier de {patient_name}.",
     )
     db.add(notification)
@@ -84,7 +84,7 @@ def create_lab_request_notification(db: Session, lab_establishment_id: str, test
     """
     notification = Notification(
         id=str(uuid.uuid4()), establishment_id=lab_establishment_id, user_id=None,
-        notification_type="new_lab_request", title="Nouvelle analyse demandee",
+        notification_type="new_lab_request", title="Nouvelle analyse demandée",
         message=f"{test_name} - {patient_name}",
     )
     db.add(notification)

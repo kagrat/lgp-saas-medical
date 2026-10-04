@@ -63,7 +63,7 @@ export default function NotificationBell() {
           <div className="flex justify-between items-center p-3 border-b border-forest-100">
             <p className="text-sm font-medium text-forest-900">Notifications</p>
             {unreadCount > 0 && (
-              <button onClick={markAllRead} className="text-xs text-amber-600 hover:underline">Tout marquer lu</button>
+              <button onClick={markAllRead} className="text-xs text-amber-600 hover:underline">Tout marquer comme lu</button>
             )}
           </div>
           {notifications.length === 0 && <p className="text-sm text-forest-700 p-4">Aucune notification.</p>}

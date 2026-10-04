@@ -28,7 +28,7 @@ export default function ActivityLog() {
               <th className="px-4 py-3 font-medium">Utilisateur</th>
               <th className="px-4 py-3 font-medium">Établissement</th>
               <th className="px-4 py-3 font-medium">Action</th>
-              <th className="px-4 py-3 font-medium">Details</th>
+              <th className="px-4 py-3 font-medium">Détails</th>
               <th className="px-4 py-3 font-medium">Date</th>
             </tr>
           </thead>

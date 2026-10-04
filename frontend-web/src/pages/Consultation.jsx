@@ -48,7 +48,7 @@ export default function Consultation() {
       setEstablishments(data)
       setStep(2)
     } catch (err) {
-      setError(getErrorMessage(err, "La recherche a échoué. Vérifie les champs et reessaie."))
+      setError(getErrorMessage(err, "La recherche a échoué. Vérifie les champs et réessaie."))
     } finally {
       setLoading(false)
     }
@@ -128,7 +128,7 @@ export default function Consultation() {
       </h1>
       <p className="text-forest-700 max-w-2xl mb-10">
         Spécialité d'abord, ensuite l'établissement le plus proche de chez toi, puis le médecin
-        de ton choix au sein de cet établissement - avec vérification de ses disponibilités reelles.
+        de ton choix au sein de cet établissement - avec vérification de ses disponibilités réelles.
       </p>
 
       {step < 5 && <StepIndicator current={step} total={TOTAL_STEPS} label={stepLabels[step]} />}
@@ -137,7 +137,7 @@ export default function Consultation() {
         <div className="rounded-2xl border border-forest-300 bg-forest-50 p-6">
           <p className="font-display text-xl text-forest-900 font-semibold mb-1">Rendez-vous confirmé</p>
           <p className="text-forest-700">
-            Le {new Date(confirmation.scheduled_at).toLocaleString('fr-FR')} - une confirmation te sera envoyee par email/SMS.
+            Le {new Date(confirmation.scheduled_at).toLocaleString('fr-FR')} - une confirmation te sera envoyée par e-mail/SMS.
           </p>
         </div>
       ) : step === 5 && pendingSlot ? (
@@ -169,7 +169,7 @@ export default function Consultation() {
           <div className="sm:col-span-2">
             <button type="submit" disabled={loading}
               className="w-full sm:w-auto rounded-full bg-primary-700 text-white px-8 py-3 font-medium hover:bg-primary-900 transition disabled:opacity-50">
-              {loading ? 'Recherche...' : 'Voir les etablissements'}
+              {loading ? 'Recherche...' : 'Voir les établissements'}
             </button>
           </div>
         </form>
@@ -189,7 +189,7 @@ export default function Consultation() {
                 <p className="font-display text-lg text-forest-900 font-semibold">{est.name}</p>
                 <p className="text-sm text-forest-700">{est.city}{est.address ? ` - ${est.address}` : ''}</p>
                 <p className="text-sm text-forest-700">
-                  {est.doctor_count} medecin{est.doctor_count > 1 ? 's' : ''} en {form.specialty}
+                  {est.doctor_count} médecin{est.doctor_count > 1 ? 's' : ''} en {form.specialty}
                 </p>
                 {est.distance_km !== null && est.distance_km !== undefined && (
                   <p className="text-sm text-amber-600 font-medium">{est.distance_km} km</p>
@@ -240,7 +240,7 @@ export default function Consultation() {
             </div>
             <button type="submit" disabled={loading}
               className="rounded-full bg-primary-700 text-white px-8 py-3 font-medium hover:bg-primary-900 transition disabled:opacity-50">
-              {loading ? 'Verification...' : 'Verifier les disponibilites'}
+              {loading ? 'Vérification...' : 'Vérifier les disponibilités'}
             </button>
           </form>
 
@@ -251,7 +251,7 @@ export default function Consultation() {
               // possibles, plutot qu'un message unique qui ne dit pas
               // pourquoi.
               hasAvailabilityConfigured ? (
-                <p className="text-forest-700">Aucun créneau disponible pour ce médecin a cette date. Essaie une autre date.</p>
+                <p className="text-forest-700">Aucun créneau disponible pour ce médecin à cette date. Essaie une autre date.</p>
               ) : (
                 <p className="text-clay-600">Ce médecin n'a pas encore renseigné ses horaires de disponibilité - contacte l'établissement directement pour ce rendez-vous.</p>
               )

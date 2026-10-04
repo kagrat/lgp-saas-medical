@@ -29,7 +29,7 @@ export default function ResetPassword() {
       return
     }
     if (!token) {
-      setError('Lien invalide - le jeton de reinitialisation est manquant.')
+      setError('Lien invalide - le jeton de réinitialisation est manquant.')
       return
     }
 
@@ -38,7 +38,7 @@ export default function ResetPassword() {
       await api.post('/auth/reset-password', { token, new_password: newPassword })
       setSuccess(true)
     } catch (err) {
-      setError(getErrorMessage(err, 'Ce lien est invalide ou a expire. Demande un nouveau lien depuis la page de connexion.'))
+      setError(getErrorMessage(err, 'Ce lien est invalide ou a expiré. Demande un nouveau lien depuis la page de connexion.'))
     } finally {
       setLoading(false)
     }
@@ -50,14 +50,14 @@ export default function ResetPassword() {
 
       {success ? (
         <div>
-          <p className="text-forest-700 mb-6">Ton mot de passe a ete reinitialise avec succes.</p>
+          <p className="text-forest-700 mb-6">Ton mot de passe a été réinitialisé avec succès.</p>
           <Link to="/connexion" className="rounded-full bg-primary-700 text-white px-6 py-2.5 font-medium hover:bg-primary-900 transition inline-block">
             Se connecter
           </Link>
         </div>
       ) : (
         <form onSubmit={handleSubmit} className="space-y-4">
-          <p className="text-forest-700 mb-4">Choisis un nouveau mot de passe (au moins 8 caracteres, avec un chiffre et une majuscule).</p>
+          <p className="text-forest-700 mb-4">Choisis un nouveau mot de passe (au moins 8 caractères, avec un chiffre et une majuscule).</p>
           <div>
             <label className="block text-sm font-medium text-forest-900 mb-1">Nouveau mot de passe</label>
             <input
@@ -77,7 +77,7 @@ export default function ResetPassword() {
             type="submit" disabled={loading}
             className="w-full rounded-full bg-primary-700 text-white py-3 font-medium hover:bg-primary-900 transition disabled:opacity-50"
           >
-            {loading ? 'Enregistrement...' : 'Reinitialiser le mot de passe'}
+            {loading ? 'Enregistrement...' : 'Réinitialiser le mot de passe'}
           </button>
         </form>
       )}

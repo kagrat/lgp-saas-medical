@@ -121,7 +121,7 @@ export default function PatientPharmacyOrders() {
                     {o.items.map((item) => item.medication_name).join(', ')}
                   </p>
                   <p className="text-sm text-forest-700 mt-0.5">
-                    Livree - {o.delivery_mode === 'delivery' ? 'Livraison' : 'Retrait sur place'}
+                    Livrée - {o.delivery_mode === 'delivery' ? 'Livraison' : 'Retrait sur place'}
                   </p>
                 </div>
                 <button onClick={() => toggleOrderHistory(o.id)} className="text-xs text-amber-600 hover:underline shrink-0 ml-3">
@@ -164,7 +164,7 @@ export default function PatientPharmacyOrders() {
                   <div className="text-sm text-forest-700 mb-2">
                     {o.items.map((item) => (
                       <p key={item.id}>
-                        {item.medication_name}: {item.confirmed_quantity} unite(s) a {item.confirmed_unit_price?.toLocaleString('fr-FR')} FCFA piece
+                        {item.medication_name}: {item.confirmed_quantity} unité(s) à {item.confirmed_unit_price?.toLocaleString('fr-FR')} FCFA pièce
                         {item.stock_status === 'rupture_totale' && <span className="text-clay-600 font-medium"> - Rupture totale</span>}
                         {item.stock_status === 'rupture_temporaire' && <span className="text-amber-600 font-medium"> - Rupture temporaire</span>}
                         {item.stock_status === 'disponible_partiel' && <span className="text-amber-600 font-medium"> - Disponible partiellement</span>}
@@ -189,7 +189,7 @@ export default function PatientPharmacyOrders() {
               )}
 
               {o.estimated_ready_at && (
-                <p className="text-sm text-forest-700 mt-3">Pret estime le {new Date(o.estimated_ready_at).toLocaleString('fr-FR')}</p>
+                <p className="text-sm text-forest-700 mt-3">Prêt estimé le {new Date(o.estimated_ready_at).toLocaleString('fr-FR')}</p>
               )}
               {o.pharmacist_note && o.status !== 'awaiting_confirmation' && (
                 <p className="text-sm text-forest-700 italic">Note de la pharmacie: {o.pharmacist_note}</p>
@@ -202,17 +202,17 @@ export default function PatientPharmacyOrders() {
               {o.delivery_mode === 'delivery' && o.status === 'confirmed' && !o.is_paid && (
                 <div className="mt-3 pt-3 border-t border-forest-100">
                   <p className="text-sm text-forest-700 mb-2">
-                    Livraison choisie - paiement en ligne requis avant que la pharmacie ne prepare ta commande.
+                    Livraison choisie - paiement en ligne requis avant que la pharmacie ne prépare ta commande.
                   </p>
                   <button onClick={() => payOrder(o.id)} disabled={payingOrderId === o.id}
                     className="rounded-full bg-[var(--portal-accent)] text-white px-5 py-1.5 text-sm font-medium hover:brightness-90 transition disabled:opacity-50">
-                    {payingOrderId === o.id ? 'Paiement...' : `Payer votre commande${o.total_amount ? ` (${o.total_amount.toLocaleString('fr-FR')} FCFA)` : ''}`}
+                    {payingOrderId === o.id ? 'Paiement...' : `Payer ta commande${o.total_amount ? ` (${o.total_amount.toLocaleString('fr-FR')} FCFA)` : ''}`}
                   </button>
                 </div>
               )}
               {o.delivery_mode === 'delivery' && o.is_paid && (
                 <p className="text-sm text-primary-700 font-medium mt-3">
-                  ✓ Payee le {new Date(o.paid_at).toLocaleDateString('fr-FR')}
+                  ✓ Payée le {new Date(o.paid_at).toLocaleDateString('fr-FR')}
                 </p>
               )}
 
@@ -220,7 +220,7 @@ export default function PatientPharmacyOrders() {
                 <div className="mt-3 pt-3 border-t border-forest-100">
                   <button onClick={() => markOrderReceived(o.id)} disabled={receivingOrderId === o.id}
                     className="rounded-full bg-primary-700 text-white px-5 py-1.5 text-sm font-medium hover:bg-primary-900 transition disabled:opacity-50">
-                    {receivingOrderId === o.id ? '...' : "J'ai recu ma commande"}
+                    {receivingOrderId === o.id ? '...' : "J'ai reçu ma commande"}
                   </button>
                 </div>
               )}

@@ -33,7 +33,7 @@ router = APIRouter(prefix="/admissions", tags=["hospitalisation"])
 def _current_doctor(db: Session, current_user: User) -> Doctor:
     doctor = db.query(Doctor).filter(Doctor.user_id == current_user.id).first()
     if not doctor:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Profil medecin introuvable")
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Profil médecin introuvable")
     return doctor
 
 
@@ -134,18 +134,18 @@ def admit_patient(payload: AdmissionCreate, db: Session = Depends(get_db),
                 Doctor.id == payload.admitting_doctor_id, Doctor.establishment_id == current_user.establishment_id,
             ).first()
             if not other_doctor:
-                raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Medecin admettant introuvable dans ton etablissement")
+                raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Médecin admettant introuvable dans ton établissement")
             doctor = other_doctor
     else:
         # Infirmier ou admin d'etablissement: doivent obligatoirement
         # preciser QUEL medecin admet cliniquement le patient.
         if not payload.admitting_doctor_id:
-            raise HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_ENTITY, detail="Precise le medecin qui admet ce patient")
+            raise HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_ENTITY, detail="Précise le médecin qui admet ce patient")
         doctor = db.query(Doctor).filter(
             Doctor.id == payload.admitting_doctor_id, Doctor.establishment_id == current_user.establishment_id,
         ).first()
         if not doctor:
-            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Medecin admettant introuvable dans ton etablissement")
+            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Médecin admettant introuvable dans ton établissement")
 
     patient = db.query(Patient).filter(Patient.id == payload.patient_id).first()
     if not patient:
@@ -154,7 +154,7 @@ def admit_patient(payload: AdmissionCreate, db: Session = Depends(get_db),
     if payload.department_id:
         dept = db.query(Department).filter(Department.id == payload.department_id, Department.establishment_id == current_user.establishment_id).first()
         if not dept:
-            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Departement introuvable")
+            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Département introuvable")
     if payload.room_id:
         room = db.query(Room).filter(Room.id == payload.room_id, Room.establishment_id == current_user.establishment_id).first()
         if not room:
@@ -171,11 +171,11 @@ def admit_patient(payload: AdmissionCreate, db: Session = Depends(get_db),
             raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Lit introuvable dans cette chambre")
         occupied = db.query(Admission).filter(Admission.bed_id == payload.bed_id, Admission.status == "active").first()
         if occupied:
-            raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail="Ce lit est deja occupe")
+            raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail="Ce lit est déjà occupé")
     elif payload.room_id:
         has_beds = db.query(Bed).filter(Bed.room_id == payload.room_id).first()
         if has_beds:
-            raise HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_ENTITY, detail="Cette chambre a des lits individuels: precise lequel choisir")
+            raise HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_ENTITY, detail="Cette chambre a des lits individuels: précise lequel choisir")
 
     admission = Admission(
         id=str(uuid.uuid4()), establishment_id=current_user.establishment_id,
@@ -220,7 +220,7 @@ def record_vitals(admission_id: str, payload: VitalSignsCreate, db: Session = De
                    current_user: User = Depends(require_roles(UserRole.NURSE))):
     admission = _get_admission_in_scope(db, admission_id, current_user)
     if admission.status != "active":
-        raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail="Cette hospitalisation est terminee")
+        raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail="Cette hospitalisation est terminée")
 
     vitals = VitalSigns(
         id=str(uuid.uuid4()), admission_id=admission.id, recorded_by_user_id=current_user.id,
@@ -319,7 +319,7 @@ def transfer_admission(admission_id: str, payload: AdmissionTransferCreate, db: 
                         current_user: User = Depends(require_roles(UserRole.DOCTOR))):
     admission = _get_admission_in_scope(db, admission_id, current_user)
     if admission.status != "active":
-        raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail="Cette hospitalisation est terminee")
+        raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail="Cette hospitalisation est terminée")
 
     if payload.to_room_id:
         room = db.query(Room).filter(Room.id == payload.to_room_id, Room.establishment_id == current_user.establishment_id).first()
@@ -329,7 +329,7 @@ def transfer_admission(admission_id: str, payload: AdmissionTransferCreate, db: 
             Admission.room_id == payload.to_room_id, Admission.status == "active", Admission.id != admission.id
         ).first()
         if occupied:
-            raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail="Cette chambre est deja occupee")
+            raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail="Cette chambre est déjà occupée")
 
     transfer = AdmissionTransfer(
         id=str(uuid.uuid4()), admission_id=admission.id,
@@ -351,7 +351,7 @@ def discharge_admission(admission_id: str, payload: AdmissionDischarge, db: Sess
                          current_user: User = Depends(require_roles(UserRole.DOCTOR))):
     admission = _get_admission_in_scope(db, admission_id, current_user)
     if admission.status != "active":
-        raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail="Cette hospitalisation est deja terminee")
+        raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail="Cette hospitalisation est déjà terminée")
 
     admission.status = "discharged"
     admission.actual_discharge_date = datetime.utcnow()

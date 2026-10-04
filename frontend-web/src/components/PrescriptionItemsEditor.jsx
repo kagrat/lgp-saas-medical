@@ -17,14 +17,14 @@ export default function PrescriptionItemsEditor({ items, onChange }) {
 
   return (
     <div className="mb-3">
-      <p className="text-xs font-medium text-forest-900 mb-2">Medicaments prescrits (optionnel - permet au patient de commander directement en pharmacie)</p>
+      <p className="text-xs font-medium text-forest-900 mb-2">Médicaments prescrits (optionnel - permet au patient de commander directement en pharmacie)</p>
       <div className="space-y-2 mb-2">
         {items.map((item, idx) => (
           <div key={idx} className="grid sm:grid-cols-[1fr_auto_1fr_auto] gap-2 items-center">
-            <input placeholder="Nom du medicament" value={item.medication_name}
+            <input placeholder="Nom du médicament" value={item.medication_name}
               onChange={(e) => updateItem(idx, 'medication_name', e.target.value)}
               className="rounded-lg border border-forest-100 px-2 py-1.5 text-sm" />
-            <input type="number" min="1" placeholder="Qte" value={item.quantity}
+            <input type="number" min="1" placeholder="Qté" value={item.quantity}
               onChange={(e) => updateItem(idx, 'quantity', e.target.value)}
               className="w-16 rounded-lg border border-forest-100 px-2 py-1.5 text-sm" />
             <input placeholder="Posologie (ex: 3x/jour)" value={item.dosage_instructions}
@@ -35,7 +35,7 @@ export default function PrescriptionItemsEditor({ items, onChange }) {
         ))}
       </div>
       <button type="button" onClick={addItem} className="text-xs text-amber-600 font-medium hover:underline">
-        + Ajouter un medicament
+        + Ajouter un médicament
       </button>
     </div>
   )

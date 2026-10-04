@@ -59,11 +59,11 @@ export default function ReceptionBookAppointment() {
   async function searchDoctors(e) {
     e.preventDefault()
     if (!selectedPatient) {
-      setError('Choisis d\'abord le patient dans les resultats de recherche.')
+      setError('Choisis d\'abord le patient dans les résultats de recherche.')
       return
     }
     if (!specialty) {
-      setError('Precise de quoi souffre le patient (specialite recherchee).')
+      setError('Précise de quoi souffre le patient (spécialité recherchée).')
       return
     }
     setError('')
@@ -73,7 +73,7 @@ export default function ReceptionBookAppointment() {
       setDoctors(data)
       setStep(2)
     } catch (err) {
-      setError(getErrorMessage(err, 'Impossible de charger les medecins.'))
+      setError(getErrorMessage(err, 'Impossible de charger les médecins.'))
     } finally {
       setLoading(false)
     }
@@ -96,7 +96,7 @@ export default function ReceptionBookAppointment() {
       setSlots(data.slots)
       setHasAvailabilityConfigured(data.has_availability_configured)
     } catch (err) {
-      setError(getErrorMessage(err, 'La verification des disponibilites a echoue.'))
+      setError(getErrorMessage(err, 'La vérification des disponibilités a échoué.'))
     } finally {
       setLoading(false)
     }
@@ -114,7 +114,7 @@ export default function ReceptionBookAppointment() {
       setConfirmation(data)
       setStep(4)
     } catch (err) {
-      setError(getErrorMessage(err, 'La reservation a echoue.'))
+      setError(getErrorMessage(err, 'La réservation a échoué.'))
     } finally {
       setBooking(false)
     }
@@ -137,14 +137,14 @@ export default function ReceptionBookAppointment() {
     <div className="rounded-xl border border-forest-100 bg-white p-5">
       <p className="font-medium text-forest-900 mb-1">Prendre rendez-vous pour un patient</p>
       <p className="text-forest-700 text-sm mb-4">
-        Pour un patient present physiquement - indique de quoi il souffre pour trouver le bon medecin.
+        Pour un patient présent physiquement - indique de quoi il souffre pour trouver le bon médecin.
       </p>
 
       {error && <p className="text-clay-600 text-sm mb-3">{error}</p>}
 
       {step === 4 && confirmation ? (
         <div className="rounded-xl border border-primary-300 bg-primary-50 p-4">
-          <p className="text-forest-900 font-medium mb-1">Rendez-vous confirme</p>
+          <p className="text-forest-900 font-medium mb-1">Rendez-vous confirmé</p>
           <p className="text-sm text-forest-700">
             {selectedPatient.full_name} - {new Date(confirmation.scheduled_at).toLocaleString('fr-FR')} avec {selectedDoctor.full_name}
           </p>
@@ -179,7 +179,7 @@ export default function ReceptionBookAppointment() {
           <form onSubmit={searchDoctors} className="flex gap-2">
             <select value={specialty} onChange={(e) => setSpecialty(e.target.value)}
               className="flex-1 rounded-lg border border-forest-100 px-3 py-2 text-sm bg-white">
-              <option value="" disabled>De quoi souffre le patient ? (specialite)</option>
+              <option value="" disabled>De quoi souffre le patient ? (spécialité)</option>
               {SPECIALTIES.map((s) => <option key={s} value={s}>{s}</option>)}
             </select>
             <button type="submit" disabled={loading}
@@ -223,7 +223,7 @@ export default function ReceptionBookAppointment() {
           {slots && (
             slots.length === 0 ? (
               hasAvailabilityConfigured ? (
-                <p className="text-forest-700 text-sm">Aucun créneau disponible a cette date.</p>
+                <p className="text-forest-700 text-sm">Aucun créneau disponible à cette date.</p>
               ) : (
                 <p className="text-clay-600 text-sm">Ce médecin n'a pas encore renseigné ses horaires de disponibilité.</p>
               )

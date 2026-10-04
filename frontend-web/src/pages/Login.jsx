@@ -36,7 +36,7 @@ export default function Login() {
   useEffect(() => {
     if (consumeSessionExpiredFlag()) {
       const label = ROLE_LABELS[lastExpiredRole]
-      setNotice(label ? `Ta session ${label} a expire. Reconnecte-toi pour continuer.` : 'Ta session a expire. Reconnecte-toi pour continuer.')
+      setNotice(label ? `Ta session ${label} a expiré. Reconnecte-toi pour continuer.` : 'Ta session a expiré. Reconnecte-toi pour continuer.')
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
@@ -54,7 +54,7 @@ export default function Login() {
         routeAfterLogin(data.token.role)
       }
     } catch (err) {
-      setError(getErrorMessage(err, 'Connexion impossible. Verifie tes identifiants.'))
+      setError(getErrorMessage(err, 'Connexion impossible. Vérifie tes identifiants.'))
     } finally {
       setLoading(false)
     }
@@ -69,7 +69,7 @@ export default function Login() {
       saveSession(data.access_token, data.role, data.establishment_id)
       routeAfterLogin(data.role)
     } catch (err) {
-      setError(getErrorMessage(err, 'Code invalide ou expire.'))
+      setError(getErrorMessage(err, 'Code invalide ou expiré.'))
     } finally {
       setVerifying(false)
     }
@@ -101,7 +101,7 @@ export default function Login() {
             {!requires2FA ? (
               <>
                 <div>
-                  <label htmlFor="email" className="block text-sm font-medium text-forest-900 mb-1">Email</label>
+                  <label htmlFor="email" className="block text-sm font-medium text-forest-900 mb-1">E-mail</label>
                   <input
                     id="email" type="email" required value={email} onChange={(e) => setEmail(e.target.value)}
                     className="w-full rounded-lg border border-forest-100 px-4 py-2.5 focus:border-forest-500"
@@ -118,9 +118,9 @@ export default function Login() {
             ) : (
               <div>
                 <p className="text-sm text-forest-700 mb-3">
-                  Un code de verification vient d'etre envoye a {email}. Saisis-le ci-dessous.
+                  Un code de vérification vient d'être envoyé à {email}. Saisis-le ci-dessous.
                 </p>
-                <label htmlFor="code" className="block text-sm font-medium text-forest-900 mb-1">Code a 6 chiffres</label>
+                <label htmlFor="code" className="block text-sm font-medium text-forest-900 mb-1">Code à 6 chiffres</label>
                 <input
                   id="code" type="text" inputMode="numeric" maxLength={6} required value={code}
                   onChange={(e) => setCode(e.target.value.replace(/\D/g, ''))}
@@ -133,13 +133,13 @@ export default function Login() {
               type="submit" disabled={requires2FA ? verifying : loading}
               className="w-full rounded-full bg-primary-700 text-white py-3 font-medium hover:bg-primary-900 transition disabled:opacity-50"
             >
-              {requires2FA ? (verifying ? 'Verification...' : 'Verifier le code') : (loading ? 'Connexion...' : 'Se connecter')}
+              {requires2FA ? (verifying ? 'Vérification...' : 'Vérifier le code') : (loading ? 'Connexion...' : 'Se connecter')}
             </button>
           </form>
 
           {!showForgotPassword ? (
             <button onClick={() => setShowForgotPassword(true)} className="text-sm text-forest-700 hover:underline mt-4">
-              Mot de passe oublie ?
+              Mot de passe oublié ?
             </button>
           ) : (
             <ForgotPasswordForm onClose={() => setShowForgotPassword(false)} />

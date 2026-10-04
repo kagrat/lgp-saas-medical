@@ -32,7 +32,7 @@ export default function PatientPrescriptions() {
     downloadDocumentAsPdf({
       title: doc.title, subtitle: 'Ordonnance',
       meta: [
-        `Medecin: ${doc.doctor_name}`, `Etablissement: ${doc.establishment_name}`,
+        `Médecin: ${doc.doctor_name}`, `Établissement: ${doc.establishment_name}`,
         `Date: ${new Date(doc.created_at).toLocaleDateString('fr-FR')}`,
       ],
       content: doc.content, filename: `${doc.title.replace(/[^a-z0-9]/gi, '_')}.pdf`,
@@ -56,7 +56,7 @@ export default function PatientPrescriptions() {
                   {expandedId === doc.id ? 'Masquer' : 'Voir'}
                 </button>
                 <button onClick={() => downloadPdf(doc)} className="text-xs text-amber-600 hover:underline">
-                  Telecharger PDF
+                  Télécharger PDF
                 </button>
               </div>
             </div>

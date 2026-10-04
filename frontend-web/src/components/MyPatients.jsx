@@ -126,7 +126,7 @@ export default function MyPatients() {
       const { data } = await api.get(`/doctors/me/patients/${selectedId}`)
       setDetail(data)
     } catch (err) {
-      setError(getErrorMessage(err, "Impossible d'ajouter cet element clinique."))
+      setError(getErrorMessage(err, "Impossible d'ajouter cet élément clinique."))
     } finally {
       setSavingFlag(false)
     }
@@ -155,7 +155,7 @@ export default function MyPatients() {
         setDepartments(deptRes.data)
         setRooms(roomsRes.data)
       } catch (err) {
-        setError('Impossible de charger les departements/chambres.')
+        setError('Impossible de charger les départements/chambres.')
       }
     }
   }
@@ -247,7 +247,7 @@ export default function MyPatients() {
       const { data } = await api.get('/doctors/search', { params: { name: doctorQuery } })
       setDoctorResults(data)
     } catch (err) {
-      setError(getErrorMessage(err, 'Recherche de medecin impossible.'))
+      setError(getErrorMessage(err, 'Recherche de médecin impossible.'))
     }
   }
 
@@ -257,7 +257,7 @@ export default function MyPatients() {
     setError('')
     try {
       await api.post(`/doctors/me/patients/${selectedId}/share`, { to_doctor_id: toDoctorId, note: shareNote || null })
-      setShareMessage('Dossier envoye.')
+      setShareMessage('Dossier envoyé.')
       setShareOpen(false)
       setDoctorQuery('')
       setDoctorResults([])
@@ -273,7 +273,7 @@ export default function MyPatients() {
     downloadDocumentAsPdf({
       title: doc.title, subtitle: DOCUMENT_TYPE_LABELS[doc.document_type] || doc.document_type,
       meta: [
-        `Patient: ${detail?.full_name || ''}`, `Medecin: ${doc.doctor_name}`,
+        `Patient: ${detail?.full_name || ''}`, `Médecin: ${doc.doctor_name}`,
         `Date: ${new Date(doc.created_at).toLocaleDateString('fr-FR')}`,
       ],
       content: doc.content, filename: `${doc.title.replace(/[^a-z0-9]/gi, '_')}.pdf`,
@@ -284,7 +284,7 @@ export default function MyPatients() {
     <div>
       {sharedWithMe.length > 0 && (
         <div className="mb-6 rounded-xl border border-amber-300 bg-amber-500/5 p-4">
-          <p className="text-sm font-medium text-forest-900 mb-2">Dossiers partages par des confreres</p>
+          <p className="text-sm font-medium text-forest-900 mb-2">Dossiers partagés par des confrères</p>
           <div className="space-y-1">
             {sharedWithMe.map((s) => (
               <button
@@ -292,7 +292,7 @@ export default function MyPatients() {
                 onClick={() => openPatient(s.patient_id)}
                 className="block text-sm text-forest-700 hover:text-forest-900 hover:underline"
               >
-                {s.patient_name} - envoye par {s.from_doctor_name}
+                {s.patient_name} - envoyé par {s.from_doctor_name}
                 {s.note ? ` (${s.note})` : ''}
               </button>
             ))}
@@ -343,7 +343,7 @@ export default function MyPatients() {
                     )}
                     {detail.viewed_via_share_from && (
                       <p className="text-xs text-amber-600 font-medium mt-1">
-                        Dossier consulte en lecture seule - partage par {detail.viewed_via_share_from}
+                        Dossier consulté en lecture seule - partagé par {detail.viewed_via_share_from}
                       </p>
                     )}
                     {detail.transferred_to && (
@@ -394,7 +394,7 @@ export default function MyPatients() {
                       <p className="text-sm font-medium text-forest-900 mb-2">Éléments cliniques</p>
                       <div className="flex flex-wrap gap-2 mb-2">
                         {detail.clinical_flags.length === 0 && (
-                          <p className="text-sm text-forest-700">Aucun element clinique renseigne.</p>
+                          <p className="text-sm text-forest-700">Aucun élément clinique renseigné.</p>
                         )}
                         {detail.clinical_flags.map((f) => (
                           <span key={f.id} className="inline-flex items-center gap-1.5 text-sm bg-forest-50 text-forest-900 px-3 py-1 rounded-full">
@@ -412,10 +412,10 @@ export default function MyPatients() {
                           <select value={newFlagType} onChange={(e) => setNewFlagType(e.target.value)}
                             className="rounded-lg border border-forest-100 px-2 py-1.5 text-sm bg-white">
                             <option value="allergy">Allergie</option>
-                            <option value="antecedent">Antecedent</option>
+                            <option value="antecedent">Antécédent</option>
                             <option value="other">Autre</option>
                           </select>
-                          <input placeholder="Ex: Penicilline, Diabete type 2..." value={newFlagLabel}
+                          <input placeholder="Ex: Pénicilline, Diabète type 2..." value={newFlagLabel}
                             onChange={(e) => setNewFlagLabel(e.target.value)}
                             className="flex-1 rounded-lg border border-forest-100 px-3 py-1.5 text-sm" />
                           <button onClick={addClinicalFlag} disabled={savingFlag || !newFlagLabel.trim()}
@@ -452,7 +452,7 @@ export default function MyPatients() {
                           <PrescriptionItemsEditor items={prescriptionItems} onChange={setPrescriptionItems} />
                         )}
                         <input
-                          placeholder="Motif / titre (ex: Suivi general, Ordonnance du 21 mai)"
+                          placeholder="Motif / titre (ex: Suivi général, Ordonnance du 21 mai)"
                           value={docForm.title}
                           onChange={(e) => setDocForm({ ...docForm, title: e.target.value })}
                           className="w-full rounded-lg border border-forest-100 px-3 py-2 text-sm mb-3"
@@ -473,7 +473,7 @@ export default function MyPatients() {
                         </button>
                       </div>
                     ) : (
-                      <p className="text-sm text-forest-700 mb-4">Dossier en lecture seule - impossible d'ajouter une note depuis un partage recu.</p>
+                      <p className="text-sm text-forest-700 mb-4">Dossier en lecture seule - impossible d'ajouter une note depuis un partage reçu.</p>
                     )}
 
                     {detail.can_add_document && (
@@ -481,15 +481,15 @@ export default function MyPatients() {
                         {shareMessage && <p className="text-forest-900 text-sm mb-2">{shareMessage}</p>}
                         {!shareOpen ? (
                           <button onClick={() => setShareOpen(true)} className="text-sm text-secondary-600 font-medium hover:underline">
-                            Envoyer ce dossier a un confrere
+                            Envoyer ce dossier à un confrère
                           </button>
                         ) : (
                           <div>
-                            <p className="text-sm font-medium text-forest-900 mb-2">Envoyer a un confrere</p>
+                            <p className="text-sm font-medium text-forest-900 mb-2">Envoyer à un confrère</p>
                             <form onSubmit={searchDoctors} className="flex gap-2 mb-2">
                               <input
                                 value={doctorQuery} onChange={(e) => setDoctorQuery(e.target.value)}
-                                placeholder="Nom du medecin..."
+                                placeholder="Nom du médecin..."
                                 className="flex-1 rounded-lg border border-forest-100 px-3 py-2 text-sm"
                               />
                               <button type="submit" className="rounded-full bg-[var(--portal-accent)] text-white px-4 py-2 text-sm font-medium hover:brightness-90 transition">
@@ -520,7 +520,7 @@ export default function MyPatients() {
 
                 {panelTab === 'historique' && (
                   <div>
-                    <p className="text-sm font-medium text-forest-900 mb-2">Consultations passees</p>
+                    <p className="text-sm font-medium text-forest-900 mb-2">Consultations passées</p>
                     {detail.appointments.length === 0 && <p className="text-sm text-forest-700">Aucun rendez-vous.</p>}
                     <div className="space-y-1">
                       {detail.appointments.map((a) => (
@@ -545,7 +545,7 @@ export default function MyPatients() {
                                   desormais telecharger un document depuis
                                   son propre espace, pas seulement le patient. */}
                               <button onClick={() => downloadDocument(d)} className="text-xs text-secondary-600 hover:underline">
-                                Telecharger
+                                Télécharger
                               </button>
                             </div>
                           </div>
@@ -634,7 +634,7 @@ export default function MyPatients() {
               </p>
             </div>
             {p.last_visit ? (
-              <p className="text-xs text-forest-700">Derniere visite: {new Date(p.last_visit).toLocaleDateString('fr-FR')}</p>
+              <p className="text-xs text-forest-700">Dernière visite: {new Date(p.last_visit).toLocaleDateString('fr-FR')}</p>
             ) : p.transferred_at ? (
               <p className="text-xs text-forest-700">
                 {p.transfer_status === 'transferred_in' ? 'Reçu' : 'Transféré'} le {new Date(p.transferred_at).toLocaleDateString('fr-FR')}

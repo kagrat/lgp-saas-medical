@@ -97,7 +97,7 @@ def create_room(payload: RoomCreate, db: Session = Depends(get_db),
     if payload.department_id:
         dept = db.query(Department).filter(Department.id == payload.department_id, Department.establishment_id == current_user.establishment_id).first()
         if not dept:
-            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Departement introuvable")
+            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Département introuvable")
 
     room = Room(
         id=str(uuid.uuid4()), establishment_id=current_user.establishment_id,

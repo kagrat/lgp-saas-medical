@@ -5,16 +5,16 @@
 // recherche par specialite ne trouverait jamais les medecins crees
 // avec un libelle different, ex: "Dentiste" vs "dentiste").
 export const SPECIALTIES = [
-  'Generaliste',
+  'Généraliste',
   'Dentiste',
   'Chirurgien',
   'Ophtalmologue',
-  'Pediatre',
-  'Gynecologue',
+  'Pédiatre',
+  'Gynécologue',
   'Cardiologue',
   'Dermatologue',
   'ORL',
-  'Kinesitherapeute',
+  'Kinésithérapeute',
   'Psychiatre',
   'Radiologue',
   'Urologue',

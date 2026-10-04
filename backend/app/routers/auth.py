@@ -60,7 +60,7 @@ def login(payload: LoginRequest, db: Session = Depends(get_db),
 
     invalid_credentials = HTTPException(
         status_code=status.HTTP_401_UNAUTHORIZED,
-        detail="Email ou mot de passe incorrect",
+        detail="E-mail ou mot de passe incorrect",
     )
 
     # NOUVEAU (audit de securite complet, demande explicite de M. Faustin):
@@ -72,7 +72,7 @@ def login(payload: LoginRequest, db: Session = Depends(get_db),
     if user and user.locked_until and user.locked_until > datetime.utcnow():
         raise HTTPException(
             status_code=status.HTTP_429_TOO_MANY_REQUESTS,
-            detail="Trop de tentatives echouees. Compte temporairement verrouille, reessaie dans quelques minutes.",
+            detail="Trop de tentatives échouées. Compte temporairement verrouillé, réessaie dans quelques minutes.",
         )
 
     if not user or not verify_password(payload.password, user.hashed_password):
@@ -90,7 +90,7 @@ def login(payload: LoginRequest, db: Session = Depends(get_db),
         db.commit()
 
     if not user.is_active:
-        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Compte desactive")
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Compte désactivé")
 
     is_staff = user.role in STAFF_ROLES
     if x_client_type == "desktop" and not is_staff:
@@ -108,7 +108,7 @@ def login(payload: LoginRequest, db: Session = Depends(get_db),
         if user.establishment and not user.establishment.is_active:
             raise HTTPException(
                 status_code=status.HTTP_403_FORBIDDEN,
-                detail="Etablissement suspendu. Contactez l'administrateur de la plateforme.",
+                detail="Établissement suspendu. Contacte l'administrateur de la plateforme.",
             )
 
     # NOUVEAU (audit de securite complet, demande explicite de M. Faustin):
@@ -124,14 +124,14 @@ def login(payload: LoginRequest, db: Session = Depends(get_db),
         db.commit()
         body = (
             f"Bonjour {user.full_name},\n\n"
-            f"Voici ton code de verification SpeedSanté+ (valable 10 minutes):\n\n{raw_code}\n\n"
-            f"Si tu n'es pas a l'origine de cette connexion, change ton mot de passe immediatement."
+            f"Voici ton code de vérification SpeedSanté+ (valable 10 minutes):\n\n{raw_code}\n\n"
+            f"Si tu n'es pas à l'origine de cette connexion, change ton mot de passe immédiatement."
         )
         try:
-            send_confirmation_email(user.email, "Ton code de verification", body)
+            send_confirmation_email(user.email, "Ton code de vérification", body)
         except Exception:
             pass
-        return LoginResponse(requires_2fa=True, message="Un code de verification vient d'etre envoye a ton email.")
+        return LoginResponse(requires_2fa=True, message="Un code de vérification vient d'être envoyé à ton e-mail.")
 
     token = create_access_token({
         "sub": user.id,
@@ -152,7 +152,7 @@ def verify_2fa(payload: Verify2FARequest, db: Session = Depends(get_db),
     connexion quand la double authentification est active - verifie le
     code recu par email et delivre alors le vrai jeton."""
     user = db.query(User).filter(User.email == payload.email.lower()).first()
-    invalid = HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Code invalide ou expire")
+    invalid = HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Code invalide ou expiré")
     if not user:
         raise invalid
 
@@ -195,7 +195,7 @@ def toggle_two_factor(payload: TwoFactorToggle, db: Session = Depends(get_db),
 def register_patient(payload: PatientRegisterRequest, db: Session = Depends(get_db)):
     existing = db.query(User).filter(User.email == payload.email.lower()).first()
     if existing:
-        raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail="Un compte existe deja avec cet email")
+        raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail="Un compte existe déjà avec cet e-mail")
 
     user = User(
         id=str(uuid.uuid4()),
@@ -234,7 +234,7 @@ def update_profile(payload: UserProfileUpdate, db: Session = Depends(get_db),
     if payload.email and payload.email.lower() != current_user.email:
         existing = db.query(User).filter(User.email == payload.email.lower()).first()
         if existing:
-            raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail="Cet email est deja utilise par un autre compte")
+            raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail="Cet e-mail est déjà utilisé par un autre compte")
         current_user.email = payload.email.lower()
 
     if payload.full_name:
@@ -247,7 +247,7 @@ def update_profile(payload: UserProfileUpdate, db: Session = Depends(get_db),
         current_user.residence = payload.residence
 
     db.add(AuditLog(user_id=current_user.id, establishment_id=current_user.establishment_id,
-                     action="update_profile", details="Profil modifie"))
+                     action="update_profile", details="Profil modifié"))
     db.commit()
     db.refresh(current_user)
     return _to_profile_out(current_user)
@@ -274,9 +274,9 @@ def change_password(payload: PasswordChangeRequest, db: Session = Depends(get_db
 
     current_user.hashed_password = hash_password(payload.new_password)
     db.add(AuditLog(user_id=current_user.id, establishment_id=current_user.establishment_id,
-                     action="change_password", details="Mot de passe modifie"))
+                     action="change_password", details="Mot de passe modifié"))
     db.commit()
-    return {"message": "Mot de passe mis a jour avec succes"}
+    return {"message": "Mot de passe mis à jour avec succès"}
 
 
 def _hash_token(raw_token: str) -> str:
@@ -293,7 +293,7 @@ def forgot_password(payload: ForgotPasswordRequest, db: Session = Depends(get_db
     puisse decouvrir quels emails sont enregistres sur la plateforme
     (enumeration d'utilisateurs, faille classique).
     """
-    generic_response = {"message": "Si un compte existe avec cet email, un lien de reinitialisation vient d'etre envoye."}
+    generic_response = {"message": "Si un compte existe avec cet e-mail, un lien de réinitialisation vient d'être envoyé."}
 
     user = db.query(User).filter(User.email == payload.email.lower()).first()
     if not user or not user.is_active:
@@ -310,13 +310,13 @@ def forgot_password(payload: ForgotPasswordRequest, db: Session = Depends(get_db
     reset_link = f"{settings.frontend_url}/reinitialiser-mot-de-passe?token={raw_token}"
     body = (
         f"Bonjour {user.full_name},\n\n"
-        f"Une demande de reinitialisation de mot de passe a ete faite pour ton compte SpeedSanté+.\n"
+        f"Une demande de réinitialisation de mot de passe a été faite pour ton compte SpeedSanté+.\n"
         f"Clique sur ce lien pour choisir un nouveau mot de passe (valable 1 heure):\n{reset_link}\n\n"
-        f"Si tu n'es pas a l'origine de cette demande, ignore simplement cet email - "
-        f"ton mot de passe actuel reste inchange."
+        f"Si tu n'es pas à l'origine de cette demande, ignore simplement cet e-mail - "
+        f"ton mot de passe actuel reste inchangé."
     )
     try:
-        send_confirmation_email(user.email, "Reinitialisation de ton mot de passe", body)
+        send_confirmation_email(user.email, "Réinitialisation de ton mot de passe", body)
     except Exception:
         # Best-effort, comme pour les autres notifications: ne jamais
         # reveler a l'appelant si l'envoi a echoue (fuiterait la meme
@@ -335,11 +335,11 @@ def reset_password(payload: ResetPasswordRequest, db: Session = Depends(get_db))
         .first()
     )
     if not reset_token or reset_token.expires_at < datetime.utcnow():
-        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Ce lien de reinitialisation est invalide ou a expire")
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Ce lien de réinitialisation est invalide ou a expiré")
 
     user = db.query(User).filter(User.id == reset_token.user_id).first()
     if not user:
-        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Ce lien de reinitialisation est invalide ou a expire")
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Ce lien de réinitialisation est invalide ou a expiré")
 
     user.hashed_password = hash_password(payload.new_password)
     reset_token.used = True
@@ -352,6 +352,6 @@ def reset_password(payload: ResetPasswordRequest, db: Session = Depends(get_db))
     ).update({"used": True})
 
     db.add(AuditLog(user_id=user.id, establishment_id=user.establishment_id,
-                     action="reset_password", details="Mot de passe reinitialise via lien email"))
+                     action="reset_password", details="Mot de passe réinitialisé via lien e-mail"))
     db.commit()
-    return {"message": "Mot de passe reinitialise avec succes"}
+    return {"message": "Mot de passe réinitialisé avec succès"}

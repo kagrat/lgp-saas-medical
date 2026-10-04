@@ -32,7 +32,7 @@ export default function LabReferralForm({ appointmentId, onDone }) {
     setError('')
     setMessage('')
     if (!selectedLabId || !testName) {
-      setError('Choisis un laboratoire et precise le nom de l\'analyse.')
+      setError('Choisis un laboratoire et précise le nom de l\'analyse.')
       return
     }
     setSubmitting(true)
@@ -44,7 +44,7 @@ export default function LabReferralForm({ appointmentId, onDone }) {
         sample_type: sampleType || null,
         priority,
       })
-      setMessage('Analyse transmise au laboratoire. Le patient la voit deja dans son suivi.')
+      setMessage('Analyse transmise au laboratoire. Le patient la voit déjà dans son suivi.')
       setTestName('')
       setSampleType('')
       setPriority('routine')
@@ -84,7 +84,7 @@ export default function LabReferralForm({ appointmentId, onDone }) {
       <div className="grid sm:grid-cols-3 gap-2 mb-3">
         <input placeholder="Nom de l'analyse" value={testName} onChange={(e) => setTestName(e.target.value)}
           className="rounded-lg border border-forest-100 px-3 py-2 text-sm" />
-        <input placeholder="Type de prelevement (optionnel)" value={sampleType} onChange={(e) => setSampleType(e.target.value)}
+        <input placeholder="Type de prélèvement (optionnel)" value={sampleType} onChange={(e) => setSampleType(e.target.value)}
           className="rounded-lg border border-forest-100 px-3 py-2 text-sm" />
         <select value={priority} onChange={(e) => setPriority(e.target.value)}
           className={`rounded-lg border px-3 py-2 text-sm bg-white ${priority === 'urgent' ? 'border-clay-500 text-clay-600 font-medium' : 'border-forest-100'}`}>

@@ -3,9 +3,9 @@ import api, { getErrorMessage } from '../api/client'
 
 const ROLE_LABELS = {
   super_admin: 'Super Admin',
-  establishment_admin: 'Admin etablissement',
-  doctor: 'Medecin',
-  secretary: 'Secretaire',
+  establishment_admin: 'Admin établissement',
+  doctor: 'Médecin',
+  secretary: 'Secrétaire',
   pharmacist: 'Pharmacien',
   lab_technician: 'Technicien labo',
   patient: 'Patient',
@@ -41,7 +41,7 @@ export default function UserDirectory() {
       await api.patch(`/users/${userId}/toggle-active`)
       await load(search)
     } catch (err) {
-      setError(getErrorMessage(err, 'Impossible de mettre a jour ce compte.'))
+      setError(getErrorMessage(err, 'Impossible de mettre à jour ce compte.'))
     } finally {
       setTogglingId(null)
     }
@@ -67,7 +67,7 @@ export default function UserDirectory() {
           <thead>
             <tr className="border-b border-forest-100 text-left text-forest-700">
               <th className="px-4 py-3 font-medium">Nom</th>
-              <th className="px-4 py-3 font-medium">Role</th>
+              <th className="px-4 py-3 font-medium">Rôle</th>
               <th className="px-4 py-3 font-medium">Établissement</th>
               <th className="px-4 py-3 font-medium">Statut</th>
               <th className="px-4 py-3 font-medium"></th>
@@ -84,7 +84,7 @@ export default function UserDirectory() {
                 <td className="px-4 py-3 text-forest-700">{u.establishment_name || '-'}</td>
                 <td className="px-4 py-3">
                   <span className={`text-xs px-3 py-1 rounded-full font-medium ${u.is_active ? 'bg-success-500/10 text-success-700' : 'bg-clay-500/10 text-clay-600'}`}>
-                    {u.is_active ? 'Actif' : 'Desactive'}
+                    {u.is_active ? 'Actif' : 'Désactivé'}
                   </span>
                 </td>
                 <td className="px-4 py-3">
@@ -93,7 +93,7 @@ export default function UserDirectory() {
                     disabled={togglingId === u.id}
                     className="text-xs rounded-full border border-forest-300 px-3 py-1 hover:bg-forest-50 transition disabled:opacity-50"
                   >
-                    {togglingId === u.id ? '...' : u.is_active ? 'Desactiver' : 'Reactiver'}
+                    {togglingId === u.id ? '...' : u.is_active ? 'Désactiver' : 'Réactiver'}
                   </button>
                 </td>
               </tr>

@@ -41,7 +41,7 @@ export default function Register() {
                 className="w-full rounded-lg border border-forest-100 px-4 py-2.5 focus:border-forest-500" />
             </div>
             <div>
-              <label className="block text-sm font-medium text-forest-900 mb-1">Email</label>
+              <label className="block text-sm font-medium text-forest-900 mb-1">E-mail</label>
               <input type="email" required value={form.email} onChange={(e) => update('email', e.target.value)}
                 className="w-full rounded-lg border border-forest-100 px-4 py-2.5 focus:border-forest-500" />
             </div>
@@ -76,7 +76,7 @@ export default function Register() {
             {error && <p className="text-clay-600 text-sm">{error}</p>}
             <button type="submit" disabled={loading}
               className="w-full rounded-full bg-amber-500 text-forest-900 py-3 font-semibold hover:bg-amber-400 transition disabled:opacity-50">
-              {loading ? 'Creation...' : 'Creer mon compte'}
+              {loading ? 'Création...' : 'Créer mon compte'}
             </button>
           </form>
         </div>

@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react'
 import api, { getErrorMessage } from '../api/client'
 
-const STATUS_LABELS = { issued: 'Emise', partially_paid: 'Partiellement payee', paid: 'Payee', cancelled: 'Annulee' }
+const STATUS_LABELS = { issued: 'Émise', partially_paid: 'Partiellement payée', paid: 'Payée', cancelled: 'Annulée' }
 const STATUS_COLORS = {
   issued: 'bg-amber-500/10 text-amber-600', partially_paid: 'bg-amber-500/10 text-amber-600',
   paid: 'bg-success-500/10 text-success-700', cancelled: 'bg-clay-500/10 text-clay-600',
@@ -54,7 +54,7 @@ export default function InvoiceManager() {
       setSummary(summaryRes.data)
       setInvoices(invoicesRes.data)
     } catch (err) {
-      setError(getErrorMessage(err, 'Impossible de charger les donnees de facturation.'))
+      setError(getErrorMessage(err, 'Impossible de charger les données de facturation.'))
     }
   }
 
@@ -89,7 +89,7 @@ export default function InvoiceManager() {
   async function submitInvoice(e) {
     e.preventDefault()
     if (!selectedPatient) {
-      setError('Choisis un patient dans les resultats de recherche.')
+      setError('Choisis un patient dans les résultats de recherche.')
       return
     }
     setCreating(true)
@@ -109,7 +109,7 @@ export default function InvoiceManager() {
       setNotes('')
       await load()
     } catch (err) {
-      setError(getErrorMessage(err, "Impossible de creer cette facture."))
+      setError(getErrorMessage(err, "Impossible de créer cette facture."))
     } finally {
       setCreating(false)
     }
@@ -150,7 +150,7 @@ export default function InvoiceManager() {
   }
 
   async function cancelInvoice() {
-    if (!window.confirm('Annuler cette facture ? Cette action ne peut pas etre annulee elle-meme.')) return
+    if (!window.confirm('Annuler cette facture ? Cette action ne peut pas être annulée elle-même.')) return
     setCancelling(true)
     setError('')
     try {
@@ -175,19 +175,19 @@ export default function InvoiceManager() {
             <p className="text-xl font-semibold text-forest-900">{summary.total_invoiced.toLocaleString('fr-FR')} FCFA</p>
           </div>
           <div className="rounded-xl border border-forest-100 bg-white p-4">
-            <p className="text-xs text-forest-700 mb-1">Total encaisse</p>
+            <p className="text-xs text-forest-700 mb-1">Total encaissé</p>
             <p className="text-xl font-semibold text-forest-900">{summary.total_collected.toLocaleString('fr-FR')} FCFA</p>
           </div>
           <div className="rounded-xl border border-forest-100 bg-white p-4">
-            <p className="text-xs text-forest-700 mb-1">Reste a encaisser</p>
+            <p className="text-xs text-forest-700 mb-1">Reste à encaisser</p>
             <p className="text-xl font-semibold text-clay-600">{summary.total_outstanding.toLocaleString('fr-FR')} FCFA</p>
-            <p className="text-xs text-forest-700 mt-1">{summary.unpaid_invoice_count} facture(s) non soldee(s)</p>
+            <p className="text-xs text-forest-700 mt-1">{summary.unpaid_invoice_count} facture(s) non soldée(s)</p>
           </div>
         </div>
       )}
 
       <div className="flex justify-between items-center mb-4">
-        <p className="text-forest-700 text-sm">Factures de l'etablissement.</p>
+        <p className="text-forest-700 text-sm">Factures de l'établissement.</p>
         <button onClick={() => setShowCreateForm((v) => !v)} className="rounded-full bg-[var(--portal-accent)] text-white px-5 py-2 text-sm font-medium hover:brightness-90 transition">
           {showCreateForm ? 'Annuler' : 'Nouvelle facture'}
         </button>
@@ -220,7 +220,7 @@ export default function InvoiceManager() {
                 <input placeholder="Description (ex: Consultation)" value={it.description}
                   onChange={(e) => updateLineItem(idx, 'description', e.target.value)}
                   className="rounded-lg border border-forest-100 px-3 py-2 text-sm" />
-                <input type="number" min="1" placeholder="Qte" value={it.quantity}
+                <input type="number" min="1" placeholder="Qté" value={it.quantity}
                   onChange={(e) => updateLineItem(idx, 'quantity', e.target.value)}
                   className="w-20 rounded-lg border border-forest-100 px-2 py-2 text-sm" />
                 <input type="number" min="0" placeholder="Prix unit." value={it.unit_price}
@@ -243,7 +243,7 @@ export default function InvoiceManager() {
 
           <button type="submit" disabled={creating}
             className="rounded-full bg-[var(--portal-accent)] text-white px-5 py-2 text-sm font-semibold hover:brightness-90 transition disabled:opacity-50">
-            {creating ? 'Creation...' : 'Creer la facture'}
+            {creating ? 'Création...' : 'Créer la facture'}
           </button>
         </form>
       )}
@@ -275,7 +275,7 @@ export default function InvoiceManager() {
                   <span>Total</span><span>{detail.total_amount.toLocaleString('fr-FR')} FCFA</span>
                 </div>
                 <div className="flex justify-between text-sm text-forest-700">
-                  <span>Paye</span><span>{detail.amount_paid.toLocaleString('fr-FR')} FCFA</span>
+                  <span>Payé</span><span>{detail.amount_paid.toLocaleString('fr-FR')} FCFA</span>
                 </div>
                 <div className="flex justify-between text-sm font-medium text-clay-600">
                   <span>Solde du</span><span>{detail.balance_due.toLocaleString('fr-FR')} FCFA</span>
@@ -298,11 +298,11 @@ export default function InvoiceManager() {
                       className="rounded-lg border border-forest-100 px-3 py-2 text-sm" />
                     <select value={paymentForm.payment_method} onChange={(e) => setPaymentForm({ ...paymentForm, payment_method: e.target.value })}
                       className="rounded-lg border border-forest-100 px-3 py-2 text-sm bg-white">
-                      <option value="cash">Especes</option>
+                      <option value="cash">Espèces</option>
                       <option value="mobile_money">Mobile Money</option>
                       <option value="card">Carte</option>
                     </select>
-                    <input placeholder="Reference (optionnel)" value={paymentForm.reference}
+                    <input placeholder="Référence (optionnel)" value={paymentForm.reference}
                       onChange={(e) => setPaymentForm({ ...paymentForm, reference: e.target.value })}
                       className="rounded-lg border border-forest-100 px-3 py-2 text-sm" />
                   </div>
@@ -320,7 +320,7 @@ export default function InvoiceManager() {
                     {detail.payments.map((p) => (
                       <p key={p.id} className="text-sm text-forest-700">
                         {new Date(p.paid_at).toLocaleDateString('fr-FR')} - {p.amount.toLocaleString('fr-FR')} FCFA ({p.payment_method}) - {p.recorded_by_name}
-                        {p.reference && ` - Ref: ${p.reference}`}
+                        {p.reference && ` - Réf. : ${p.reference}`}
                       </p>
                     ))}
                   </div>

@@ -57,7 +57,7 @@ export default function DesktopSecretaryDashboard() {
       await api.post(`/appointments/${appointmentId}/arrive`)
       await loadAppointments()
     } catch (err) {
-      setError(getErrorMessage(err, "Impossible de marquer ce rendez-vous comme arrive."))
+      setError(getErrorMessage(err, "Impossible de marquer ce rendez-vous comme arrivé."))
     } finally {
       setArrivingId(null)
     }
@@ -70,7 +70,7 @@ export default function DesktopSecretaryDashboard() {
       await api.post(`/appointments/${appointmentId}/complete`)
       await loadAppointments()
     } catch (err) {
-      setError(getErrorMessage(err, "Impossible de marquer ce rendez-vous comme termine."))
+      setError(getErrorMessage(err, "Impossible de marquer ce rendez-vous comme terminé."))
     } finally {
       setCompletingId(null)
     }
@@ -120,10 +120,10 @@ export default function DesktopSecretaryDashboard() {
 
   const appointmentFilterOptions = [
     { value: 'all', label: 'Tous' },
-    { value: 'confirmed', label: 'Confirmes' },
-    { value: 'arrived', label: 'Arrives' },
+    { value: 'confirmed', label: 'Confirmés' },
+    { value: 'arrived', label: 'Arrivés' },
     { value: 'completed', label: 'Terminés' },
-    { value: 'cancelled', label: 'Annules' },
+    { value: 'cancelled', label: 'Annulés' },
   ]
   const filteredAppointments = appointmentFilter === 'all' ? appointments : appointments.filter((a) => a.status === appointmentFilter)
 
@@ -161,7 +161,7 @@ export default function DesktopSecretaryDashboard() {
                           disabled={arrivingId === a.id}
                           className="text-sm rounded-full border border-forest-300 px-4 py-1.5 hover:bg-forest-50 transition disabled:opacity-50"
                         >
-                          {arrivingId === a.id ? '...' : 'Marquer arrive'}
+                          {arrivingId === a.id ? '...' : 'Marquer arrivé'}
                         </button>
                         <button
                           onClick={() => toggleReschedule(a.id)}
@@ -178,7 +178,7 @@ export default function DesktopSecretaryDashboard() {
                           disabled={completingId === a.id}
                           className="text-sm rounded-full bg-[var(--portal-accent)] text-white px-4 py-1.5 hover:brightness-90 transition disabled:opacity-50"
                         >
-                          {completingId === a.id ? 'Mise a jour...' : 'Marquer termine'}
+                          {completingId === a.id ? 'Mise à jour...' : 'Marquer terminé'}
                         </button>
                         <button
                           onClick={() => cancelAppointment(a.id)}

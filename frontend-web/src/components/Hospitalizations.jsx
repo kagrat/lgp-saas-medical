@@ -92,7 +92,7 @@ export default function Hospitalizations() {
   async function submitAdmit(e) {
     e.preventDefault()
     if (!admitForm.patient_id) {
-      setError('Choisis un patient dans les resultats de recherche.')
+      setError('Choisis un patient dans les résultats de recherche.')
       return
     }
     setAdmitting(true)
@@ -190,7 +190,7 @@ export default function Hospitalizations() {
   return (
     <div>
       <div className="flex justify-between items-center mb-6">
-        <p className="text-forest-700 text-sm">Patients actuellement hospitalises.</p>
+        <p className="text-forest-700 text-sm">Patients actuellement hospitalisés.</p>
         <button onClick={() => setShowAdmitForm((v) => !v)} className="rounded-full bg-[var(--portal-accent)] text-white px-5 py-2 text-sm font-medium hover:brightness-90 transition">
           {showAdmitForm ? 'Annuler' : 'Admettre un patient'}
         </button>
@@ -233,7 +233,7 @@ export default function Hospitalizations() {
           <div className="grid sm:grid-cols-2 gap-3 mb-3">
             <select value={admitForm.department_id} onChange={(e) => setAdmitForm({ ...admitForm, department_id: e.target.value })}
               className="rounded-lg border border-forest-100 px-3 py-2 text-sm bg-white">
-              <option value="">Departement (optionnel)</option>
+              <option value="">Département (optionnel)</option>
               {departments.map((d) => <option key={d.id} value={d.id}>{d.name}</option>)}
             </select>
             <select value={admitForm.room_id} onChange={(e) => setAdmitForm({ ...admitForm, room_id: e.target.value, bed_id: '' })}
@@ -257,7 +257,7 @@ export default function Hospitalizations() {
             onChange={(e) => setAdmitForm({ ...admitForm, diagnosis: e.target.value })}
             rows={2} className="w-full rounded-lg border border-forest-100 px-3 py-2 text-sm mb-3" />
           <div className="mb-3">
-            <label className="block text-xs text-forest-700 mb-1">Date de sortie prevue (optionnel)</label>
+            <label className="block text-xs text-forest-700 mb-1">Date de sortie prévue (optionnel)</label>
             <input type="date" value={admitForm.expected_discharge_date}
               onChange={(e) => setAdmitForm({ ...admitForm, expected_discharge_date: e.target.value })}
               className="rounded-lg border border-forest-100 px-3 py-2 text-sm" />
@@ -278,7 +278,7 @@ export default function Hospitalizations() {
                 <div>
                   <p className="font-display text-lg text-forest-900 font-semibold">{detail.patient_name}</p>
                   <p className="text-sm text-forest-700">
-                    Dossier {detail.dossier_number} - {detail.department_name || 'Aucun departement'}{detail.room_name ? ` - ${detail.room_name}` : ''}
+                    Dossier {detail.dossier_number} - {detail.department_name || 'Aucun département'}{detail.room_name ? ` - ${detail.room_name}` : ''}
                   </p>
                   {detail.diagnosis && <p className="text-sm text-forest-700 mt-1">Diagnostic: {detail.diagnosis}</p>}
                 </div>
@@ -287,7 +287,7 @@ export default function Hospitalizations() {
 
               <div className="flex gap-2 mb-4">
                 <button onClick={() => { setTransferOpen((v) => !v); setDischargeOpen(false) }} className="text-sm text-amber-600 font-medium hover:underline">
-                  Transferer
+                  Transférer
                 </button>
                 <button onClick={() => { setDischargeOpen((v) => !v); setTransferOpen(false) }} className="text-sm text-amber-600 font-medium hover:underline">
                   Faire sortir le patient
@@ -296,11 +296,11 @@ export default function Hospitalizations() {
 
               {transferOpen && (
                 <div className="bg-white rounded-lg p-4 mb-4">
-                  <p className="text-sm font-medium text-forest-900 mb-2">Transferer vers</p>
+                  <p className="text-sm font-medium text-forest-900 mb-2">Transférer vers</p>
                   <div className="grid sm:grid-cols-2 gap-2 mb-2">
                     <select value={transferForm.to_department_id} onChange={(e) => setTransferForm({ ...transferForm, to_department_id: e.target.value })}
                       className="rounded-lg border border-forest-100 px-3 py-2 text-sm bg-white">
-                      <option value="">Departement</option>
+                      <option value="">Département</option>
                       {departments.map((d) => <option key={d.id} value={d.id}>{d.name}</option>)}
                     </select>
                     <select value={transferForm.to_room_id} onChange={(e) => setTransferForm({ ...transferForm, to_room_id: e.target.value })}
@@ -321,7 +321,7 @@ export default function Hospitalizations() {
 
               {dischargeOpen && (
                 <div className="bg-white rounded-lg p-4 mb-4">
-                  <p className="text-sm font-medium text-forest-900 mb-2">Resume de sortie</p>
+                  <p className="text-sm font-medium text-forest-900 mb-2">Résumé de sortie</p>
                   <textarea required value={dischargeSummary} onChange={(e) => setDischargeSummary(e.target.value)}
                     rows={3} placeholder="Motif de sortie, recommandations..."
                     className="w-full rounded-lg border border-forest-100 px-3 py-2 text-sm mb-2" />
@@ -333,7 +333,7 @@ export default function Hospitalizations() {
               )}
 
               <div className="bg-white rounded-lg p-4 mb-4">
-                <p className="text-sm font-medium text-forest-900 mb-2">Ajouter une note de tournee</p>
+                <p className="text-sm font-medium text-forest-900 mb-2">Ajouter une note de tournée</p>
                 <input placeholder="Titre" value={noteForm.title} onChange={(e) => setNoteForm({ ...noteForm, title: e.target.value })}
                   className="w-full rounded-lg border border-forest-100 px-3 py-2 text-sm mb-2" />
                 <textarea placeholder="Contenu" value={noteForm.content} onChange={(e) => setNoteForm({ ...noteForm, content: e.target.value })}
@@ -345,7 +345,7 @@ export default function Hospitalizations() {
               </div>
 
               <p className="text-sm font-medium text-forest-900 mb-2">Constantes vitales (infirmier)</p>
-              {detail.vital_signs.length === 0 && <p className="text-sm text-forest-700 mb-3">Aucune constante relevee.</p>}
+              {detail.vital_signs.length === 0 && <p className="text-sm text-forest-700 mb-3">Aucune constante relevée.</p>}
               <div className="space-y-1 mb-4">
                 {detail.vital_signs.slice(0, 5).map((v) => (
                   <p key={v.id} className="text-sm text-forest-700">
@@ -373,14 +373,14 @@ export default function Hospitalizations() {
       )}
 
       <div className="space-y-2">
-        {admissions.length === 0 && <p className="text-forest-700">Aucun patient hospitalise actuellement.</p>}
+        {admissions.length === 0 && <p className="text-forest-700">Aucun patient hospitalisé actuellement.</p>}
         {admissions.map((a) => (
           <button key={a.id} onClick={() => openAdmission(a.id)}
             className="w-full text-left rounded-xl border border-forest-100 bg-white p-4 flex justify-between items-center hover:border-forest-300 transition">
             <div>
               <p className="text-forest-900 font-medium">{a.patient_name}</p>
               <p className="text-sm text-forest-700">
-                Dossier {a.dossier_number} - {a.department_name || 'Aucun departement'}{a.room_name ? ` - ${a.room_name}` : ''}
+                Dossier {a.dossier_number} - {a.department_name || 'Aucun département'}{a.room_name ? ` - ${a.room_name}` : ''}
               </p>
             </div>
             <p className="text-xs text-forest-700">Admis le {new Date(a.admission_date).toLocaleDateString('fr-FR')}</p>

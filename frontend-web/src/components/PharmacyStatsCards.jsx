@@ -19,7 +19,7 @@ export default function PharmacyStatsCards() {
       <StatBox label="Commandes totales" value={stats.total_orders} />
       <StatBox label="Commandes ce mois" value={stats.orders_this_month} />
       <StatBox label="En attente" value={stats.pending_orders} highlight={stats.pending_orders > 0} />
-      <StatBox label="Alertes stock" value={stats.low_stock_items} highlight={stats.low_stock_items > 0} />
+      <StatBox label="Alertes de stock" value={stats.low_stock_items} highlight={stats.low_stock_items > 0} />
     </div>
   )
 }

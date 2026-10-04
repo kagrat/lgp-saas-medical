@@ -42,7 +42,7 @@ export default function SuperAdminDashboard() {
       setTrends(trendsRes.data)
       setEstablishments(estRes.data)
     } catch (err) {
-      setError(getErrorMessage(err, 'Impossible de charger les donnees globales. Verifie ta session Super Admin.'))
+      setError(getErrorMessage(err, 'Impossible de charger les données globales. Vérifie ta session Super Admin.'))
     }
   }
 
@@ -93,7 +93,7 @@ export default function SuperAdminDashboard() {
       await api.patch(`/establishments/${establishment.id}/status`, { is_active: !establishment.is_active })
       await loadAll()
     } catch (err) {
-      setError(getErrorMessage(err, "Impossible de mettre a jour le statut."))
+      setError(getErrorMessage(err, "Impossible de mettre à jour le statut."))
     }
   }
 
@@ -146,7 +146,7 @@ export default function SuperAdminDashboard() {
 
       {stats && (
         <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-10">
-          <StatCard label="Etablissements" value={stats.total_establishments} />
+          <StatCard label="Établissements" value={stats.total_establishments} />
           <StatCard label="Actifs" value={stats.active_establishments} />
           <StatCard label="Suspendus" value={stats.suspended_establishments} highlight={stats.suspended_establishments > 0} />
           <StatCard label="RDV totaux" value={stats.total_appointments} />
@@ -213,7 +213,7 @@ export default function SuperAdminDashboard() {
         <input required placeholder="Nom admin établissement" value={newEstablishment.admin_full_name}
           onChange={(e) => setNewEstablishment({ ...newEstablishment, admin_full_name: e.target.value })}
           className="rounded-lg border border-forest-100 px-3 py-2" />
-        <input required type="email" placeholder="Email admin" value={newEstablishment.admin_email}
+        <input required type="email" placeholder="E-mail admin" value={newEstablishment.admin_email}
           onChange={(e) => setNewEstablishment({ ...newEstablishment, admin_email: e.target.value })}
           className="rounded-lg border border-forest-100 px-3 py-2" />
         <input required type="password" placeholder="Mot de passe temporaire" value={newEstablishment.admin_password}
@@ -277,7 +277,7 @@ export default function SuperAdminDashboard() {
                       est.is_active ? 'border border-clay-500 text-clay-600 hover:bg-clay-500 hover:text-white' : 'bg-primary-700 text-white hover:bg-primary-900'
                     }`}
                   >
-                    {est.is_active ? 'Suspendre' : 'Reactiver'}
+                    {est.is_active ? 'Suspendre' : 'Réactiver'}
                   </button>
                 </div>
               </div>
@@ -287,7 +287,7 @@ export default function SuperAdminDashboard() {
       </div>
        
       <div className="flex items-center justify-between mb-4">
-  <h2 className="font-display text-xl font-semibold text-forest-900">Messages support</h2>
+  <h2 className="font-display text-xl font-semibold text-forest-900">Messages du support</h2>
   <button onClick={() => setShowSupportInbox(!showSupportInbox)}
     className="text-sm rounded-full border border-forest-300 px-4 py-1.5 hover:bg-forest-50 transition">
     {showSupportInbox ? 'Masquer' : 'Afficher'}
@@ -295,7 +295,7 @@ export default function SuperAdminDashboard() {
 </div>
 {showSupportInbox && <div className="mb-10"><SupportInbox /></div>}
       <div className="flex items-center justify-between mb-4">
-        <h2 className="font-display text-xl font-semibold text-forest-900">Parametres généraux</h2>
+        <h2 className="font-display text-xl font-semibold text-forest-900">Paramètres généraux</h2>
         <button onClick={() => setShowSettings(!showSettings)}
           className="text-sm rounded-full border border-forest-300 px-4 py-1.5 hover:bg-forest-50 transition">
           {showSettings ? 'Masquer' : 'Afficher'}
@@ -304,7 +304,7 @@ export default function SuperAdminDashboard() {
       {showSettings && <div className="mb-10"><PlatformSettingsPanel /></div>}
 
       <div className="flex items-center justify-between mb-4">
-        <h2 className="font-display text-xl font-semibold text-forest-900">Tables plateforme</h2>
+        <h2 className="font-display text-xl font-semibold text-forest-900">Tables de la plateforme</h2>
         <button onClick={() => setShowPlatformTables(!showPlatformTables)}
           className="text-sm rounded-full border border-forest-300 px-4 py-1.5 hover:bg-forest-50 transition">
           {showPlatformTables ? 'Masquer' : 'Afficher'}

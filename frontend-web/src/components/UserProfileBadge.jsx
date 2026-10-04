@@ -3,8 +3,8 @@ import { Link } from 'react-router-dom'
 import api from '../api/client'
 
 const ROLE_LABELS = {
-  doctor: 'Medecin', nurse: 'Infirmier(e)', secretary: 'Secretaire',
-  receptionist: 'Receptionniste', pharmacist: 'Pharmacien(ne)',
+  doctor: 'Médecin', nurse: 'Infirmier(e)', secretary: 'Secrétaire',
+  receptionist: 'Réceptionniste', pharmacist: 'Pharmacien(ne)',
   lab_technician: 'Technicien(ne) labo', accountant: 'Comptable',
   hr_manager: 'Ressources humaines', establishment_admin: 'Administrateur(rice)',
 }
@@ -159,8 +159,8 @@ export default function UserProfileBadge() {
             </div>
             <p className="text-xs text-forest-700">
               {profile.two_factor_enabled
-                ? 'Un code te sera envoye par email a chaque connexion.'
-                : 'Ajoute un code envoye par email a chaque connexion, pour plus de securite.'}
+                ? 'Un code te sera envoyé par e-mail à chaque connexion.'
+                : 'Ajoute un code envoyé par e-mail à chaque connexion, pour plus de sécurité.'}
             </p>
           </div>
         </div>

@@ -29,7 +29,7 @@ def list_audit_logs(limit: int = 100, db: Session = Depends(get_db),
         establishment = db.query(Establishment).filter(Establishment.id == log.establishment_id).first() if log.establishment_id else None
         results.append(AuditLogOut(
             id=log.id,
-            user_name=user.full_name if user else "Systeme",
+            user_name=user.full_name if user else "Système",
             establishment_name=establishment.name if establishment else None,
             action=log.action,
             details=log.details,
@@ -62,7 +62,7 @@ def list_establishment_audit_logs(limit: int = 100, db: Session = Depends(get_db
         user = db.query(User).filter(User.id == log.user_id).first() if log.user_id else None
         results.append(AuditLogOut(
             id=log.id,
-            user_name=user.full_name if user else "Systeme",
+            user_name=user.full_name if user else "Système",
             establishment_name=None,  # inutile ici: toujours son propre etablissement
             action=log.action,
             details=log.details,

@@ -205,7 +205,7 @@ def patient_conversation(establishment_id: str, with_user_id: Optional[str] = No
                           current_user: User = Depends(require_roles(UserRole.PATIENT))):
     patient = db.query(Patient).filter(Patient.user_id == current_user.id).first()
     if not patient or not _patient_has_relationship(db, patient.id, establishment_id):
-        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Aucune relation avec cet etablissement")
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Aucune relation avec cet établissement")
 
     staff_uid = with_user_id or _default_counterparty_user_id(db, patient.id, establishment_id)
     messages = (
@@ -223,17 +223,17 @@ def patient_send_message(establishment_id: str, payload: MessageCreate, with_use
                           current_user: User = Depends(require_roles(UserRole.PATIENT))):
     patient = db.query(Patient).filter(Patient.user_id == current_user.id).first()
     if not patient or not _patient_has_relationship(db, patient.id, establishment_id):
-        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Aucune relation avec cet etablissement")
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Aucune relation avec cet établissement")
 
     establishment = db.query(Establishment).filter(Establishment.id == establishment_id).first()
     if not establishment:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Etablissement introuvable")
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Établissement introuvable")
 
     staff_uid = with_user_id or _default_counterparty_user_id(db, patient.id, establishment_id)
     doctor_id = None
     if staff_uid is None:
         if establishment.type not in DESK_ESTABLISHMENT_TYPES:
-            raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Choisis la personne a qui ecrire")
+            raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Choisis la personne à qui écrire")
     else:
         # Le patient n'ecrit qu'a un medecin avec qui il a un rendez-vous, ou
         # en reponse a un membre du personnel qui lui a deja ecrit - jamais
@@ -245,7 +245,7 @@ def patient_send_message(establishment_id: str, payload: MessageCreate, with_use
             Message.staff_user_id == staff_uid, Message.sender_role == MessageSenderRole.STAFF,
         ).first() is not None
         if not (is_my_doctor or replied_to):
-            raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Tu ne peux pas ecrire a cette personne")
+            raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Tu ne peux pas écrire à cette personne")
         doctor_id = doctor.id if doctor else None
 
     message = Message(
@@ -341,9 +341,9 @@ def establishment_send_message(patient_id: str, payload: MessageCreate, db: Sess
 
 def _internal_staff_role_check(current_user: User):
     if current_user.role == UserRole.PATIENT:
-        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Reserve au personnel")
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Réservé au personnel")
     if not current_user.establishment_id:
-        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Compte non rattache a un etablissement")
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Compte non rattaché à un établissement")
 
 
 @router.get("/internal/mine", response_model=list[InternalConversationSummaryOut])
@@ -390,7 +390,7 @@ def internal_conversation(other_user_id: str, db: Session = Depends(get_db), cur
         User.id == other_user_id, User.establishment_id == current_user.establishment_id,
     ).first()
     if not other_user:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Collegue introuvable dans ton etablissement")
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Collègue introuvable dans ton établissement")
 
     messages = (
         db.query(InternalMessage)
@@ -429,9 +429,9 @@ def send_internal_message(other_user_id: str, payload: InternalMessageCreate, db
         User.id == other_user_id, User.establishment_id == current_user.establishment_id,
     ).first()
     if not other_user:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Collegue introuvable dans ton etablissement")
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Collègue introuvable dans ton établissement")
     if other_user.id == current_user.id:
-        raise HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_ENTITY, detail="Impossible de s'envoyer un message a soi-meme")
+        raise HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_ENTITY, detail="Impossible de s'envoyer un message à soi-même")
 
     message = InternalMessage(
         id=str(uuid.uuid4()), establishment_id=current_user.establishment_id,

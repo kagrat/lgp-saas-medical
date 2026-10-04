@@ -128,7 +128,7 @@ export default function DesktopDoctorDashboard() {
       await api.post(`/appointments/${appointmentId}/arrive`)
       await loadAppointments()
     } catch (err) {
-      setError(getErrorMessage(err, "Impossible de marquer ce rendez-vous comme arrive."))
+      setError(getErrorMessage(err, "Impossible de marquer ce rendez-vous comme arrivé."))
     } finally {
       setArrivingId(null)
     }
@@ -141,7 +141,7 @@ export default function DesktopDoctorDashboard() {
       await api.post(`/appointments/${appointmentId}/complete`)
       await loadAppointments()
     } catch (err) {
-      setError(getErrorMessage(err, "Impossible de marquer ce rendez-vous comme termine."))
+      setError(getErrorMessage(err, "Impossible de marquer ce rendez-vous comme terminé."))
     } finally {
       setCompletingId(null)
     }
@@ -166,7 +166,7 @@ export default function DesktopDoctorDashboard() {
       })
       setRescheduleSlots(data.slots)
     } catch (err) {
-      setError(getErrorMessage(err, 'Impossible de charger les creneaux libres.'))
+      setError(getErrorMessage(err, 'Impossible de charger les créneaux libres.'))
     } finally {
       setLoadingRescheduleSlots(false)
     }
@@ -199,7 +199,7 @@ export default function DesktopDoctorDashboard() {
       const { data } = await api.get('/doctors/search', { params: { establishment_id: establishment?.id } })
       setColleagues(data.filter((d) => d.id !== myDoctorId))
     } catch (err) {
-      setError(getErrorMessage(err, 'Impossible de charger la liste des collegues.'))
+      setError(getErrorMessage(err, 'Impossible de charger la liste des collègues.'))
     } finally {
       setLoadingColleagues(false)
     }
@@ -213,7 +213,7 @@ export default function DesktopDoctorDashboard() {
       setColleagues(null)
       await loadAppointments()
     } catch (err) {
-      setError(getErrorMessage(err, 'Impossible de transferer ce rendez-vous.'))
+      setError(getErrorMessage(err, 'Impossible de transférer ce rendez-vous.'))
     }
   }
 
@@ -259,7 +259,7 @@ export default function DesktopDoctorDashboard() {
           ? validLabItems.map((it) => ({ test_name: it.test_name, sample_type: it.sample_type || null }))
           : null,
       })
-      setDocMessage('Ajoute au dossier de sante du patient.')
+      setDocMessage('Ajoute au dossier de santé du patient.')
       setDocForm({ document_type: 'consultation_note', title: '', content: '' })
       setPrescriptionItems([])
       setPrescriptionLabItems([])
@@ -347,13 +347,13 @@ export default function DesktopDoctorDashboard() {
         <div className="space-y-2">
           <div className="flex justify-between items-center mb-2">
             <p className="text-xs text-forest-700">
-              Ouvre un rendez-vous termine pour retrouver toutes les options du dossier du patient.
+              Ouvre un rendez-vous terminé pour retrouver toutes les options du dossier du patient.
             </p>
             <button
               onClick={() => setShowCompleted((v) => !v)}
               className="text-xs text-amber-600 font-medium hover:underline shrink-0 ml-3"
             >
-              {showCompleted ? 'Masquer les termines' : 'Afficher aussi les termines'}
+              {showCompleted ? 'Masquer les terminés' : 'Afficher aussi les terminés'}
             </button>
           </div>
           {appointments.length === 0 && <p className="text-forest-700">Aucun rendez-vous.</p>}
@@ -606,9 +606,9 @@ export default function DesktopDoctorDashboard() {
 
                   {transferringId === a.id && (
                     <div className="mt-3 pt-3 border-t border-forest-100">
-                      <p className="text-sm font-medium text-forest-900 mb-2">Transferer a un collegue</p>
+                      <p className="text-sm font-medium text-forest-900 mb-2">Transférer à un collègue</p>
                       {loadingColleagues && <p className="text-sm text-forest-700">Chargement...</p>}
-                      {colleagues && colleagues.length === 0 && <p className="text-sm text-forest-700">Aucun autre medecin dans cet etablissement.</p>}
+                      {colleagues && colleagues.length === 0 && <p className="text-sm text-forest-700">Aucun autre médecin dans cet établissement.</p>}
                       {colleagues && colleagues.length > 0 && (
                         <div className="grid sm:grid-cols-2 gap-2">
                           {colleagues.map((doc) => (
@@ -642,13 +642,13 @@ export default function DesktopDoctorDashboard() {
                     </div>
                     <button type="submit" disabled={loadingRescheduleSlots}
                       className="rounded-full border border-forest-300 px-4 py-1.5 text-sm hover:bg-forest-50 transition disabled:opacity-50">
-                      {loadingRescheduleSlots ? '...' : 'Voir les creneaux libres'}
+                      {loadingRescheduleSlots ? '...' : 'Voir les créneaux libres'}
                     </button>
                   </form>
 
                   {rescheduleSlots && (
                     rescheduleSlots.length === 0 ? (
-                      <p className="text-sm text-forest-700">Aucun creneau libre a cette date.</p>
+                      <p className="text-sm text-forest-700">Aucun créneau libre à cette date.</p>
                     ) : (
                       <div className="grid grid-cols-4 sm:grid-cols-6 gap-2">
                         {rescheduleSlots.map((slot, idx) => (
@@ -667,7 +667,7 @@ export default function DesktopDoctorDashboard() {
                 <div className="mt-4 pt-4 border-t border-forest-100">
                   {loadingVitals && <p className="text-sm text-forest-700">Chargement...</p>}
                   {!loadingVitals && vitalsData.length === 0 && (
-                    <p className="text-sm text-forest-700">Aucune constante relevee pour ce rendez-vous.</p>
+                    <p className="text-sm text-forest-700">Aucune constante relevée pour ce rendez-vous.</p>
                   )}
                   <div className="space-y-2">
                     {vitalsData.map((v) => (

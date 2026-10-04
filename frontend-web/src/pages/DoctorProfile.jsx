@@ -52,7 +52,7 @@ export default function DoctorProfile() {
       })
       setSuggestions(data)
     } catch (err) {
-      setError(getErrorMessage(err, 'La recherche a echoue.'))
+      setError(getErrorMessage(err, 'La recherche a échoué.'))
     } finally {
       setSearching(false)
     }
@@ -94,7 +94,7 @@ export default function DoctorProfile() {
 
         {doctor.bio && (
           <div className="mb-2">
-            <p className="text-sm font-medium text-forest-900 mb-1">A propos</p>
+            <p className="text-sm font-medium text-forest-900 mb-1">À propos</p>
             <p className="text-sm text-forest-700">{doctor.bio}</p>
           </div>
         )}
@@ -106,7 +106,7 @@ export default function DoctorProfile() {
         <div className="rounded-2xl border border-forest-300 bg-forest-50 p-6 mb-6">
           <p className="font-display text-xl text-forest-900 font-semibold mb-1">Rendez-vous confirmé</p>
           <p className="text-forest-700">
-            Le {new Date(confirmation.scheduled_at).toLocaleString('fr-FR')} - une confirmation te sera envoyee par email/SMS.
+            Le {new Date(confirmation.scheduled_at).toLocaleString('fr-FR')} - une confirmation te sera envoyée par e-mail/SMS.
           </p>
         </div>
       ) : pendingSlot ? (
@@ -119,7 +119,7 @@ export default function DoctorProfile() {
         />
       ) : (
         <div className="rounded-2xl border border-forest-100 bg-white p-6 mb-6">
-          <StepIndicator current={1} total={2} label="Choisis un creneau" />
+          <StepIndicator current={1} total={2} label="Choisis un créneau" />
           <h2 className="font-display text-xl text-forest-900 font-semibold mb-4">Choisis un créneau</h2>
           <form onSubmit={handleSearch} className="grid sm:grid-cols-2 gap-3 mb-4">
             <input type="date" required value={searchDate} onChange={(e) => setSearchDate(e.target.value)}
@@ -129,7 +129,7 @@ export default function DoctorProfile() {
               className="rounded-lg border border-forest-100 px-4 py-2.5 focus:border-forest-500" />
             <button type="submit" disabled={searching}
               className="sm:col-span-2 rounded-full bg-primary-700 text-white py-2.5 font-medium hover:bg-primary-900 transition disabled:opacity-50">
-              {searching ? 'Recherche...' : 'Voir les creneaux disponibles'}
+              {searching ? 'Recherche...' : 'Voir les créneaux disponibles'}
             </button>
           </form>
 

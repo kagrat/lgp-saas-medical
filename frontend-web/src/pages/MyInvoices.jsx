@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react'
 import api, { getErrorMessage } from '../api/client'
 
-const STATUS_LABELS = { issued: 'A payer', partially_paid: 'Partiellement payee', paid: 'Payee', cancelled: 'Annulee' }
+const STATUS_LABELS = { issued: 'À payer', partially_paid: 'Partiellement payée', paid: 'Payée', cancelled: 'Annulée' }
 const STATUS_COLORS = {
   issued: 'bg-amber-500/10 text-amber-600', partially_paid: 'bg-amber-500/10 text-amber-600',
   paid: 'bg-success-500/10 text-success-700', cancelled: 'bg-clay-500/10 text-clay-600',

@@ -60,34 +60,34 @@ export default function ReportsManager() {
       {error && <p className="text-clay-600 mb-4">{error}</p>}
 
       <div className="flex justify-between items-center mb-3">
-        <h3 className="font-display text-lg text-forest-900 font-semibold">Revenu reel par departement</h3>
+        <h3 className="font-display text-lg text-forest-900 font-semibold">Revenu réel par département</h3>
         <button onClick={exportInvoicesCsv} disabled={exporting}
           className="text-sm bg-[var(--portal-accent)] text-white px-4 py-1.5 rounded-full font-medium hover:brightness-90 transition disabled:opacity-50">
           {exporting ? 'Export...' : 'Exporter les factures (CSV/Excel)'}
         </button>
       </div>
       <div className="space-y-2 mb-8">
-        {departmentRevenue.length === 0 && <p className="text-forest-700 text-sm">Aucune donnee de facturation pour le moment.</p>}
+        {departmentRevenue.length === 0 && <p className="text-forest-700 text-sm">Aucune donnée de facturation pour le moment.</p>}
         {departmentRevenue.map((d) => (
           <div key={d.department_name} className="rounded-xl border border-forest-100 bg-white p-4 flex justify-between items-center">
             <p className="text-forest-900 font-medium">{d.department_name}</p>
             <div className="text-right text-sm">
-              <p className="text-forest-900">{d.total_invoiced.toLocaleString('fr-FR')} FCFA facture</p>
-              <p className="text-forest-700">{d.total_collected.toLocaleString('fr-FR')} FCFA encaisse</p>
+              <p className="text-forest-900">{d.total_invoiced.toLocaleString('fr-FR')} FCFA facturé</p>
+              <p className="text-forest-700">{d.total_collected.toLocaleString('fr-FR')} FCFA encaissé</p>
             </div>
           </div>
         ))}
       </div>
 
       <div className="flex items-center justify-between mb-3">
-        <h3 className="font-display text-lg text-forest-900 font-semibold">Journal d'activite de l'etablissement</h3>
+        <h3 className="font-display text-lg text-forest-900 font-semibold">Journal d'activité de l'établissement</h3>
         <button onClick={() => setShowAuditLog((v) => !v)} className="text-sm text-forest-700 hover:underline">
           {showAuditLog ? 'Masquer' : 'Afficher'}
         </button>
       </div>
       {showAuditLog && (
         <div className="space-y-1">
-          {auditLogs.length === 0 && <p className="text-forest-700 text-sm">Aucune activite enregistree.</p>}
+          {auditLogs.length === 0 && <p className="text-forest-700 text-sm">Aucune activité enregistrée.</p>}
           {auditLogs.slice(0, AUDIT_LOG_DISPLAY_LIMIT).map((log) => (
             <div key={log.id} className="rounded-lg bg-forest-50 px-3 py-2 text-sm">
               <span className="text-forest-900 font-medium">{log.user_name}</span>{' '}
@@ -97,7 +97,7 @@ export default function ReportsManager() {
             </div>
           ))}
           {auditLogs.length > AUDIT_LOG_DISPLAY_LIMIT && (
-            <p className="text-xs text-forest-700 pt-1">Affiche les {AUDIT_LOG_DISPLAY_LIMIT} entrees les plus recentes sur {auditLogs.length}.</p>
+            <p className="text-xs text-forest-700 pt-1">Affiche les {AUDIT_LOG_DISPLAY_LIMIT} entrées les plus récentes sur {auditLogs.length}.</p>
           )}
         </div>
       )}

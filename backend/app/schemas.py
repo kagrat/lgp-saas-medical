@@ -71,9 +71,9 @@ class WalkInPatientOut(BaseModel):
     full_name: str
     phone: Optional[str] = None
     has_real_email: bool
-    """False si aucun email n'a ete fourni: le compte a recu un email de
-    substitution et ne peut pas encore etre utilise pour se connecter -
-    le patient devra completer son inscription plus tard avec un vrai email."""
+    """False si aucun e-mail n'a été fourni: le compte a reçu un e-mail de
+    substitution et ne peut pas encore être utilisé pour se connecter -
+    le patient devra compléter son inscription plus tard avec un vrai e-mail."""
 
 
 class PatientRegisterRequest(BaseModel):
@@ -140,7 +140,7 @@ class EstablishmentLogoUpdate(BaseModel):
     @classmethod
     def valid_data_url(cls, v: str) -> str:
         if not v.startswith("data:image/"):
-            raise ValueError("Le logo doit etre une image valide (PNG ou JPEG)")
+            raise ValueError("Le logo doit être une image valide (PNG ou JPEG)")
         return v
 
 
@@ -215,7 +215,7 @@ class DoctorAvailabilityCreate(BaseModel):
     def end_after_start(cls, v: time, info):
         start = info.data.get("start_time")
         if start and v <= start:
-            raise ValueError("L'heure de fin doit etre apres l'heure de debut")
+            raise ValueError("L'heure de fin doit être après l'heure de début")
         return v
 
 
@@ -269,7 +269,7 @@ class DoctorAbsenceCreate(BaseModel):
     def end_after_start(cls, v: date, info):
         start = info.data.get("start_date")
         if start and v < start:
-            raise ValueError("La date de fin doit etre apres la date de debut")
+            raise ValueError("La date de fin doit être après la date de début")
         return v
 
 
@@ -297,7 +297,7 @@ class AppointmentCreate(BaseModel):
     @classmethod
     def must_be_future(cls, v: datetime) -> datetime:
         if v < datetime.utcnow():
-            raise ValueError("Impossible de prendre un rendez-vous dans le passe")
+            raise ValueError("Impossible de prendre un rendez-vous dans le passé")
         return v
 
 
@@ -317,7 +317,7 @@ class AppointmentBookForPatient(BaseModel):
     @classmethod
     def must_be_future(cls, v: datetime) -> datetime:
         if v < datetime.utcnow():
-            raise ValueError("Impossible de prendre un rendez-vous dans le passe")
+            raise ValueError("Impossible de prendre un rendez-vous dans le passé")
         return v
 
 
@@ -440,7 +440,7 @@ class PharmacyBatchCreate(BaseModel):
     def expiration_after_reception(cls, v: date, info):
         received_at = info.data.get("received_at")
         if received_at and v <= received_at:
-            raise ValueError("La date d'expiration doit etre posterieure a la date de reception")
+            raise ValueError("La date d'expiration doit être postérieure à la date de réception")
         return v
 
 
@@ -497,7 +497,7 @@ class GuestReservationCreate(BaseModel):
     @classmethod
     def valid_image(cls, v: str) -> str:
         if not v.startswith("data:image/"):
-            raise ValueError("L'ordonnance doit etre une image valide (PNG ou JPEG)")
+            raise ValueError("L'ordonnance doit être une image valide (PNG ou JPEG)")
         return v
 
 
@@ -543,7 +543,7 @@ class ReservationOut(BaseModel):
     created_at: datetime
     total_amount: Optional[float] = None
     """Somme (confirmed_quantity * confirmed_unit_price) sur toutes les
-    lignes - None tant que le pharmacien n'a pas encore tout verifie."""
+    lignes - None tant que le pharmacien n'a pas encore tout vérifié."""
     prescription_document_id: Optional[str] = None
     # NOUVEAU (demande explicite de M. Faustin: liste des commandes
     # restructuree - numero de commande, nom du patient et numero de
@@ -722,7 +722,7 @@ class MedicationAdministrationCreate(BaseModel):
     @classmethod
     def valid_status(cls, v: str) -> str:
         if v not in ("given", "held", "refused"):
-            raise ValueError("Statut invalide - valeurs acceptees: given, held, refused")
+            raise ValueError("Statut invalide - valeurs acceptées: given, held, refused")
         return v
 
 
@@ -1234,7 +1234,7 @@ class UserPhotoUpdate(BaseModel):
     @classmethod
     def valid_data_url(cls, v: str) -> str:
         if not v.startswith("data:image/"):
-            raise ValueError("La photo doit etre une image valide (PNG ou JPEG)")
+            raise ValueError("La photo doit être une image valide (PNG ou JPEG)")
         return v
 
 
@@ -1405,7 +1405,7 @@ class AppointmentReschedule(BaseModel):
     @classmethod
     def must_be_future(cls, v: datetime) -> datetime:
         if v < datetime.utcnow():
-            raise ValueError("Impossible de reporter a une date passee")
+            raise ValueError("Impossible de reporter à une date passée")
         return v
 
 
@@ -1426,7 +1426,7 @@ class OpeningHoursCreate(BaseModel):
     def close_after_open(cls, v: time, info):
         open_t = info.data.get("open_time")
         if open_t and v <= open_t:
-            raise ValueError("L'heure de fermeture doit etre apres l'heure d'ouverture")
+            raise ValueError("L'heure de fermeture doit être après l'heure d'ouverture")
         return v
 
 
@@ -1451,7 +1451,7 @@ class LabTestItemInput(BaseModel):
     @classmethod
     def valid_priority(cls, v: str) -> str:
         if v not in ("routine", "urgent"):
-            raise ValueError("Priorite invalide - valeurs acceptees: routine, urgent")
+            raise ValueError("Priorité invalide - valeurs acceptées: routine, urgent")
         return v
 
 
@@ -1602,7 +1602,7 @@ class EquipmentCreate(BaseModel):
     def valid_status(cls, v: str) -> str:
         allowed = {"fonctionnel", "maintenance", "hors_service"}
         if v not in allowed:
-            raise ValueError(f"Statut invalide, doit etre parmi: {', '.join(allowed)}")
+            raise ValueError(f"Statut invalide, doit être parmi: {', '.join(allowed)}")
         return v
 
 
@@ -1630,7 +1630,7 @@ class GeneralEquipmentCreate(BaseModel):
     def valid_status(cls, v: str) -> str:
         allowed = {"fonctionnel", "maintenance", "hors_service"}
         if v not in allowed:
-            raise ValueError(f"Statut invalide, doit etre parmi: {', '.join(allowed)}")
+            raise ValueError(f"Statut invalide, doit être parmi: {', '.join(allowed)}")
         return v
 
 
@@ -1740,7 +1740,7 @@ class PharmacyOrderSummaryOut(BaseModel):
 
 
     """NOUVEAU: raccourci des commandes en cours pour le tableau de bord -
-    un nombre limite, pas la liste complete (deja disponible dans
+    un nombre limité, pas la liste complète (déjà disponible dans
     l'onglet Commandes)."""
     id: str
     patient_name: str
@@ -1781,7 +1781,7 @@ class LabReferralCreate(BaseModel):
     @classmethod
     def valid_priority(cls, v: str) -> str:
         if v not in ("routine", "urgent"):
-            raise ValueError("Priorite invalide - valeurs acceptees: routine, urgent")
+            raise ValueError("Priorité invalide - valeurs acceptées: routine, urgent")
         return v
 
 class ReservationItemReview(BaseModel):
@@ -1798,7 +1798,7 @@ class ReservationItemReview(BaseModel):
     def valid_stock_status(cls, v: str) -> str:
         allowed = {"disponible", "disponible_partiel", "rupture_temporaire", "rupture_totale"}
         if v not in allowed:
-            raise ValueError(f"Motif de stock invalide. Valeurs acceptees: {', '.join(sorted(allowed))}")
+            raise ValueError(f"Motif de stock invalide. Valeurs acceptées: {', '.join(sorted(allowed))}")
         return v
 
 

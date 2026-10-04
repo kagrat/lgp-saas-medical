@@ -1,10 +1,10 @@
 const STATUS_LABELS = {
-  requested: 'Demandee',
-  sample_collected: 'Prelevement fait',
+  requested: 'Demandée',
+  sample_collected: 'Prélèvement fait',
   in_progress: 'En cours',
-  validated: 'Validee',
+  validated: 'Validée',
   delivered: 'Rendue',
-  cancelled: 'Annulee',
+  cancelled: 'Annulée',
 }
 
 const STATUS_COLORS = {

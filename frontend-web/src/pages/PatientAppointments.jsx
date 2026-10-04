@@ -62,7 +62,7 @@ export default function PatientAppointments() {
     try {
       const form = reviewForms[doctorId]
       await api.post(`/doctors/${doctorId}/reviews`, { rating: Number(form.rating), comment: form.comment || null })
-      setReviewMessage('Merci, ton avis a ete enregistre.')
+      setReviewMessage('Merci, ton avis a été enregistré.')
       await loadReviewable()
     } catch (err) {
       setError(getErrorMessage(err, "Impossible d'enregistrer cet avis."))
@@ -84,8 +84,8 @@ export default function PatientAppointments() {
       {error && <p className="text-clay-600 mb-4">{error}</p>}
 
       <section className="mb-10">
-        <h2 className="font-display text-xl font-semibold text-forest-900 mb-4">A venir</h2>
-        {upcoming.length === 0 && <p className="text-forest-700">Aucun rendez-vous a venir.</p>}
+        <h2 className="font-display text-xl font-semibold text-forest-900 mb-4">À venir</h2>
+        {upcoming.length === 0 && <p className="text-forest-700">Aucun rendez-vous à venir.</p>}
         <div className="space-y-3">
           {upcoming.map((a) => (
             <div key={a.id} className="rounded-xl border border-forest-100 bg-white p-4 flex items-center justify-between">
@@ -110,7 +110,7 @@ export default function PatientAppointments() {
       {reviewable.length > 0 && (
         <section className="mb-10">
           <h2 className="font-display text-xl font-semibold text-forest-900 mb-4">Note tes médecins</h2>
-          <p className="text-sm text-forest-700 mb-4">Tu peux laisser un avis pour chaque médecin avec qui tu as eu un rendez-vous termine.</p>
+          <p className="text-sm text-forest-700 mb-4">Tu peux laisser un avis pour chaque médecin avec qui tu as eu un rendez-vous terminé.</p>
           {reviewMessage && <p className="text-forest-900 bg-forest-50 border border-forest-300 rounded-xl p-3 mb-4 text-sm">{reviewMessage}</p>}
           <div className="space-y-4">
             {reviewable.map((d) => (

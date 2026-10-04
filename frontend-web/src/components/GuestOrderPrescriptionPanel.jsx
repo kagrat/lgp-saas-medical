@@ -29,7 +29,7 @@ export default function GuestOrderPrescriptionPanel({ reservation, onItemAdded }
       await api.post(`/pharmacy/reservations/${reservation.id}/items`, { medication_id: medicationId, quantity: 1 })
       if (onItemAdded) onItemAdded()
     } catch (err) {
-      setError(getErrorMessage(err, "Impossible d'ajouter ce medicament."))
+      setError(getErrorMessage(err, "Impossible d'ajouter ce médicament."))
     } finally {
       setAddingId(null)
     }
@@ -38,7 +38,7 @@ export default function GuestOrderPrescriptionPanel({ reservation, onItemAdded }
   return (
     <div className="mb-4">
       <span className="inline-block text-xs px-2 py-0.5 rounded-full bg-amber-500/10 text-amber-600 font-medium mb-2">
-        Commande invité (sans compte) - ordonnance uploadée
+        Commande invité (sans compte) - ordonnance envoyée
       </span>
       {reservation.guest_prescription_image && (
         <img

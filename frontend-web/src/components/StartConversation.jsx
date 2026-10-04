@@ -50,7 +50,7 @@ export default function StartConversation({ searchFn, onStart }) {
   return (
     <div className="rounded-xl border border-forest-100 bg-white p-4 mb-4">
       <div className="flex justify-between items-center mb-3">
-        <p className="text-sm font-medium text-forest-900">Ecrire a un patient</p>
+        <p className="text-sm font-medium text-forest-900">Écrire à un patient</p>
         <button onClick={() => setOpen(false)} className="text-sm text-forest-700 hover:underline">Fermer</button>
       </div>
       <input
@@ -61,7 +61,7 @@ export default function StartConversation({ searchFn, onStart }) {
         className="w-full rounded-lg border border-forest-100 px-3 py-2 text-sm mb-2"
       />
       {loading && <p className="text-sm text-forest-700">Recherche...</p>}
-      {!loading && results.length === 0 && <p className="text-sm text-forest-700">Aucun patient trouve.</p>}
+      {!loading && results.length === 0 && <p className="text-sm text-forest-700">Aucun patient trouvé.</p>}
       <div className="space-y-1 max-h-56 overflow-y-auto">
         {results.map((p) => (
           <button

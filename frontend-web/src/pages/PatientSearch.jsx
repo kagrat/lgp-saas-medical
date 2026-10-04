@@ -63,7 +63,7 @@ export default function PatientSearch() {
       }
       setStep(2)
     } catch (err) {
-      setError(getErrorMessage(err, "La recherche a échoué. Vérifie les champs et reessaie."))
+      setError(getErrorMessage(err, "La recherche a échoué. Vérifie les champs et réessaie."))
     } finally {
       setLoading(false)
     }
@@ -105,17 +105,17 @@ export default function PatientSearch() {
         Trouve un médecin, on te propose toujours un créneau.
       </h1>
       <p className="text-forest-700 max-w-2xl mb-10">
-        Si le médecin demande n'est pas disponible, la plateforme suggere automatiquement
-        d'autres créneaux, d'autres médecins de la meme spécialité, ou un autre établissement adhérent proche.
+        Si le médecin demandé n'est pas disponible, la plateforme suggère automatiquement
+        d'autres créneaux, d'autres médecins de la même spécialité, ou un autre établissement adhérent proche.
       </p>
 
-      {step < 3 && <StepIndicator current={step} total={3} label={step === 1 ? 'Recherche' : 'Choisis ton creneau'} />}
+      {step < 3 && <StepIndicator current={step} total={3} label={step === 1 ? 'Recherche' : 'Choisis ton créneau'} />}
 
       {confirmation ? (
         <div className="rounded-2xl border border-forest-300 bg-forest-50 p-6">
           <p className="font-display text-xl text-forest-900 font-semibold mb-1">Rendez-vous confirmé</p>
           <p className="text-forest-700">
-            Le {new Date(confirmation.scheduled_at).toLocaleString('fr-FR')} - une confirmation te sera envoyee par email/SMS.
+            Le {new Date(confirmation.scheduled_at).toLocaleString('fr-FR')} - une confirmation te sera envoyée par e-mail/SMS.
           </p>
         </div>
       ) : step === 3 && pendingSlot ? (
@@ -163,7 +163,7 @@ export default function PatientSearch() {
           </div>
           <div>
             <label className="block text-sm font-medium text-forest-900 mb-1">
-              Date souhaitee {quickRange === 'week' && <span className="text-forest-700 font-normal">(ignorée - recherche sur 7 jours)</span>}
+              Date souhaitée {quickRange === 'week' && <span className="text-forest-700 font-normal">(ignorée - recherche sur 7 jours)</span>}
             </label>
             <input type="date" required={quickRange !== 'week'} disabled={quickRange === 'week'}
               value={form.preferred_date}
@@ -178,7 +178,7 @@ export default function PatientSearch() {
           <div className="sm:col-span-2">
             <button type="submit" disabled={loading}
               className="w-full sm:w-auto rounded-full bg-primary-700 text-white px-8 py-3 font-medium hover:bg-primary-900 transition disabled:opacity-50">
-              {loading ? 'Recherche...' : 'Rechercher un creneau'}
+              {loading ? 'Recherche...' : 'Rechercher un créneau'}
             </button>
           </div>
         </form>

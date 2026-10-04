@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react'
 import api, { getErrorMessage } from '../api/client'
 
-const LEAVE_STATUS_LABELS = { pending: 'En attente', approved: 'Approuve', rejected: 'Refuse' }
+const LEAVE_STATUS_LABELS = { pending: 'En attente', approved: 'Approuvé', rejected: 'Refusé' }
 const LEAVE_STATUS_COLORS = {
   pending: 'bg-amber-500/10 text-amber-600', approved: 'bg-success-500/10 text-success-700', rejected: 'bg-clay-500/10 text-clay-600',
 }
@@ -62,7 +62,7 @@ export default function SchedulingManager() {
       })
       setLeaveRequests(data)
     } catch (err) {
-      setError(getErrorMessage(err, 'Impossible de charger les demandes de conge.'))
+      setError(getErrorMessage(err, 'Impossible de charger les demandes de congé.'))
     }
   }
 
@@ -79,7 +79,7 @@ export default function SchedulingManager() {
       setShiftForm({ user_id: '', department_id: '', shift_date: '', start_time: '08:00', end_time: '16:00', notes: '' })
       await loadShifts()
     } catch (err) {
-      setError(getErrorMessage(err, 'Impossible de creer ce creneau.'))
+      setError(getErrorMessage(err, 'Impossible de créer ce créneau.'))
     } finally {
       setSavingShift(false)
     }
@@ -117,7 +117,7 @@ export default function SchedulingManager() {
         </select>
         <select value={shiftForm.department_id} onChange={(e) => setShiftForm({ ...shiftForm, department_id: e.target.value })}
           className="rounded-lg border border-forest-100 px-3 py-2 text-sm bg-white">
-          <option value="">Departement (optionnel)</option>
+          <option value="">Département (optionnel)</option>
           {departments.map((d) => <option key={d.id} value={d.id}>{d.name}</option>)}
         </select>
         <input required type="date" value={shiftForm.shift_date} onChange={(e) => setShiftForm({ ...shiftForm, shift_date: e.target.value })}
@@ -132,12 +132,12 @@ export default function SchedulingManager() {
           className="sm:col-span-2 rounded-lg border border-forest-100 px-3 py-2 text-sm" />
         <button type="submit" disabled={savingShift}
           className="sm:col-span-2 rounded-full bg-[var(--portal-accent)] text-white py-2.5 text-sm font-medium hover:brightness-90 transition disabled:opacity-50">
-          {savingShift ? 'Ajout...' : 'Ajouter ce creneau'}
+          {savingShift ? 'Ajout...' : 'Ajouter ce créneau'}
         </button>
       </form>
 
       <div className="space-y-2 mb-8">
-        {shifts.length === 0 && <p className="text-forest-700 text-sm">Aucun creneau planifie.</p>}
+        {shifts.length === 0 && <p className="text-forest-700 text-sm">Aucun créneau planifié.</p>}
         {shifts.map((s) => (
           <div key={s.id} className="rounded-xl border border-forest-100 bg-white p-4 flex justify-between items-center">
             <div>
@@ -152,7 +152,7 @@ export default function SchedulingManager() {
         ))}
       </div>
 
-      <h3 className="font-display text-lg text-forest-900 font-semibold mb-3">Demandes de conge</h3>
+      <h3 className="font-display text-lg text-forest-900 font-semibold mb-3">Demandes de congé</h3>
       <div className="flex gap-2 mb-4">
         {['pending', 'approved', 'rejected', 'all'].map((f) => (
           <button
@@ -190,7 +190,7 @@ export default function SchedulingManager() {
               </div>
             )}
             {l.status !== 'pending' && l.reviewed_by_name && (
-              <p className="text-xs text-forest-500 mt-2">Traite par {l.reviewed_by_name}{l.review_note ? ` - ${l.review_note}` : ''}</p>
+              <p className="text-xs text-forest-500 mt-2">Traité par {l.reviewed_by_name}{l.review_note ? ` - ${l.review_note}` : ''}</p>
             )}
           </div>
         ))}

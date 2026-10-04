@@ -38,7 +38,7 @@ def create_equipment(payload: GeneralEquipmentCreate, db: Session = Depends(get_
             Department.id == payload.department_id, Department.establishment_id == current_user.establishment_id
         ).first()
         if not dept:
-            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Departement introuvable")
+            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Département introuvable")
 
     item = Equipment(
         id=str(uuid.uuid4()), establishment_id=current_user.establishment_id,
@@ -70,14 +70,14 @@ def update_equipment(equipment_id: str, payload: GeneralEquipmentCreate, db: Ses
         Equipment.id == equipment_id, Equipment.establishment_id == current_user.establishment_id
     ).first()
     if not item:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Equipement introuvable")
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Équipement introuvable")
 
     if payload.department_id:
         dept = db.query(Department).filter(
             Department.id == payload.department_id, Department.establishment_id == current_user.establishment_id
         ).first()
         if not dept:
-            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Departement introuvable")
+            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Département introuvable")
 
     was_due = bool(item.next_maintenance_date and item.next_maintenance_date <= date.today())
 
@@ -108,6 +108,6 @@ def delete_equipment(equipment_id: str, db: Session = Depends(get_db),
         Equipment.id == equipment_id, Equipment.establishment_id == current_user.establishment_id
     ).first()
     if not item:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Equipement introuvable")
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Équipement introuvable")
     db.delete(item)
     db.commit()

@@ -20,8 +20,8 @@ from app.deps import require_roles
 
 router = APIRouter(prefix="/dashboard", tags=["tableau-de-bord"])
 
-MONTH_NAMES_FR = ["Janvier", "Fevrier", "Mars", "Avril", "Mai", "Juin",
-                   "Juillet", "Aout", "Septembre", "Octobre", "Novembre", "Decembre"]
+MONTH_NAMES_FR = ["Janvier", "Février", "Mars", "Avril", "Mai", "Juin",
+                   "Juillet", "Août", "Septembre", "Octobre", "Novembre", "Décembre"]
 
 
 def _percent_change(current: float, previous: float) -> float | None:

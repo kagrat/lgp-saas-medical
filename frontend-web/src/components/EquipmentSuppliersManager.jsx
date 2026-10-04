@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react'
 import api, { getErrorMessage } from '../api/client'
 
-const PO_STATUS_LABELS = { pending: 'En attente', received: 'Recu', cancelled: 'Annule' }
+const PO_STATUS_LABELS = { pending: 'En attente', received: 'Reçu', cancelled: 'Annulé' }
 const PO_STATUS_COLORS = {
   pending: 'bg-amber-500/10 text-amber-600', received: 'bg-success-500/10 text-success-700', cancelled: 'bg-clay-500/10 text-clay-600',
 }
@@ -53,7 +53,7 @@ export default function EquipmentSuppliersManager() {
       setInventoryItems(inventoryRes.data)
       setPurchaseOrders(poRes.data)
     } catch (err) {
-      setError(getErrorMessage(err, "Impossible de charger l'equipement et les fournisseurs."))
+      setError(getErrorMessage(err, "Impossible de charger l'équipement et les fournisseurs."))
     }
   }
 
@@ -85,7 +85,7 @@ export default function EquipmentSuppliersManager() {
       await api.patch(`/inventory/${id}`, { quantity: Math.max(0, newQuantity) })
       await load()
     } catch (err) {
-      setError(getErrorMessage(err, 'Mise a jour impossible.'))
+      setError(getErrorMessage(err, 'Mise à jour impossible.'))
     }
   }
 
@@ -110,7 +110,7 @@ export default function EquipmentSuppliersManager() {
       setEquipForm({ name: '', category: '', department_id: '', status: 'fonctionnel', next_maintenance_date: '' })
       await load()
     } catch (err) {
-      setError(getErrorMessage(err, "Impossible d'ajouter cet equipement."))
+      setError(getErrorMessage(err, "Impossible d'ajouter cet équipement."))
     } finally {
       setSavingEquip(false)
     }
@@ -146,7 +146,7 @@ export default function EquipmentSuppliersManager() {
       setEditingEquipmentId(null)
       await load()
     } catch (err) {
-      setError(getErrorMessage(err, "Impossible de modifier cet equipement."))
+      setError(getErrorMessage(err, "Impossible de modifier cet équipement."))
     } finally {
       setSavingEquipEdit(false)
     }
@@ -157,7 +157,7 @@ export default function EquipmentSuppliersManager() {
       await api.delete(`/suppliers/${id}`)
       await load()
     } catch (err) {
-      setError(getErrorMessage(err, 'Suppression impossible (peut-etre lie a un bon de commande existant).'))
+      setError(getErrorMessage(err, 'Suppression impossible (peut-être lié à un bon de commande existant).'))
     }
   }
 
@@ -191,7 +191,7 @@ export default function EquipmentSuppliersManager() {
       setPoForm({ supplier_id: '', inventory_item_id: '', description: '', quantity: '1' })
       await load()
     } catch (err) {
-      setError(getErrorMessage(err, 'Impossible de creer ce bon de commande.'))
+      setError(getErrorMessage(err, 'Impossible de créer ce bon de commande.'))
     } finally {
       setSavingPo(false)
     }
@@ -203,7 +203,7 @@ export default function EquipmentSuppliersManager() {
       await api.post(`/purchase-orders/${id}/receive`)
       await load()
     } catch (err) {
-      setError(getErrorMessage(err, 'Reception impossible.'))
+      setError(getErrorMessage(err, 'Réception impossible.'))
     }
   }
 
@@ -221,17 +221,17 @@ export default function EquipmentSuppliersManager() {
     <div>
       {error && <p className="text-clay-600 mb-4">{error}</p>}
 
-      <h3 className="font-display text-lg text-forest-900 font-semibold mb-3">Equipement medical</h3>
+      <h3 className="font-display text-lg text-forest-900 font-semibold mb-3">Équipement médical</h3>
       <form onSubmit={submitEquipment} className="grid sm:grid-cols-2 gap-3 bg-white border border-forest-100 rounded-xl p-5 mb-4">
-        <input required placeholder="Nom (ex: Echographe)" value={equipForm.name}
+        <input required placeholder="Nom (ex: Échographe)" value={equipForm.name}
           onChange={(e) => setEquipForm({ ...equipForm, name: e.target.value })}
           className="rounded-lg border border-forest-100 px-3 py-2 text-sm" />
-        <input placeholder="Categorie (optionnel)" value={equipForm.category}
+        <input placeholder="Catégorie (optionnel)" value={equipForm.category}
           onChange={(e) => setEquipForm({ ...equipForm, category: e.target.value })}
           className="rounded-lg border border-forest-100 px-3 py-2 text-sm" />
         <select value={equipForm.department_id} onChange={(e) => setEquipForm({ ...equipForm, department_id: e.target.value })}
           className="rounded-lg border border-forest-100 px-3 py-2 text-sm bg-white">
-          <option value="">Departement (optionnel)</option>
+          <option value="">Département (optionnel)</option>
           {departments.map((d) => <option key={d.id} value={d.id}>{d.name}</option>)}
         </select>
         <select value={equipForm.status} onChange={(e) => setEquipForm({ ...equipForm, status: e.target.value })}
@@ -241,30 +241,30 @@ export default function EquipmentSuppliersManager() {
           <option value="hors_service">Hors service</option>
         </select>
         <div className="sm:col-span-2">
-          <label className="block text-xs text-forest-700 mb-1">Prochaine maintenance preventive (optionnel)</label>
+          <label className="block text-xs text-forest-700 mb-1">Prochaine maintenance préventive (optionnel)</label>
           <input type="date" value={equipForm.next_maintenance_date}
             onChange={(e) => setEquipForm({ ...equipForm, next_maintenance_date: e.target.value })}
             className="rounded-lg border border-forest-100 px-3 py-2 text-sm" />
         </div>
         <button type="submit" disabled={savingEquip}
           className="sm:col-span-2 rounded-full bg-[var(--portal-accent)] text-white py-2.5 text-sm font-medium hover:brightness-90 transition disabled:opacity-50">
-          {savingEquip ? 'Ajout...' : 'Ajouter cet equipement'}
+          {savingEquip ? 'Ajout...' : 'Ajouter cet équipement'}
         </button>
       </form>
       <div className="space-y-2 mb-8">
-        {equipment.length === 0 && <p className="text-forest-700 text-sm">Aucun equipement enregistre.</p>}
+        {equipment.length === 0 && <p className="text-forest-700 text-sm">Aucun équipement enregistré.</p>}
         {equipment.map((eq) => (
           editingEquipmentId === eq.id ? (
             <form key={eq.id} onSubmit={submitEquipmentEdit} className="grid sm:grid-cols-2 gap-3 bg-white border border-primary-500 rounded-xl p-4">
               <input required placeholder="Nom" value={editEquipForm.name}
                 onChange={(e) => setEditEquipForm({ ...editEquipForm, name: e.target.value })}
                 className="rounded-lg border border-forest-100 px-3 py-2 text-sm" />
-              <input placeholder="Categorie (optionnel)" value={editEquipForm.category}
+              <input placeholder="Catégorie (optionnel)" value={editEquipForm.category}
                 onChange={(e) => setEditEquipForm({ ...editEquipForm, category: e.target.value })}
                 className="rounded-lg border border-forest-100 px-3 py-2 text-sm" />
               <select value={editEquipForm.department_id} onChange={(e) => setEditEquipForm({ ...editEquipForm, department_id: e.target.value })}
                 className="rounded-lg border border-forest-100 px-3 py-2 text-sm bg-white">
-                <option value="">Departement (optionnel)</option>
+                <option value="">Département (optionnel)</option>
                 {departments.map((d) => <option key={d.id} value={d.id}>{d.name}</option>)}
               </select>
               <select value={editEquipForm.status} onChange={(e) => setEditEquipForm({ ...editEquipForm, status: e.target.value })}
@@ -274,7 +274,7 @@ export default function EquipmentSuppliersManager() {
                 <option value="hors_service">Hors service</option>
               </select>
               <div className="sm:col-span-2">
-                <label className="block text-xs text-forest-700 mb-1">Prochaine maintenance preventive (optionnel)</label>
+                <label className="block text-xs text-forest-700 mb-1">Prochaine maintenance préventive (optionnel)</label>
                 <input type="date" value={editEquipForm.next_maintenance_date}
                   onChange={(e) => setEditEquipForm({ ...editEquipForm, next_maintenance_date: e.target.value })}
                   className="rounded-lg border border-forest-100 px-3 py-2 text-sm" />
@@ -294,7 +294,7 @@ export default function EquipmentSuppliersManager() {
             <div>
               <p className="text-forest-900 font-medium">
                 {eq.name}
-                {eq.maintenance_due && <span className="ml-2 text-xs px-2 py-0.5 rounded-full bg-clay-500/10 text-clay-600 font-medium">Maintenance a prevoir</span>}
+                {eq.maintenance_due && <span className="ml-2 text-xs px-2 py-0.5 rounded-full bg-clay-500/10 text-clay-600 font-medium">Maintenance à prévoir</span>}
               </p>
               <p className="text-sm text-forest-700">
                 {eq.category ? `${eq.category} - ` : ''}{eq.department_name ? `${eq.department_name} - ` : ''}{eq.status}
@@ -315,10 +315,10 @@ export default function EquipmentSuppliersManager() {
         <input required placeholder="Nom du fournisseur" value={supplierForm.name}
           onChange={(e) => setSupplierForm({ ...supplierForm, name: e.target.value })}
           className="rounded-lg border border-forest-100 px-3 py-2 text-sm" />
-        <input placeholder="Telephone (optionnel)" value={supplierForm.contact_phone}
+        <input placeholder="Téléphone (optionnel)" value={supplierForm.contact_phone}
           onChange={(e) => setSupplierForm({ ...supplierForm, contact_phone: e.target.value })}
           className="rounded-lg border border-forest-100 px-3 py-2 text-sm" />
-        <input placeholder="Email (optionnel)" value={supplierForm.contact_email}
+        <input placeholder="E-mail (optionnel)" value={supplierForm.contact_email}
           onChange={(e) => setSupplierForm({ ...supplierForm, contact_email: e.target.value })}
           className="rounded-lg border border-forest-100 px-3 py-2 text-sm" />
         <button type="submit" disabled={savingSupplier}
@@ -327,7 +327,7 @@ export default function EquipmentSuppliersManager() {
         </button>
       </form>
       <div className="flex flex-wrap gap-2 mb-8">
-        {suppliers.length === 0 && <p className="text-forest-700 text-sm">Aucun fournisseur enregistre.</p>}
+        {suppliers.length === 0 && <p className="text-forest-700 text-sm">Aucun fournisseur enregistré.</p>}
         {suppliers.map((s) => (
           <span key={s.id} className="text-sm bg-forest-50 text-forest-900 px-3 py-1.5 rounded-full flex items-center gap-2">
             {s.name}{s.contact_phone ? ` - ${s.contact_phone}` : ''}
@@ -416,13 +416,13 @@ export default function EquipmentSuppliersManager() {
         </select>
         <select value={poForm.inventory_item_id} onChange={(e) => setPoForm({ ...poForm, inventory_item_id: e.target.value })}
           className="rounded-lg border border-forest-100 px-3 py-2 text-sm bg-white">
-          <option value="">Article de stock lie (optionnel)</option>
+          <option value="">Article de stock lié (optionnel)</option>
           {inventoryItems.map((i) => <option key={i.id} value={i.id}>{i.name}</option>)}
         </select>
-        <input required placeholder="Description (ex: Reappro gants latex)" value={poForm.description}
+        <input required placeholder="Description (ex: Réappro. gants latex)" value={poForm.description}
           onChange={(e) => setPoForm({ ...poForm, description: e.target.value })}
           className="rounded-lg border border-forest-100 px-3 py-2 text-sm" />
-        <input required type="number" min="1" placeholder="Quantite" value={poForm.quantity}
+        <input required type="number" min="1" placeholder="Quantité" value={poForm.quantity}
           onChange={(e) => setPoForm({ ...poForm, quantity: e.target.value })}
           className="rounded-lg border border-forest-100 px-3 py-2 text-sm" />
         <button type="submit" disabled={savingPo}
@@ -432,7 +432,7 @@ export default function EquipmentSuppliersManager() {
       </form>
       {poForm.inventory_item_id && (
         <p className="text-xs text-forest-500 -mt-2 mb-4">
-          A la reception, la quantite sera automatiquement ajoutee au stock de cet article.
+          À la réception, la quantité sera automatiquement ajoutée au stock de cet article.
         </p>
       )}
       <div className="space-y-2">
@@ -443,7 +443,7 @@ export default function EquipmentSuppliersManager() {
               <div>
                 <p className="text-forest-900 font-medium">{po.description}</p>
                 <p className="text-sm text-forest-700">
-                  {po.quantity} unite(s) - {po.supplier_name}{po.inventory_item_name ? ` - lie a: ${po.inventory_item_name}` : ''}
+                  {po.quantity} unité(s) - {po.supplier_name}{po.inventory_item_name ? ` - lié à : ${po.inventory_item_name}` : ''}
                 </p>
               </div>
               <span className={`text-xs px-2 py-0.5 rounded-full font-medium shrink-0 ${PO_STATUS_COLORS[po.status]}`}>
@@ -453,7 +453,7 @@ export default function EquipmentSuppliersManager() {
             {po.status === 'pending' && (
               <div className="flex gap-2 mt-3">
                 <button onClick={() => receivePo(po.id)} className="text-sm bg-[var(--portal-accent)] text-white px-4 py-1.5 rounded-full font-medium hover:brightness-90 transition">
-                  Marquer recu
+                  Marquer reçu
                 </button>
                 <button onClick={() => cancelPo(po.id)} className="text-sm border border-clay-500 text-clay-600 px-4 py-1.5 rounded-full font-medium hover:bg-clay-500 hover:text-white transition">
                   Annuler

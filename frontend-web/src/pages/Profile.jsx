@@ -82,7 +82,7 @@ export default function Profile() {
     setError('')
     try {
       await api.patch('/patients/me/emergency-contact', emergencyContact)
-      setEmergencyContactMessage('Contact d\'urgence enregistre.')
+      setEmergencyContactMessage('Contact d\'urgence enregistré.')
     } catch (err) {
       setError(getErrorMessage(err, "Impossible d'enregistrer le contact d'urgence."))
     } finally {
@@ -98,9 +98,9 @@ export default function Profile() {
     try {
       const { data } = await api.patch('/auth/me', infoForm)
       setProfile(data)
-      setInfoMessage('Informations mises a jour.')
+      setInfoMessage('Informations mises à jour.')
     } catch (err) {
-      setError(getErrorMessage(err, 'Impossible de mettre a jour tes informations.'))
+      setError(getErrorMessage(err, 'Impossible de mettre à jour tes informations.'))
     } finally {
       setSavingInfo(false)
     }
@@ -122,7 +122,7 @@ export default function Profile() {
         current_password: passwordForm.current_password,
         new_password: passwordForm.new_password,
       })
-      setPasswordMessage('Mot de passe modifie avec succes.')
+      setPasswordMessage('Mot de passe modifié avec succès.')
       setPasswordForm({ current_password: '', new_password: '', confirm_password: '' })
     } catch (err) {
       setError(getErrorMessage(err, 'Impossible de modifier le mot de passe.'))
@@ -137,7 +137,7 @@ export default function Profile() {
       await api.patch('/auth/2fa', { enabled: !profile.two_factor_enabled })
       setProfile({ ...profile, two_factor_enabled: !profile.two_factor_enabled })
     } catch (err) {
-      setError(getErrorMessage(err, 'Impossible de modifier ce reglage.'))
+      setError(getErrorMessage(err, 'Impossible de modifier ce réglage.'))
     } finally {
       setTogglingTwoFactor(false)
     }
@@ -232,7 +232,7 @@ export default function Profile() {
               className="w-full rounded-lg border border-forest-100 px-4 py-2.5 focus:border-forest-500" />
           </div>
           <div>
-            <label className="block text-sm font-medium text-forest-900 mb-1">Email</label>
+            <label className="block text-sm font-medium text-forest-900 mb-1">E-mail</label>
             <input required type="email" value={infoForm.email} onChange={(e) => setInfoForm({ ...infoForm, email: e.target.value })}
               className="w-full rounded-lg border border-forest-100 px-4 py-2.5 focus:border-forest-500" />
           </div>
@@ -252,7 +252,7 @@ export default function Profile() {
             <input placeholder="Nom complet" value={emergencyContact.emergency_contact_name}
               onChange={(e) => setEmergencyContact({ ...emergencyContact, emergency_contact_name: e.target.value })}
               className="rounded-lg border border-forest-100 px-3 py-2" />
-            <input placeholder="Relation (ex: Soeur, Époux)" value={emergencyContact.emergency_contact_relation}
+            <input placeholder="Relation (ex: Sœur, Époux)" value={emergencyContact.emergency_contact_relation}
               onChange={(e) => setEmergencyContact({ ...emergencyContact, emergency_contact_relation: e.target.value })}
               className="rounded-lg border border-forest-100 px-3 py-2" />
             <input type="tel" placeholder="Numéro de téléphone" value={emergencyContact.emergency_contact_phone}
@@ -291,7 +291,7 @@ export default function Profile() {
                 <div>
                   <p className="text-forest-900 font-medium">{d.full_name}</p>
                   <p className="text-sm text-forest-700">
-                    {d.relation_type}{d.date_of_birth ? ` - ne(e) le ${new Date(d.date_of_birth).toLocaleDateString('fr-FR')}` : ''}
+                    {d.relation_type}{d.date_of_birth ? ` - né(e) le ${new Date(d.date_of_birth).toLocaleDateString('fr-FR')}` : ''}
                   </p>
                 </div>
                 <button onClick={() => handleRemoveDependent(d.id)}
@@ -342,8 +342,8 @@ export default function Profile() {
         <div className="bg-white border border-forest-100 rounded-xl p-5 flex items-center justify-between">
           <p className="text-sm text-forest-700 max-w-md">
             {profile?.two_factor_enabled
-              ? 'Un code te sera envoye par email a chaque connexion, en plus de ton mot de passe.'
-              : 'Ajoute un code envoye par email a chaque connexion, pour proteger davantage ton compte.'}
+              ? 'Un code te sera envoyé par e-mail à chaque connexion, en plus de ton mot de passe.'
+              : 'Ajoute un code envoyé par e-mail à chaque connexion, pour protéger davantage ton compte.'}
           </p>
           <button
             onClick={toggleTwoFactor}

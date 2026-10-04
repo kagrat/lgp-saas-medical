@@ -33,19 +33,19 @@ export default function CompleteRegistrationForm() {
     setError('')
     setMessage('')
     if (!selectedPatientId || !email) {
-      setError('Choisis un patient et indique son email.')
+      setError('Choisis un patient et indique son e-mail.')
       return
     }
     setSaving(true)
     try {
       await api.patch(`/patients/${selectedPatientId}/email`, { email })
-      setMessage("Inscription completee - le patient peut maintenant utiliser 'Mot de passe oublie' pour choisir son mot de passe et se connecter.")
+      setMessage("Inscription complétée - le patient peut maintenant utiliser 'Mot de passe oublié' pour choisir son mot de passe et se connecter.")
       setEmail('')
       setSelectedPatientId('')
       setPatients([])
       setPatientSearch('')
     } catch (err) {
-      setError(getErrorMessage(err, "Impossible de completer l'inscription de ce patient."))
+      setError(getErrorMessage(err, "Impossible de compléter l'inscription de ce patient."))
     } finally {
       setSaving(false)
     }
@@ -55,7 +55,7 @@ export default function CompleteRegistrationForm() {
     <div className="rounded-xl border border-forest-100 bg-white p-5">
       <p className="font-medium text-forest-900 mb-1">Compléter l'inscription d'un patient</p>
       <p className="text-forest-700 text-sm mb-4">
-        Pour un patient cree sans email lors d'une visite precedente, et qui souhaite desormais acceder lui-meme a la plateforme.
+        Pour un patient créé sans e-mail lors d'une visite précédente, et qui souhaite désormais accéder lui-même à la plateforme.
       </p>
 
       {error && <p className="text-clay-600 text-sm mb-3">{error}</p>}
@@ -83,7 +83,7 @@ export default function CompleteRegistrationForm() {
       )}
 
       <form onSubmit={handleSubmit} className="flex gap-2">
-        <input type="email" required placeholder="Email du patient" value={email}
+        <input type="email" required placeholder="E-mail du patient" value={email}
           onChange={(e) => setEmail(e.target.value)}
           className="flex-1 rounded-lg border border-forest-100 px-3 py-2 text-sm" />
         <button type="submit" disabled={saving}

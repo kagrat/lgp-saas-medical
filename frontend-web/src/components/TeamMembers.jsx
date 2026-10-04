@@ -2,11 +2,11 @@ import { useEffect, useState } from 'react'
 import api, { getErrorMessage } from '../api/client'
 
 const STAFF_ROLES = [
-  { value: 'secretary', label: 'Secretaire' },
+  { value: 'secretary', label: 'Secrétaire' },
   { value: 'pharmacist', label: 'Pharmacien' },
   { value: 'lab_technician', label: 'Technicien laboratoire' },
   // NOUVEAU (gestion interne complete, demande M. Faustin):
-  { value: 'nurse', label: 'Infirmier(ere)' },
+  { value: 'nurse', label: 'Infirmier(ère)' },
   { value: 'receptionist', label: "Agent d'accueil" },
   { value: 'accountant', label: 'Comptable' },
   { value: 'hr_manager', label: 'Responsable RH' },
@@ -47,7 +47,7 @@ export default function TeamMembers() {
       const { data } = await api.get('/establishments/staff')
       setStaff(data)
     } catch (err) {
-      setError(getErrorMessage(err, "Impossible de charger l'equipe."))
+      setError(getErrorMessage(err, "Impossible de charger l'équipe."))
     }
   }
 
@@ -70,7 +70,7 @@ export default function TeamMembers() {
       await load()
       await loadDepartments()
     } catch (err) {
-      setError(getErrorMessage(err, "Impossible d'ajouter ce membre de l'equipe."))
+      setError(getErrorMessage(err, "Impossible d'ajouter ce membre de l'équipe."))
     } finally {
       setSaving(false)
     }
@@ -82,7 +82,7 @@ export default function TeamMembers() {
       await api.patch(`/establishments/staff/${staffId}/deactivate`)
       await load()
     } catch (err) {
-      setError(getErrorMessage(err, 'Impossible de mettre a jour ce compte.'))
+      setError(getErrorMessage(err, 'Impossible de mettre à jour ce compte.'))
     } finally {
       setTogglingId(null)
     }
@@ -108,7 +108,7 @@ export default function TeamMembers() {
       await load()
       await loadDepartments()
     } catch (err) {
-      setError(getErrorMessage(err, 'Impossible de mettre a jour le dossier employe.'))
+      setError(getErrorMessage(err, 'Impossible de mettre à jour le dossier employé.'))
     } finally {
       setSavingProfile(false)
     }
@@ -124,7 +124,7 @@ export default function TeamMembers() {
       setDeptForm('')
       await loadDepartments()
     } catch (err) {
-      setError(getErrorMessage(err, 'Impossible de creer ce departement.'))
+      setError(getErrorMessage(err, 'Impossible de créer ce département.'))
     } finally {
       setSavingDept(false)
     }
@@ -137,7 +137,7 @@ export default function TeamMembers() {
       setHeadAssignFor(null)
       await loadDepartments()
     } catch (err) {
-      setError(getErrorMessage(err, 'Impossible de designer ce chef de service.'))
+      setError(getErrorMessage(err, 'Impossible de désigner ce chef de service.'))
     }
   }
 
@@ -145,18 +145,18 @@ export default function TeamMembers() {
     <div>
       {/* Departements / services */}
       <div className="bg-white border border-forest-100 rounded-xl p-5 mb-6">
-        <p className="font-medium text-forest-900 mb-3">Departements / services</p>
+        <p className="font-medium text-forest-900 mb-3">Départements / services</p>
         <form onSubmit={addDepartment} className="flex gap-2 mb-4">
           <input
             value={deptForm} onChange={(e) => setDeptForm(e.target.value)}
-            placeholder="Nom du departement (ex: Maternite, Cardiologie...)"
+            placeholder="Nom du département (ex: Maternité, Cardiologie...)"
             className="flex-1 rounded-lg border border-forest-100 px-3 py-2 text-sm"
           />
           <button type="submit" disabled={savingDept} className="rounded-full bg-[var(--portal-accent)] text-white px-5 py-2 text-sm font-medium hover:brightness-90 transition disabled:opacity-50">
-            {savingDept ? '...' : 'Creer'}
+            {savingDept ? '...' : 'Créer'}
           </button>
         </form>
-        {departments.length === 0 && <p className="text-sm text-forest-700">Aucun departement cree pour le moment.</p>}
+        {departments.length === 0 && <p className="text-sm text-forest-700">Aucun département créé pour le moment.</p>}
         <div className="space-y-2">
           {departments.map((d) => (
             <div key={d.id} className="flex justify-between items-center rounded-lg bg-forest-50 px-3 py-2">
@@ -164,7 +164,7 @@ export default function TeamMembers() {
                 <p className="text-sm text-forest-900 font-medium">{d.name}</p>
                 <p className="text-xs text-forest-700">
                   {d.staff_count} membre{d.staff_count > 1 ? 's' : ''}
-                  {d.head_user_name ? ` - Chef de service: ${d.head_user_name}` : ' - Aucun chef de service designe'}
+                  {d.head_user_name ? ` - Chef de service: ${d.head_user_name}` : ' - Aucun chef de service désigné'}
                 </p>
               </div>
               {headAssignFor === d.id ? (
@@ -180,7 +180,7 @@ export default function TeamMembers() {
                 </select>
               ) : (
                 <button onClick={() => setHeadAssignFor(d.id)} className="text-xs text-amber-600 font-medium hover:underline shrink-0 ml-3">
-                  Designer un chef de service
+                  Désigner un chef de service
                 </button>
               )}
             </div>
@@ -193,7 +193,7 @@ export default function TeamMembers() {
         <input required placeholder="Nom complet" value={form.full_name}
           onChange={(e) => setForm({ ...form, full_name: e.target.value })}
           className="rounded-lg border border-forest-100 px-3 py-2" />
-        <input required type="email" placeholder="Email" value={form.email}
+        <input required type="email" placeholder="E-mail" value={form.email}
           onChange={(e) => setForm({ ...form, email: e.target.value })}
           className="rounded-lg border border-forest-100 px-3 py-2" />
         <input placeholder="Téléphone (optionnel)" value={form.phone}
@@ -210,10 +210,10 @@ export default function TeamMembers() {
         {/* NOUVEAU: dossier employe, optionnel a la creation, completable ensuite */}
         <select value={form.department_id} onChange={(e) => setForm({ ...form, department_id: e.target.value })}
           className="rounded-lg border border-forest-100 px-3 py-2 bg-white">
-          <option value="">Departement (optionnel)</option>
+          <option value="">Département (optionnel)</option>
           {departments.map((d) => <option key={d.id} value={d.id}>{d.name}</option>)}
         </select>
-        <input placeholder="Poste (ex: Infirmiere en chef)" value={form.position_title}
+        <input placeholder="Poste (ex: Infirmière en chef)" value={form.position_title}
           onChange={(e) => setForm({ ...form, position_title: e.target.value })}
           className="rounded-lg border border-forest-100 px-3 py-2" />
         <div>
@@ -225,13 +225,13 @@ export default function TeamMembers() {
         <input placeholder="Type de contrat (CDI, CDD...)" value={form.contract_type}
           onChange={(e) => setForm({ ...form, contract_type: e.target.value })}
           className="rounded-lg border border-forest-100 px-3 py-2" />
-        <input placeholder="Numero de licence/diplome (optionnel)" value={form.license_number}
+        <input placeholder="Numéro de licence/diplôme (optionnel)" value={form.license_number}
           onChange={(e) => setForm({ ...form, license_number: e.target.value })}
           className="rounded-lg border border-forest-100 px-3 py-2 sm:col-span-2" />
 
         <button type="submit" disabled={saving}
           className="sm:col-span-2 rounded-full bg-[var(--portal-accent)] text-white py-2.5 font-medium hover:brightness-90 transition disabled:opacity-50">
-          {saving ? 'Ajout...' : "Ajouter ce membre de l'equipe"}
+          {saving ? 'Ajout...' : "Ajouter ce membre de l'équipe"}
         </button>
       </form>
 
@@ -249,14 +249,14 @@ export default function TeamMembers() {
                   {s.phone && ` - ${s.phone}`}
                 </p>
                 <p className="text-xs text-forest-700 mt-0.5">
-                  {s.department_name ? s.department_name : 'Aucun departement'}
+                  {s.department_name ? s.department_name : 'Aucun département'}
                   {s.position_title ? ` - ${s.position_title}` : ''}
                   {s.hire_date ? ` - embauche le ${new Date(s.hire_date).toLocaleDateString('fr-FR')}` : ''}
                 </p>
               </div>
               <div className="flex gap-2 shrink-0 ml-3">
                 <button onClick={() => startEditProfile(s)} className="text-sm text-amber-600 font-medium hover:underline">
-                  Dossier employe
+                  Dossier employé
                 </button>
                 <button
                   onClick={() => toggleActive(s.id)}
@@ -265,7 +265,7 @@ export default function TeamMembers() {
                     s.is_active ? 'border border-clay-500 text-clay-600 hover:bg-clay-500 hover:text-white' : 'bg-[var(--portal-accent)] text-white hover:brightness-90'
                   }`}
                 >
-                  {togglingId === s.id ? '...' : s.is_active ? 'Desactiver' : 'Reactiver'}
+                  {togglingId === s.id ? '...' : s.is_active ? 'Désactiver' : 'Réactiver'}
                 </button>
               </div>
             </div>
@@ -275,12 +275,12 @@ export default function TeamMembers() {
                 <input placeholder="Nom complet" value={profileForm.full_name}
                   onChange={(e) => setProfileForm({ ...profileForm, full_name: e.target.value })}
                   className="rounded-lg border border-forest-100 px-3 py-2 text-sm" />
-                <input placeholder="Telephone" value={profileForm.phone}
+                <input placeholder="Téléphone" value={profileForm.phone}
                   onChange={(e) => setProfileForm({ ...profileForm, phone: e.target.value })}
                   className="rounded-lg border border-forest-100 px-3 py-2 text-sm" />
                 <select value={profileForm.department_id} onChange={(e) => setProfileForm({ ...profileForm, department_id: e.target.value })}
                   className="rounded-lg border border-forest-100 px-3 py-2 text-sm bg-white">
-                  <option value="">Aucun departement</option>
+                  <option value="">Aucun département</option>
                   {departments.map((d) => <option key={d.id} value={d.id}>{d.name}</option>)}
                 </select>
                 <input placeholder="Poste" value={profileForm.position_title}
@@ -292,7 +292,7 @@ export default function TeamMembers() {
                 <input placeholder="Type de contrat" value={profileForm.contract_type}
                   onChange={(e) => setProfileForm({ ...profileForm, contract_type: e.target.value })}
                   className="rounded-lg border border-forest-100 px-3 py-2 text-sm" />
-                <input placeholder="Numero de licence/diplome" value={profileForm.license_number}
+                <input placeholder="Numéro de licence/diplôme" value={profileForm.license_number}
                   onChange={(e) => setProfileForm({ ...profileForm, license_number: e.target.value })}
                   className="rounded-lg border border-forest-100 px-3 py-2 text-sm sm:col-span-2" />
                 <div className="sm:col-span-2 flex gap-2">

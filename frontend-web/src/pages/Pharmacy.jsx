@@ -55,7 +55,7 @@ export default function Pharmacy() {
       })
       setPharmacies(data)
     } catch (err) {
-      setError(getErrorMessage(err, 'La recherche a echoue.'))
+      setError(getErrorMessage(err, 'La recherche a échoué.'))
     } finally {
       setLoading(false)
     }
@@ -131,7 +131,7 @@ export default function Pharmacy() {
       })
       setProducts(data)
     } catch (err) {
-      setError(getErrorMessage(err, 'Impossible de charger les medicaments de cette pharmacie.'))
+      setError(getErrorMessage(err, 'Impossible de charger les médicaments de cette pharmacie.'))
     } finally {
       setLoading(false)
     }
@@ -186,7 +186,7 @@ export default function Pharmacy() {
       setConfirmation(data)
       setStep(3)
     } catch (err) {
-      setError(getErrorMessage(err, 'La commande a echoue.'))
+      setError(getErrorMessage(err, 'La commande a échoué.'))
     } finally {
       setSubmitting(false)
     }
@@ -215,14 +215,14 @@ export default function Pharmacy() {
       </h1>
 
       {step !== 'guest-form' && step < 3 && (
-        <StepIndicator current={step} total={2} label={step === 1 ? 'Choisis une pharmacie' : 'Ajoute des medicaments a ton panier'} />
+        <StepIndicator current={step} total={2} label={step === 1 ? 'Choisis une pharmacie' : 'Ajoute des médicaments à ton panier'} />
       )}
 
       {confirmation ? (
         <div className="rounded-2xl border border-forest-300 bg-forest-50 p-6">
           <p className="font-display text-xl text-forest-900 font-semibold mb-1">Commande envoyée</p>
           <p className="text-forest-700 mb-4">
-            La pharmacie va vérifier la disponibilité et te transmettra une proposition a confirmer.
+            La pharmacie va vérifier la disponibilité et te transmettra une proposition à confirmer.
             Retrouve le suivi dans "Mon espace" - Mes commandes pharmacie.
           </p>
           <button onClick={startOver} className="rounded-full bg-primary-700 text-white px-6 py-2.5 font-medium hover:bg-primary-900 transition">
@@ -350,11 +350,11 @@ export default function Pharmacy() {
               return (
                 <div key={item.id} className="rounded-xl border border-forest-100 bg-white p-5">
                   <p className="font-display text-lg text-forest-900 font-semibold">{item.medication_name}</p>
-                  <p className="text-xs text-forest-700">Ref. {item.reference}</p>
+                  <p className="text-xs text-forest-700">Réf. {item.reference}</p>
                   {item.category && <p className="text-sm text-forest-700">{item.category}</p>}
                   <p className="text-sm text-amber-600 font-medium mt-1">{item.unit_price.toLocaleString('fr-FR')} FCFA</p>
                   <p className={`text-xs mt-1 ${item.is_low_stock ? 'text-clay-600' : 'text-forest-500'}`}>
-                    {item.is_low_stock ? 'Stock limite' : 'En stock'}
+                    {item.is_low_stock ? 'Stock limité' : 'En stock'}
                   </p>
                   <button
                     onClick={() => addToCart(item)}
@@ -381,7 +381,7 @@ export default function Pharmacy() {
                   <div key={line.medication_id} className="flex items-center justify-between gap-3">
                     <div>
                       <p className="text-forest-900 text-sm font-medium">{line.medication_name}</p>
-                      <p className="text-xs text-forest-700">{line.unit_price.toLocaleString('fr-FR')} FCFA / unite</p>
+                      <p className="text-xs text-forest-700">{line.unit_price.toLocaleString('fr-FR')} FCFA / unité</p>
                     </div>
                     <div className="flex items-center gap-2">
                       <input type="number" min="1" max={line.available} value={line.quantity}

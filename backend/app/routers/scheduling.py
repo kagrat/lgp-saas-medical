@@ -58,9 +58,9 @@ def create_shift(payload: ShiftCreate, db: Session = Depends(get_db),
             Department.id == payload.department_id, Department.establishment_id == current_user.establishment_id
         ).first()
         if not dept:
-            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Departement introuvable")
+            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Département introuvable")
     if payload.end_time <= payload.start_time:
-        raise HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_ENTITY, detail="L'heure de fin doit etre apres l'heure de debut")
+        raise HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_ENTITY, detail="L'heure de fin doit être après l'heure de début")
 
     shift = Shift(
         id=str(uuid.uuid4()), establishment_id=current_user.establishment_id, user_id=payload.user_id,
@@ -88,9 +88,9 @@ def create_my_shift(payload: ShiftSelfCreate, db: Session = Depends(get_db),
     periode de 1 mois").
     """
     if not current_user.establishment_id:
-        raise HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_ENTITY, detail="Compte non rattache a un etablissement")
+        raise HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_ENTITY, detail="Compte non rattaché à un établissement")
     if payload.end_time <= payload.start_time:
-        raise HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_ENTITY, detail="L'heure de fin doit etre apres l'heure de debut")
+        raise HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_ENTITY, detail="L'heure de fin doit être après l'heure de début")
 
     shift = Shift(
         id=str(uuid.uuid4()), establishment_id=current_user.establishment_id, user_id=current_user.id,
@@ -136,7 +136,7 @@ def delete_shift(shift_id: str, db: Session = Depends(get_db),
         Shift.id == shift_id, Shift.establishment_id == current_user.establishment_id
     ).first()
     if not shift:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Creneau introuvable")
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Créneau introuvable")
     db.delete(shift)
     db.commit()
 
@@ -147,7 +147,7 @@ def delete_shift(shift_id: str, db: Session = Depends(get_db),
 def request_leave(payload: LeaveRequestCreate, db: Session = Depends(get_db),
                    current_user: User = Depends(require_roles(*ALL_STAFF_ROLES))):
     if payload.end_date < payload.start_date:
-        raise HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_ENTITY, detail="La date de fin doit etre apres la date de debut")
+        raise HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_ENTITY, detail="La date de fin doit être après la date de début")
 
     leave = LeaveRequest(
         id=str(uuid.uuid4()), establishment_id=current_user.establishment_id, user_id=current_user.id,
@@ -189,7 +189,7 @@ def review_leave_request(leave_id: str, payload: LeaveRequestReview, db: Session
     if not leave:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Demande introuvable")
     if leave.status != "pending":
-        raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail="Cette demande a deja ete traitee")
+        raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail="Cette demande a déjà été traitée")
 
     leave.status = "approved" if payload.approve else "rejected"
     leave.reviewed_by_user_id = current_user.id

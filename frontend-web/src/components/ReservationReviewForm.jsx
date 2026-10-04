@@ -51,7 +51,7 @@ export default function ReservationReviewForm({ reservation, onDone }) {
       })
       if (onDone) onDone()
     } catch (err) {
-      setError(getErrorMessage(err, 'Impossible de transmettre cette verification.'))
+      setError(getErrorMessage(err, 'Impossible de transmettre cette vérification.'))
     } finally {
       setSubmitting(false)
     }
@@ -60,7 +60,7 @@ export default function ReservationReviewForm({ reservation, onDone }) {
   return (
     <form onSubmit={handleSubmit} className="mt-3 pt-3 border-t border-forest-100">
       <p className="text-sm font-medium text-forest-900 mb-2">
-        Vérifie la disponibilité et confirme quantite/prix de chaque article avant de transmettre au patient
+        Vérifie la disponibilité et confirme quantité/prix de chaque article avant de transmettre au patient
       </p>
       <div className="space-y-2 mb-2">
         {reservation.items.map((item) => {
@@ -74,15 +74,15 @@ export default function ReservationReviewForm({ reservation, onDone }) {
                 <label className="block text-xs text-forest-700 mb-1">Disponibilité</label>
                 <select value={line.stock_status} onChange={(e) => updateLine(item.id, 'stock_status', e.target.value)}
                   className="w-full rounded-lg border border-forest-100 px-3 py-1.5 text-sm bg-white">
-                  <option value="disponible">Disponible (quantite demandee)</option>
+                  <option value="disponible">Disponible (quantité demandée)</option>
                   <option value="disponible_partiel">Disponible partiellement</option>
-                  <option value="rupture_temporaire">Rupture temporaire (bientot reapprovisionne)</option>
+                  <option value="rupture_temporaire">Rupture temporaire (bientôt réapprovisionné)</option>
                   <option value="rupture_totale">Rupture totale</option>
                 </select>
               </div>
               <div className="grid sm:grid-cols-2 gap-2">
                 <div>
-                  <label className="block text-xs text-forest-700 mb-1">Quantite confirmée</label>
+                  <label className="block text-xs text-forest-700 mb-1">Quantité confirmée</label>
                   <input type="number" min="0" required value={line.confirmed_quantity}
                     disabled={line.stock_status === 'rupture_totale'}
                     onChange={(e) => updateLine(item.id, 'confirmed_quantity', e.target.value)}

@@ -219,7 +219,7 @@ export default function EstablishmentAdmin() {
         setAppointments(results[2].data)
       }
     } catch (err) {
-      setError(getErrorMessage(err, "Impossible de charger le tableau de bord. Vérifie que tu es bien connecte en tant qu'admin établissement."))
+      setError(getErrorMessage(err, "Impossible de charger le tableau de bord. Vérifie que tu es bien connecté en tant qu'admin établissement."))
     }
   }
 
@@ -251,7 +251,7 @@ export default function EstablishmentAdmin() {
       })
       await loadAll()
     } catch (err) {
-      setError(getErrorMessage(err, "Impossible de mettre a jour cette commande."))
+      setError(getErrorMessage(err, "Impossible de mettre à jour cette commande."))
     } finally {
       setUpdatingOrderId(null)
     }
@@ -264,7 +264,7 @@ export default function EstablishmentAdmin() {
       await api.post(`/appointments/${appointmentId}/complete`)
       await loadAll()
     } catch (err) {
-      setError(getErrorMessage(err, "Impossible de marquer ce rendez-vous comme termine."))
+      setError(getErrorMessage(err, "Impossible de marquer ce rendez-vous comme terminé."))
     } finally {
       setCompletingId(null)
     }
@@ -277,7 +277,7 @@ export default function EstablishmentAdmin() {
       await api.post(`/appointments/${appointmentId}/arrive`)
       await loadAll()
     } catch (err) {
-      setError(getErrorMessage(err, "Impossible de marquer ce rendez-vous comme arrive."))
+      setError(getErrorMessage(err, "Impossible de marquer ce rendez-vous comme arrivé."))
     } finally {
       setArrivingId(null)
     }
@@ -313,7 +313,7 @@ export default function EstablishmentAdmin() {
       })
       setRescheduleSlots(data.slots)
     } catch (err) {
-      setError(getErrorMessage(err, 'Impossible de charger les creneaux libres.'))
+      setError(getErrorMessage(err, 'Impossible de charger les créneaux libres.'))
     } finally {
       setLoadingRescheduleSlots(false)
     }
@@ -361,7 +361,7 @@ export default function EstablishmentAdmin() {
         title: docForm.title,
         content: docForm.content,
       })
-      setDocMessage('Ajoute au dossier de sante du patient.')
+      setDocMessage('Ajoute au dossier de santé du patient.')
       setDocForm({ document_type: 'consultation_note', title: '', content: '' })
     } catch (err) {
       setError(getErrorMessage(err, "Impossible d'ajouter ce document au dossier."))
@@ -428,7 +428,7 @@ export default function EstablishmentAdmin() {
       })
       await loadAll()
     } catch (err) {
-      setError(getErrorMessage(err, "Impossible de mettre a jour cette analyse."))
+      setError(getErrorMessage(err, "Impossible de mettre à jour cette analyse."))
     } finally {
       setUpdatingLabId(null)
     }
@@ -484,7 +484,7 @@ export default function EstablishmentAdmin() {
     ? [{ id: 'catalog', label: 'Catalogue', icon: Clipboard }]
     : isPharmacy
     ? []
-    : [{ id: 'rooms', label: 'Chambres et Lits', icon: BedDouble }]
+    : [{ id: 'rooms', label: 'Chambres et lits', icon: BedDouble }]
   // Onglet Patients reserve aux hopitaux/cliniques: une pharmacie ou un
   // laboratoire n'a pas de dossier de consultation a afficher - seuls des
   // rendez-vous medicaux justifient cet annuaire (meme regle appliquee
@@ -497,7 +497,7 @@ export default function EstablishmentAdmin() {
     // NOUVEAU (demande explicite de M. Faustin: retirer la messagerie
     // interne du menu pharmacie specifiquement).
     ...(isPharmacy ? [] : [{ id: 'internal-messages', label: 'Messagerie interne', icon: MessageCircle }]),
-    { id: 'team', label: 'Equipe', icon: Building2 },
+    { id: 'team', label: 'Équipe', icon: Building2 },
     { id: 'hours', label: 'Horaires', icon: Clock },
     ...extraTabs,
     // NOUVEAU (reporting avance): disponible pour TOUS les types
@@ -514,7 +514,7 @@ export default function EstablishmentAdmin() {
     // la partie equipement" pour le portail Hopital) - desormais
     // reserve au laboratoire uniquement (equipements de labo, toujours
     // pertinents), retire pour hopital/clinique ET pharmacie.
-    ...(isLab ? [{ id: 'equipment', label: 'Equipement', icon: Wrench }] : []),
+    ...(isLab ? [{ id: 'equipment', label: 'Équipement', icon: Wrench }] : []),
     // NOUVEAU (demande M. Faustin): Statistiques desormais en toute
     // derniere position du menu, plus en tete - l'onglet operationnel
     // (rendez-vous/commandes/analyses) doit primer visuellement.
@@ -529,10 +529,10 @@ export default function EstablishmentAdmin() {
 
   const appointmentFilterOptions = [
     { value: 'all', label: 'Tous' },
-    { value: 'confirmed', label: 'Confirmes' },
-    { value: 'arrived', label: 'Arrives' },
+    { value: 'confirmed', label: 'Confirmés' },
+    { value: 'arrived', label: 'Arrivés' },
     { value: 'completed', label: 'Terminés' },
-    { value: 'cancelled', label: 'Annules' },
+    { value: 'cancelled', label: 'Annulés' },
   ]
   const filteredAppointments = appointmentFilter === 'all' ? appointments : appointments.filter((a) => a.status === appointmentFilter)
 
@@ -551,7 +551,7 @@ export default function EstablishmentAdmin() {
       portalLabel={isLab ? 'Portail Laboratoire' : isPharmacy ? 'Portail Pharmacie' : 'Portail Hôpital / Clinique'}
       title={establishment.name}
       logoUrl={establishment.logo_url}
-      subtitle={isLab ? 'Gestion des demandes d\'analyses.' : isPharmacy ? 'Gestion de l\'inventaire et des commandes de ta pharmacie.' : 'Gestion des medecins, rendez-vous et pharmacie de ton etablissement.'}
+      subtitle={isLab ? 'Gestion des demandes d\'analyses.' : isPharmacy ? 'Gestion de l\'inventaire et des commandes de ta pharmacie.' : 'Gestion des médecins, rendez-vous et pharmacie de ton établissement.'}
       tabs={tabs}
       activeTab={tab}
       onTabChange={(id) => { setTab(id); setError(''); setInventoryEntry('produits') }}
@@ -566,8 +566,8 @@ export default function EstablishmentAdmin() {
         <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-4">
           <StatCard label="RDV totaux" value={stats.total_appointments} />
           <StatCard label="RDV ce mois" value={stats.appointments_this_month} trendPct={stats.appointments_trend_pct} />
-          <StatCard label="Medecins actifs" value={stats.total_doctors} />
-          <StatCard label="Alertes stock" value={stats.low_stock_items} highlight={stats.low_stock_items > 0} />
+          <StatCard label="Médecins actifs" value={stats.total_doctors} />
+          <StatCard label="Alertes de stock" value={stats.low_stock_items} highlight={stats.low_stock_items > 0} />
         </div>
       )}
 
@@ -577,7 +577,7 @@ export default function EstablishmentAdmin() {
             <input required placeholder="Nom complet" value={newDoctor.full_name}
               onChange={(e) => setNewDoctor({ ...newDoctor, full_name: e.target.value })}
               className="rounded-lg border border-forest-100 px-3 py-2" />
-            <input required type="email" placeholder="Email" value={newDoctor.email}
+            <input required type="email" placeholder="E-mail" value={newDoctor.email}
               onChange={(e) => setNewDoctor({ ...newDoctor, email: e.target.value })}
               className="rounded-lg border border-forest-100 px-3 py-2" />
             <input placeholder="Téléphone (ex: +229 ...)" value={newDoctor.phone}
@@ -614,7 +614,7 @@ export default function EstablishmentAdmin() {
                     onClick={() => setExpandedDoctorId(expandedDoctorId === d.id ? null : d.id)}
                     className="text-sm rounded-full border border-forest-300 px-4 py-1.5 hover:bg-forest-50 transition"
                   >
-                    {expandedDoctorId === d.id ? 'Fermer' : 'Gerer les disponibilites'}
+                    {expandedDoctorId === d.id ? 'Fermer' : 'Gérer les disponibilités'}
                   </button>
                 </div>
                 {expandedDoctorId === d.id && (
@@ -728,12 +728,12 @@ export default function EstablishmentAdmin() {
                           </div>
                           <button onClick={(e) => checkRescheduleSlots(a.doctor_id, e)} disabled={loadingRescheduleSlots}
                             className="rounded-full border border-forest-300 px-4 py-1.5 text-sm hover:bg-forest-50 transition disabled:opacity-50">
-                            {loadingRescheduleSlots ? '...' : 'Voir les creneaux libres'}
+                            {loadingRescheduleSlots ? '...' : 'Voir les créneaux libres'}
                           </button>
                         </div>
                         {rescheduleSlots && (
                           rescheduleSlots.length === 0 ? (
-                            <p className="text-sm text-forest-700">Aucun creneau libre a cette date.</p>
+                            <p className="text-sm text-forest-700">Aucun créneau libre à cette date.</p>
                           ) : (
                             <div className="grid grid-cols-4 sm:grid-cols-6 gap-2">
                               {rescheduleSlots.map((slot, idx) => (
@@ -1010,7 +1010,7 @@ export default function EstablishmentAdmin() {
                           disabled={updatingOrderId === o.id}
                           className="rounded-full bg-[var(--portal-accent)] text-white px-5 py-1.5 text-sm font-medium hover:brightness-90 transition disabled:opacity-50"
                         >
-                          {updatingOrderId === o.id ? 'Mise a jour...' : 'Mettre a jour'}
+                          {updatingOrderId === o.id ? 'Mise à jour...' : 'Mettre à jour'}
                         </button>
                       </div>
                     )}
@@ -1057,12 +1057,12 @@ export default function EstablishmentAdmin() {
                   </p>
                   {t.referred_by_establishment_name && (
                     <p className="text-xs text-amber-600">
-                      Orientee par {t.referred_by_doctor_name || 'un medecin'} - {t.referred_by_establishment_name}
+                      Orientée par {t.referred_by_doctor_name || 'un médecin'} - {t.referred_by_establishment_name}
                     </p>
                   )}
-                  {t.sample_type && <p className="text-sm text-forest-700">Prelevement: {t.sample_type}</p>}
+                  {t.sample_type && <p className="text-sm text-forest-700">Prélèvement: {t.sample_type}</p>}
                   {t.sample_collected_at && (
-                    <p className="text-xs text-forest-700 mb-3">Preleve le {new Date(t.sample_collected_at).toLocaleString('fr-FR')}</p>
+                    <p className="text-xs text-forest-700 mb-3">Prélevé le {new Date(t.sample_collected_at).toLocaleString('fr-FR')}</p>
                   )}
                   <StatusStepper steps={LAB_STEPS} currentValue={t.status} labels={LAB_STATUS_LABELS} />
                 </div>
@@ -1082,7 +1082,7 @@ export default function EstablishmentAdmin() {
                   />
                 </div>
                 <textarea
-                  placeholder="Résultats (a remplir quand l'analyse est validee)"
+                  placeholder="Résultats (à remplir quand l'analyse est validée)"
                   value={labUpdateForm[t.id]?.results_text || ''}
                   onChange={(e) => updateLabForm(t.id, 'results_text', e.target.value)}
                   rows={2}
@@ -1093,7 +1093,7 @@ export default function EstablishmentAdmin() {
                   disabled={updatingLabId === t.id}
                   className="rounded-full bg-[var(--portal-accent)] text-white px-5 py-1.5 text-sm font-medium hover:brightness-90 transition disabled:opacity-50"
                 >
-                  {updatingLabId === t.id ? 'Mise a jour...' : 'Mettre a jour'}
+                  {updatingLabId === t.id ? 'Mise à jour...' : 'Mettre à jour'}
                 </button>
               </div>
             ))}

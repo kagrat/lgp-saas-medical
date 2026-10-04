@@ -88,7 +88,7 @@ export default function DesktopNurseDashboard() {
         respiratory_rate: vitalsForm.respiratory_rate ? Number(vitalsForm.respiratory_rate) : null,
         notes: vitalsForm.notes || null,
       })
-      setVitalsMessage('Constantes enregistrees.')
+      setVitalsMessage('Constantes enregistrées.')
       setVitalsForm({ temperature_celsius: '', blood_pressure: '', pulse_bpm: '', respiratory_rate: '', notes: '' })
       const { data } = await api.get(`/admissions/${selectedId}`)
       setDetail(data)
@@ -106,7 +106,7 @@ export default function DesktopNurseDashboard() {
     setError('')
     try {
       await api.post(`/admissions/${selectedId}/nursing-note`, noteForm)
-      setNoteMessage('Note de soins ajoutee au dossier.')
+      setNoteMessage('Note de soins ajoutée au dossier.')
       setNoteForm({ title: '', content: '' })
       const { data } = await api.get(`/admissions/${selectedId}`)
       setDetail(data)
@@ -124,7 +124,7 @@ export default function DesktopNurseDashboard() {
     setError('')
     try {
       await api.post(`/admissions/${selectedId}/medications`, medForm)
-      setMedMessage('Administration enregistree.')
+      setMedMessage('Administration enregistrée.')
       setMedForm({ medication_name: '', dosage: '', status: 'given', notes: '' })
       const { data } = await api.get(`/admissions/${selectedId}`)
       setDetail(data)
@@ -137,7 +137,7 @@ export default function DesktopNurseDashboard() {
 
   const tabs = [
     { id: 'arrivees', label: 'Arrivées du jour', icon: ClipboardCheck },
-    { id: 'patients', label: 'Patients hospitalises', icon: BedDouble },
+    { id: 'patients', label: 'Patients hospitalisés', icon: BedDouble },
     { id: 'schedule', label: 'Mon planning', icon: Clock },
     { id: 'messages', label: 'Messages', icon: MessageSquare },
     { id: 'internal-messages', label: 'Messagerie interne', icon: MessageCircle },
@@ -146,7 +146,7 @@ export default function DesktopNurseDashboard() {
   return (
     <SidebarLayout
       portalLabel="Portail Infirmier"
-      title="Espace infirmier(ere)"
+      title="Espace infirmier(ère)"
       subtitle="Consulte un patient pour relever ses constantes vitales, ou ton propre planning."
       tabs={tabs}
       activeTab={tab}
@@ -184,7 +184,7 @@ export default function DesktopNurseDashboard() {
                 <div>
                   <p className="font-display text-lg text-forest-900 font-semibold">{detail.patient_name}</p>
                   <p className="text-sm text-forest-700">
-                    Dossier {detail.dossier_number} - {detail.department_name || 'Aucun departement'}{detail.room_name ? ` - ${detail.room_name}` : ''}
+                    Dossier {detail.dossier_number} - {detail.department_name || 'Aucun département'}{detail.room_name ? ` - ${detail.room_name}` : ''}
                   </p>
                   {detail.diagnosis && <p className="text-sm text-forest-700 mt-1">Diagnostic: {detail.diagnosis}</p>}
                 </div>
@@ -197,7 +197,7 @@ export default function DesktopNurseDashboard() {
                 <p className="text-sm font-medium text-forest-900 mb-2">Relever les constantes</p>
                 {vitalsMessage && <p className="text-forest-900 bg-forest-50 border border-forest-300 rounded-lg p-2 mb-3 text-sm">{vitalsMessage}</p>}
                 <div className="grid sm:grid-cols-2 gap-3 mb-3">
-                  <input type="number" step="0.1" placeholder="Temperature (°C)" value={vitalsForm.temperature_celsius}
+                  <input type="number" step="0.1" placeholder="Température (°C)" value={vitalsForm.temperature_celsius}
                     onChange={(e) => setVitalsForm({ ...vitalsForm, temperature_celsius: e.target.value })}
                     className="rounded-lg border border-forest-100 px-3 py-2 text-sm" />
                   <input placeholder="Tension (ex: 120/80)" value={vitalsForm.blood_pressure}
@@ -206,7 +206,7 @@ export default function DesktopNurseDashboard() {
                   <input type="number" placeholder="Pouls (bpm)" value={vitalsForm.pulse_bpm}
                     onChange={(e) => setVitalsForm({ ...vitalsForm, pulse_bpm: e.target.value })}
                     className="rounded-lg border border-forest-100 px-3 py-2 text-sm" />
-                  <input type="number" placeholder="Frequence respiratoire" value={vitalsForm.respiratory_rate}
+                  <input type="number" placeholder="Fréquence respiratoire" value={vitalsForm.respiratory_rate}
                     onChange={(e) => setVitalsForm({ ...vitalsForm, respiratory_rate: e.target.value })}
                     className="rounded-lg border border-forest-100 px-3 py-2 text-sm" />
                 </div>
@@ -220,7 +220,7 @@ export default function DesktopNurseDashboard() {
               </div>
 
               <p className="text-sm font-medium text-forest-900 mb-2">Historique des constantes</p>
-              {detail.vital_signs.length === 0 && <p className="text-sm text-forest-700 mb-3">Aucune constante relevee pour le moment.</p>}
+              {detail.vital_signs.length === 0 && <p className="text-sm text-forest-700 mb-3">Aucune constante relevée pour le moment.</p>}
               <div className="space-y-2 mb-4">
                 {detail.vital_signs.map((v) => (
                   <div key={v.id} className="bg-white rounded-lg p-3 text-sm">
@@ -243,21 +243,21 @@ export default function DesktopNurseDashboard() {
                   quasi universelle en milieu hospitalier reel, absente
                   jusqu'ici. */}
               <div className="bg-white rounded-lg p-4 mb-4">
-                <p className="text-sm font-medium text-forest-900 mb-2">Administrer un medicament</p>
+                <p className="text-sm font-medium text-forest-900 mb-2">Administrer un médicament</p>
                 {medMessage && <p className="text-forest-900 bg-forest-50 border border-forest-300 rounded-lg p-2 mb-3 text-sm">{medMessage}</p>}
                 <div className="grid sm:grid-cols-2 gap-2 mb-2">
-                  <input placeholder="Nom du medicament" value={medForm.medication_name}
+                  <input placeholder="Nom du médicament" value={medForm.medication_name}
                     onChange={(e) => setMedForm({ ...medForm, medication_name: e.target.value })}
                     className="rounded-lg border border-forest-100 px-3 py-2 text-sm" />
-                  <input placeholder="Dose (ex: 1g, 500mg)" value={medForm.dosage}
+                  <input placeholder="Dose (ex: 1 g, 500 mg)" value={medForm.dosage}
                     onChange={(e) => setMedForm({ ...medForm, dosage: e.target.value })}
                     className="rounded-lg border border-forest-100 px-3 py-2 text-sm" />
                 </div>
                 <select value={medForm.status} onChange={(e) => setMedForm({ ...medForm, status: e.target.value })}
                   className="w-full rounded-lg border border-forest-100 px-3 py-2 text-sm bg-white mb-2">
-                  <option value="given">Administre</option>
-                  <option value="held">Dose retenue (a la demande du medecin)</option>
-                  <option value="refused">Refuse par le patient</option>
+                  <option value="given">Administré</option>
+                  <option value="held">Dose retenue (à la demande du médecin)</option>
+                  <option value="refused">Refusé par le patient</option>
                 </select>
                 <input placeholder="Notes (optionnel)" value={medForm.notes}
                   onChange={(e) => setMedForm({ ...medForm, notes: e.target.value })}
@@ -268,15 +268,15 @@ export default function DesktopNurseDashboard() {
                 </button>
               </div>
 
-              <p className="text-sm font-medium text-forest-900 mb-2">Historique des medicaments</p>
-              {detail.medication_administrations.length === 0 && <p className="text-sm text-forest-700 mb-4">Aucun medicament administre pour le moment.</p>}
+              <p className="text-sm font-medium text-forest-900 mb-2">Historique des médicaments</p>
+              {detail.medication_administrations.length === 0 && <p className="text-sm text-forest-700 mb-4">Aucun médicament administré pour le moment.</p>}
               <div className="space-y-2 mb-4">
                 {detail.medication_administrations.map((m) => (
                   <div key={m.id} className={`rounded-lg p-3 text-sm ${m.status !== 'given' ? 'bg-clay-500/5 border border-clay-300' : 'bg-white'}`}>
                     <p className="text-forest-900 font-medium">
                       {m.medication_name}{m.dosage && ` - ${m.dosage}`}
                       {m.status === 'held' && <span className="ml-2 text-xs px-2 py-0.5 rounded-full bg-clay-500/10 text-clay-600 font-medium">Dose retenue</span>}
-                      {m.status === 'refused' && <span className="ml-2 text-xs px-2 py-0.5 rounded-full bg-clay-500/10 text-clay-600 font-medium">Refuse</span>}
+                      {m.status === 'refused' && <span className="ml-2 text-xs px-2 py-0.5 rounded-full bg-clay-500/10 text-clay-600 font-medium">Refusé</span>}
                     </p>
                     <p className="text-forest-700">{new Date(m.administered_at).toLocaleString('fr-FR')} - {m.administered_by_name}</p>
                     {m.notes && <p className="text-forest-700 italic">{m.notes}</p>}
@@ -293,7 +293,7 @@ export default function DesktopNurseDashboard() {
                 <input placeholder="Titre (ex: Soins du matin)" value={noteForm.title}
                   onChange={(e) => setNoteForm({ ...noteForm, title: e.target.value })}
                   className="w-full rounded-lg border border-forest-100 px-3 py-2 text-sm mb-2" />
-                <textarea placeholder="Observations, soins prodigues, etat du patient..." value={noteForm.content}
+                <textarea placeholder="Observations, soins prodigués, état du patient..." value={noteForm.content}
                   onChange={(e) => setNoteForm({ ...noteForm, content: e.target.value })}
                   rows={3} className="w-full rounded-lg border border-forest-100 px-3 py-2 text-sm mb-3" />
                 <button onClick={submitNursingNote} disabled={savingNote || !noteForm.title || !noteForm.content}
@@ -302,7 +302,7 @@ export default function DesktopNurseDashboard() {
                 </button>
               </div>
 
-              <p className="text-sm font-medium text-forest-900 mb-2">Dossier (notes medicales et de soins)</p>
+              <p className="text-sm font-medium text-forest-900 mb-2">Dossier (notes médicales et de soins)</p>
               {detail.documents.length === 0 && <p className="text-sm text-forest-700">Aucune note pour le moment.</p>}
               <div className="space-y-2">
                 {detail.documents.map((d) => (
@@ -310,7 +310,7 @@ export default function DesktopNurseDashboard() {
                     <div className="flex justify-between items-start mb-1">
                       <p className="text-forest-900 font-medium">{d.title}</p>
                       <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${d.document_type === 'nursing_note' ? 'bg-primary-500/10 text-primary-700' : 'bg-secondary-500/10 text-secondary-600'}`}>
-                        {d.document_type === 'nursing_note' ? 'Note de soins' : 'Note medicale'}
+                        {d.document_type === 'nursing_note' ? 'Note de soins' : 'Note médicale'}
                       </span>
                     </div>
                     <p className="text-xs text-forest-700 mb-1">{d.doctor_name} - {new Date(d.created_at).toLocaleString('fr-FR')}</p>
@@ -324,7 +324,7 @@ export default function DesktopNurseDashboard() {
       )}
 
       <div className="space-y-2">
-        {admissions.length === 0 && <p className="text-forest-700">Aucun patient hospitalise actuellement.</p>}
+        {admissions.length === 0 && <p className="text-forest-700">Aucun patient hospitalisé actuellement.</p>}
         {admissions.map((a) => (
           <button
             key={a.id}
@@ -334,7 +334,7 @@ export default function DesktopNurseDashboard() {
             <div>
               <p className="text-forest-900 font-medium">{a.patient_name}</p>
               <p className="text-sm text-forest-700">
-                Dossier {a.dossier_number} - {a.department_name || 'Aucun departement'}{a.room_name ? ` - ${a.room_name}` : ''}
+                Dossier {a.dossier_number} - {a.department_name || 'Aucun département'}{a.room_name ? ` - ${a.room_name}` : ''}
               </p>
             </div>
             <p className="text-xs text-forest-700">Admis le {new Date(a.admission_date).toLocaleDateString('fr-FR')}</p>

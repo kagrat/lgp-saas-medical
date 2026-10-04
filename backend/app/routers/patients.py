@@ -51,7 +51,7 @@ def create_walk_in_patient(payload: WalkInPatientCreate, db: Session = Depends(g
     if payload.email:
         existing = db.query(User).filter(User.email == payload.email.lower()).first()
         if existing:
-            raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail="Un compte existe deja avec cet email")
+            raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail="Un compte existe déjà avec cet e-mail")
         email = payload.email.lower()
     else:
         # Domaine volontairement non-livrable et reconnaissable - jamais un
@@ -76,7 +76,7 @@ def create_walk_in_patient(payload: WalkInPatientCreate, db: Session = Depends(g
     db.add(patient)
 
     db.add(AuditLog(user_id=current_user.id, establishment_id=current_user.establishment_id,
-                     action="create_walk_in_patient", details=f"Patient cree en presentiel: {payload.full_name} ({dossier_number})"))
+                     action="create_walk_in_patient", details=f"Patient créé en présentiel: {payload.full_name} ({dossier_number})"))
     db.commit()
 
     return WalkInPatientOut(
@@ -110,17 +110,17 @@ def complete_registration(patient_id: str, payload: CompleteRegistrationRequest,
     if not user.email.endswith("@sans-email.speedsante.local"):
         raise HTTPException(
             status_code=status.HTTP_409_CONFLICT,
-            detail="Ce patient a deja un vrai email enregistre - impossible de l'ecraser depuis cet ecran.",
+            detail="Ce patient a déjà un vrai e-mail enregistré - impossible de l'écraser depuis cet écran.",
         )
 
     new_email = payload.email.lower()
     existing = db.query(User).filter(User.email == new_email, User.id != user.id).first()
     if existing:
-        raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail="Un compte existe deja avec cet email")
+        raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail="Un compte existe déjà avec cet e-mail")
 
     user.email = new_email
     db.add(AuditLog(user_id=current_user.id, establishment_id=current_user.establishment_id,
-                     action="complete_patient_registration", details=f"Email ajoute pour le patient {patient.dossier_number}"))
+                     action="complete_patient_registration", details=f"E-mail ajouté pour le patient {patient.dossier_number}"))
     db.commit()
 
     return WalkInPatientOut(id=patient.id, dossier_number=patient.dossier_number, full_name=user.full_name, phone=user.phone, has_real_email=True)

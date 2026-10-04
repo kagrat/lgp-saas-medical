@@ -21,10 +21,10 @@ export default function PrescriptionLabItemsEditor({ items, onChange }) {
       <div className="space-y-2 mb-2">
         {items.map((item, idx) => (
           <div key={idx} className="grid sm:grid-cols-[1fr_1fr_auto] gap-2 items-center">
-            <input placeholder="Nom de l'analyse (ex: NFS, Glycemie...)" value={item.test_name}
+            <input placeholder="Nom de l'analyse (ex: NFS, Glycémie...)" value={item.test_name}
               onChange={(e) => updateItem(idx, 'test_name', e.target.value)}
               className="rounded-lg border border-forest-100 px-2 py-1.5 text-sm" />
-            <input placeholder="Type de prelevement (optionnel)" value={item.sample_type}
+            <input placeholder="Type de prélèvement (optionnel)" value={item.sample_type}
               onChange={(e) => updateItem(idx, 'sample_type', e.target.value)}
               className="rounded-lg border border-forest-100 px-2 py-1.5 text-sm" />
             <button type="button" onClick={() => removeItem(idx)} className="text-xs text-clay-600 hover:underline">Retirer</button>

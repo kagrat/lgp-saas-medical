@@ -54,7 +54,7 @@ export default function DoctorAvailabilityManager({ doctorId }) {
       })
       await load()
     } catch (err) {
-      setError(getErrorMessage(err, "Impossible d'ajouter ce créneau. Vérifie que l'heure de fin est bien apres l'heure de debut."))
+      setError(getErrorMessage(err, "Impossible d'ajouter ce créneau. Vérifie que l'heure de fin est bien après l'heure de début."))
     } finally {
       setSavingAvail(false)
     }
@@ -73,7 +73,7 @@ export default function DoctorAvailabilityManager({ doctorId }) {
     e.preventDefault()
     setError('')
     if (!absenceForm.start_date || !absenceForm.end_date) {
-      setError('Precise une date de debut et de fin.')
+      setError('Précise une date de début et de fin.')
       return
     }
     setSavingAbsence(true)
@@ -86,7 +86,7 @@ export default function DoctorAvailabilityManager({ doctorId }) {
       setAbsenceForm({ start_date: '', end_date: '', reason: '' })
       await load()
     } catch (err) {
-      setError(getErrorMessage(err, "Impossible d'enregistrer cette absence. Vérifie que la date de fin est bien apres la date de debut."))
+      setError(getErrorMessage(err, "Impossible d'enregistrer cette absence. Vérifie que la date de fin est bien après la date de début."))
     } finally {
       setSavingAbsence(false)
     }
@@ -106,7 +106,7 @@ export default function DoctorAvailabilityManager({ doctorId }) {
       {error && <p className="text-clay-600 text-sm mb-3">{error}</p>}
 
       <p className="text-sm font-medium text-forest-900 mb-3">
-        Disponibilités hebdomadaires (se repetent chaque semaine)
+        Disponibilités hebdomadaires (se répètent chaque semaine)
       </p>
 
       <form onSubmit={handleAddAvailability} className="flex flex-wrap gap-2 items-end mb-4">
@@ -128,14 +128,14 @@ export default function DoctorAvailabilityManager({ doctorId }) {
             className="rounded-lg border border-forest-100 px-2 py-1.5 text-sm" />
         </div>
         <div>
-          <label className="block text-xs text-forest-700 mb-1">Duree/RDV (min)</label>
+          <label className="block text-xs text-forest-700 mb-1">Durée/RDV (min)</label>
           <input type="number" min="5" step="5" value={availForm.slot_duration_minutes}
             onChange={(e) => setAvailForm({ ...availForm, slot_duration_minutes: e.target.value })}
             className="w-24 rounded-lg border border-forest-100 px-2 py-1.5 text-sm" />
         </div>
         <button type="submit" disabled={savingAvail}
           className="rounded-full bg-[var(--portal-accent)] text-white px-4 py-1.5 text-sm font-semibold hover:brightness-90 transition disabled:opacity-50">
-          {savingAvail ? 'Ajout...' : 'Ajouter ce creneau'}
+          {savingAvail ? 'Ajout...' : 'Ajouter ce créneau'}
         </button>
       </form>
 
@@ -180,7 +180,7 @@ export default function DoctorAvailabilityManager({ doctorId }) {
         </div>
         <button type="submit" disabled={savingAbsence}
           className="rounded-full bg-[var(--portal-accent)] text-white px-4 py-1.5 text-sm font-semibold hover:brightness-90 transition disabled:opacity-50">
-          {savingAbsence ? 'Ajout...' : 'Declarer une absence'}
+          {savingAbsence ? 'Ajout...' : 'Déclarer une absence'}
         </button>
       </form>
 

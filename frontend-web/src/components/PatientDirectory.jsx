@@ -37,7 +37,7 @@ export default function PatientDirectory() {
       const { data } = await api.get('/patients/establishment', { params: query ? { search: query } : {} })
       setPatients(data)
     } catch (err) {
-      setError(getErrorMessage(err, 'Impossible de charger le repertoire patients.'))
+      setError(getErrorMessage(err, 'Impossible de charger le répertoire des patients.'))
     }
   }
 

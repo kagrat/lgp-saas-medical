@@ -2,9 +2,9 @@ import { Link } from 'react-router-dom'
 import { Video } from 'lucide-react'
 
 const CATEGORIES = [
-  { to: '/consultation', label: 'Médecins', description: 'Consultations dans les hopitaux et cliniques adherents', image: '/images/doctor-consultation.jpg' },
-  { to: '/pharmacie', label: 'Pharmacies', description: 'Medicaments disponibles pres de chez toi', image: '/images/pharmacy-shelves.jpg' },
-  { to: '/laboratoire', label: 'Laboratoires', description: 'Analyses medicales et resultats', image: '/images/lab-equipment.jpg' },
+  { to: '/consultation', label: 'Médecins', description: 'Consultations dans les hôpitaux et cliniques adhérents', image: '/images/doctor-consultation.jpg' },
+  { to: '/pharmacie', label: 'Pharmacies', description: 'Médicaments disponibles près de chez toi', image: '/images/pharmacy-shelves.jpg' },
+  { to: '/laboratoire', label: 'Laboratoires', description: 'Analyses médicales et résultats', image: '/images/lab-equipment.jpg' },
 ]
 
 export default function Care() {
@@ -38,8 +38,8 @@ export default function Care() {
           <Video className="w-6 h-6 text-forest-700" strokeWidth={1.75} />
         </span>
         <div>
-          <p className="font-display text-lg text-forest-900 font-semibold">Teleconsultation</p>
-          <p className="text-sm text-forest-700">Bientot disponible sur la plateforme.</p>
+          <p className="font-display text-lg text-forest-900 font-semibold">Téléconsultation</p>
+          <p className="text-sm text-forest-700">Bientôt disponible sur la plateforme.</p>
         </div>
       </div>
     </div>

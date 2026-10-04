@@ -121,7 +121,7 @@ export default function PatientMessaging() {
                 </form>
               </div>
             ) : (
-              <p className="text-forest-700 text-sm">Choisis une conversation ou démarre-en une nouvelle.</p>
+              <p className="text-forest-700 text-sm">Choisis une conversation ou démarres-en une nouvelle.</p>
             )}
           </div>
         </div>

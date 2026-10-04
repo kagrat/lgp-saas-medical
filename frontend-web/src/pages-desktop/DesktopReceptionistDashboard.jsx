@@ -35,7 +35,7 @@ export default function DesktopReceptionistDashboard() {
     <SidebarLayout
       portalLabel="Portail Accueil"
       title="Espace accueil"
-      subtitle="Enregistre les arrivees, prends les constantes, cree un patient, ou prends-lui rendez-vous."
+      subtitle="Enregistre les arrivées, prends les constantes, crée un patient, ou prends-lui rendez-vous."
       tabs={tabs}
       activeTab={tab}
       onTabChange={setTab}

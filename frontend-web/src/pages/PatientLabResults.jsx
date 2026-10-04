@@ -29,9 +29,9 @@ export default function PatientLabResults() {
 
   function downloadPdf(test) {
     downloadDocumentAsPdf({
-      title: test.test_name, subtitle: "Resultat d'analyse",
+      title: test.test_name, subtitle: "Résultat d'analyse",
       meta: [`Laboratoire: ${test.establishment_name}`, `Date: ${new Date(test.created_at).toLocaleDateString('fr-FR')}`],
-      content: test.results_text || 'Resultats non encore disponibles.',
+      content: test.results_text || 'Résultats non encore disponibles.',
       filename: `${test.test_name.replace(/[^a-z0-9]/gi, '_')}_resultats.pdf`,
     })
   }
@@ -72,7 +72,7 @@ export default function PatientLabResults() {
               <div className="mt-3 pt-3 border-t border-forest-100">
                 {t.referred_by_establishment_name && (
                   <p className="text-xs text-amber-600 mb-2">
-                    Prescrit par {t.referred_by_doctor_name || 'un medecin'} ({t.referred_by_establishment_name})
+                    Prescrit par {t.referred_by_doctor_name || 'un médecin'} ({t.referred_by_establishment_name})
                   </p>
                 )}
                 <StatusStepper steps={LAB_STEPS} currentValue={t.status} labels={LAB_STATUS_LABELS} />
@@ -81,7 +81,7 @@ export default function PatientLabResults() {
                     <div className="flex items-center justify-between mb-1">
                       <p className="text-sm text-forest-900 font-medium">Résultats</p>
                       <button onClick={() => downloadPdf(t)} className="text-xs text-amber-600 hover:underline">
-                        Telecharger PDF
+                        Télécharger PDF
                       </button>
                     </div>
                     <p className="text-sm text-forest-700 whitespace-pre-wrap">{t.results_text}</p>

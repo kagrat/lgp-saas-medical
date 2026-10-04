@@ -14,7 +14,7 @@ export default function PlatformSettingsPanel() {
         support_email: data.support_email || '',
         support_phone: data.support_phone || '',
       }))
-      .catch((err) => setError(getErrorMessage(err, 'Impossible de charger les parametres.')))
+      .catch((err) => setError(getErrorMessage(err, 'Impossible de charger les paramètres.')))
   }, [])
 
   async function handleSubmit(e) {
@@ -24,9 +24,9 @@ export default function PlatformSettingsPanel() {
     setSaving(true)
     try {
       await api.put('/settings', form)
-      setMessage('Parametres mis a jour.')
+      setMessage('Paramètres mis à jour.')
     } catch (err) {
-      setError(getErrorMessage(err, 'Impossible de mettre a jour les parametres.'))
+      setError(getErrorMessage(err, 'Impossible de mettre à jour les paramètres.'))
     } finally {
       setSaving(false)
     }
@@ -35,7 +35,7 @@ export default function PlatformSettingsPanel() {
   return (
     <div>
       <p className="text-sm text-forest-700 mb-4">
-        Reglages généraux de la plateforme. D'autres parametres (paiements, roles avances)
+        Réglages généraux de la plateforme. D'autres paramètres (paiements, rôles avancés)
         arriveront quand l'infrastructure correspondante sera en place.
       </p>
       {error && <p className="text-clay-600 mb-4">{error}</p>}
@@ -47,7 +47,7 @@ export default function PlatformSettingsPanel() {
             className="w-full rounded-lg border border-forest-100 px-4 py-2.5 focus:border-forest-500" />
         </div>
         <div>
-          <label className="block text-sm font-medium text-forest-900 mb-1">Email de support</label>
+          <label className="block text-sm font-medium text-forest-900 mb-1">E-mail de support</label>
           <input type="email" value={form.support_email} onChange={(e) => setForm({ ...form, support_email: e.target.value })}
             className="w-full rounded-lg border border-forest-100 px-4 py-2.5 focus:border-forest-500" />
         </div>

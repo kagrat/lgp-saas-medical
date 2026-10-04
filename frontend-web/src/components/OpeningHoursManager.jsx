@@ -99,7 +99,7 @@ export default function OpeningHoursManager() {
         </button>
       </form>
 
-      <p className="text-sm font-medium text-forest-900 mb-2">Ou configurer un jour precis</p>
+      <p className="text-sm font-medium text-forest-900 mb-2">Ou configurer un jour précis</p>
       <form onSubmit={handleAdd} className="flex flex-wrap gap-2 items-end bg-white border border-forest-100 rounded-xl p-5 mb-6">
         <div>
           <label className="block text-xs text-forest-700 mb-1">Jour</label>

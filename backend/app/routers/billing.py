@@ -159,7 +159,7 @@ def export_invoices_csv(db: Session = Depends(get_db), current_user: User = Depe
 
     buffer = io.StringIO()
     writer = csv.writer(buffer, delimiter=';')  # point-virgule: plus fiable pour Excel FR
-    writer.writerow(["Numero", "Patient", "Statut", "Total (FCFA)", "Encaisse (FCFA)", "Solde du (FCFA)", "Date d'emission"])
+    writer.writerow(["Numéro", "Patient", "Statut", "Total (FCFA)", "Encaissé (FCFA)", "Solde du (FCFA)", "Date d'émission"])
     for invoice in invoices:
         paid = _amount_paid(invoice)
         writer.writerow([
@@ -185,9 +185,9 @@ def get_invoice(invoice_id: str, db: Session = Depends(get_db),
     if current_user.role == UserRole.PATIENT:
         patient = db.query(Patient).filter(Patient.user_id == current_user.id).first()
         if not patient or invoice.patient_id != patient.id:
-            raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Acces refuse a cette facture")
+            raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Accès refusé à cette facture")
     elif invoice.establishment_id != current_user.establishment_id:
-        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Acces refuse a cette facture")
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Accès refusé à cette facture")
 
     return _to_full_out(invoice)
 
@@ -201,14 +201,14 @@ def record_payment(invoice_id: str, payload: PaymentCreate, db: Session = Depend
     if not invoice:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Facture introuvable")
     if invoice.status == "cancelled":
-        raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail="Cette facture est annulee")
+        raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail="Cette facture est annulée")
 
     already_paid = _amount_paid(invoice)
     remaining = invoice.total_amount - already_paid
     if payload.amount > remaining + 0.01:  # tolerance flottante
         raise HTTPException(
             status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
-            detail=f"Le montant depasse le solde restant du ({round(remaining, 2)} FCFA)",
+            detail=f"Le montant dépasse le solde restant dû ({round(remaining, 2)} FCFA)",
         )
 
     payment = Payment(
@@ -241,7 +241,7 @@ def cancel_invoice(invoice_id: str, db: Session = Depends(get_db),
     if not invoice:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Facture introuvable")
     if invoice.payments:
-        raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail="Impossible d'annuler une facture avec des paiements enregistres")
+        raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail="Impossible d'annuler une facture avec des paiements enregistrés")
 
     invoice.status = "cancelled"
     db.commit()
@@ -289,13 +289,13 @@ def billing_summary_by_department(db: Session = Depends(get_db), current_user: U
         return buckets.setdefault(name, {"total_invoiced": 0.0, "total_collected": 0.0})
 
     for invoice in invoices:
-        department_name = "Consultations / non attribue"
+        department_name = "Consultations / non attribué"
         if invoice.admission_id:
             admission = db.query(Admission).filter(Admission.id == invoice.admission_id).first()
             if admission and admission.department:
                 department_name = admission.department.name
             elif admission:
-                department_name = "Hospitalisation (departement non renseigne)"
+                department_name = "Hospitalisation (département non renseigné)"
 
         b = _bucket(department_name)
         b["total_invoiced"] += invoice.total_amount

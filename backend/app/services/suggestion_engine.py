@@ -17,7 +17,8 @@ Notes/avis) pour aider le patient a choisir entre plusieurs options proches.
 from datetime import datetime, timedelta, date, time
 from typing import Optional
 
-from sqlalchemy import func
+from sqlalchemy import func, or_
+from app.specialties import specialty_variants
 from sqlalchemy.orm import Session
 
 from app.models import Doctor, DoctorAvailability, DoctorAbsence, Appointment, Establishment, AppointmentStatus, DoctorReview, Shift
@@ -148,7 +149,7 @@ def find_appointment_or_suggest(
         reference_coords = resolve_city_coordinates(city)
 
     base_query = db.query(Doctor).join(Establishment).filter(
-        Doctor.specialty.ilike(specialty),
+        or_(*[Doctor.specialty.ilike(v) for v in specialty_variants(specialty)]),
         Doctor.is_active == True,
         Establishment.is_active == True,
     )

@@ -93,10 +93,10 @@ export default function LabCatalogManager() {
 
       <h3 className="font-display text-lg text-forest-900 font-semibold mb-3">Valeurs de référence</h3>
       <form onSubmit={handleAddRef} className="grid sm:grid-cols-2 gap-3 bg-white border border-forest-100 rounded-xl p-5 mb-4">
-        <input required placeholder="Nom de l'analyse (ex: Glycemie)" value={refForm.test_name}
+        <input required placeholder="Nom de l'analyse (ex: Glycémie)" value={refForm.test_name}
           onChange={(e) => setRefForm({ ...refForm, test_name: e.target.value })}
           className="rounded-lg border border-forest-100 px-3 py-2" />
-        <input placeholder="Unite (ex: g/L)" value={refForm.unit}
+        <input placeholder="Unité (ex: g/L)" value={refForm.unit}
           onChange={(e) => setRefForm({ ...refForm, unit: e.target.value })}
           className="rounded-lg border border-forest-100 px-3 py-2" />
         <input type="number" step="any" placeholder="Valeur min" value={refForm.min_value}
@@ -146,7 +146,7 @@ export default function LabCatalogManager() {
           className="rounded-lg border border-forest-100 px-3 py-2" />
         <button type="submit" disabled={savingEquip}
           className="sm:col-span-3 rounded-full bg-[var(--portal-accent)] text-white py-2.5 font-medium hover:brightness-90 transition disabled:opacity-50">
-          {savingEquip ? 'Ajout...' : "Ajouter cet equipement"}
+          {savingEquip ? 'Ajout...' : "Ajouter cet équipement"}
         </button>
       </form>
       <div className="space-y-2">

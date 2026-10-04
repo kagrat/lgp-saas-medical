@@ -43,7 +43,7 @@ export default function ExternalReferralForm({ patientId }) {
     setError('')
     try {
       await api.post(`/doctors/me/patients/${patientId}/share`, { to_doctor_id: doctorId, note: note || null })
-      setMessage('Dossier transmis a ce medecin externe.')
+      setMessage('Dossier transmis à ce médecin externe.')
       setResults(null)
       setQuery({ name: '', city: '', specialty: '' })
       setNote('')

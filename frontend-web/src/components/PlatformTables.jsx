@@ -46,7 +46,7 @@ export default function PlatformTables() {
       {!loading && table === 'appointments' && (
         <TableView
           rows={rows}
-          columns={['Patient', 'Medecin', 'Etablissement', 'Date', 'Statut']}
+          columns={['Patient', 'Médecin', 'Établissement', 'Date', 'Statut']}
           render={(r) => [
             r.patient_name, r.doctor_name, r.establishment_name,
             new Date(r.scheduled_at).toLocaleString('fr-FR'),
@@ -58,7 +58,7 @@ export default function PlatformTables() {
       {!loading && table === 'orders' && (
         <TableView
           rows={rows}
-          columns={['Patient', 'Medicament', 'Etablissement', 'Quantite', 'Statut']}
+          columns={['Patient', 'Médicament', 'Établissement', 'Quantité', 'Statut']}
           render={(r) => [r.patient_name, r.medication_name, r.establishment_name, r.quantity, <StatusBadge status={r.status} />]}
         />
       )}
@@ -66,7 +66,7 @@ export default function PlatformTables() {
       {!loading && table === 'doctors' && (
         <TableView
           rows={rows}
-          columns={['Nom', 'Specialite', 'Etablissement', 'Statut']}
+          columns={['Nom', 'Spécialité', 'Établissement', 'Statut']}
           render={(r) => [r.full_name, r.specialty, r.establishment_name, r.is_active ? 'Actif' : 'Inactif']}
         />
       )}

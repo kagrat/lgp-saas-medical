@@ -150,7 +150,7 @@ export default function DesktopPharmacistDashboard() {
       })
       await loadOrders()
     } catch (err) {
-      setError(getErrorMessage(err, "Impossible de mettre a jour cette commande."))
+      setError(getErrorMessage(err, "Impossible de mettre à jour cette commande."))
     } finally {
       setUpdatingOrderId(null)
     }
@@ -315,7 +315,7 @@ export default function DesktopPharmacistDashboard() {
                           disabled={updatingOrderId === o.id}
                           className="rounded-full bg-[var(--portal-accent)] text-white px-5 py-1.5 text-sm font-medium hover:brightness-90 transition disabled:opacity-50"
                         >
-                          {updatingOrderId === o.id ? 'Mise a jour...' : 'Mettre a jour'}
+                          {updatingOrderId === o.id ? 'Mise à jour...' : 'Mettre à jour'}
                         </button>
                       </div>
                     )}

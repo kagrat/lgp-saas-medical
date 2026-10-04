@@ -84,7 +84,7 @@ export function consumeSessionExpiredFlag() {
   return wasExpired
 }
 
-export function getErrorMessage(err, fallback = 'Une erreur est survenue. Reessaie.') {
+export function getErrorMessage(err, fallback = 'Une erreur est survenue. Réessaie.') {
   const detail = err?.response?.data?.detail
   if (!detail) return fallback
   if (typeof detail === 'string') return detail

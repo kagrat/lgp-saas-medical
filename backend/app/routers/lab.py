@@ -165,7 +165,7 @@ def refer_test_to_lab(payload: LabReferralCreate, db: Session = Depends(get_db),
     if not appointment:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Rendez-vous introuvable")
     if appointment.establishment_id != current_user.establishment_id:
-        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Acces refuse a ce rendez-vous")
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Accès refusé à ce rendez-vous")
 
     referring_doctor_id = None
     if current_user.role == UserRole.DOCTOR:

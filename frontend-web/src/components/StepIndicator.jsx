@@ -10,7 +10,7 @@ export default function StepIndicator({ current, total, label }) {
         ))}
       </div>
       <p className="text-xs text-amber-600 font-medium uppercase tracking-wide">
-        Etape {current} sur {total}{label ? ` - ${label}` : ''}
+        Étape {current} sur {total}{label ? ` - ${label}` : ''}
       </p>
     </div>
   )

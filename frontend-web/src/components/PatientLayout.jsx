@@ -111,7 +111,7 @@ export function PatientSidebarChrome({ children }) {
           className="flex items-center gap-3 px-6 py-4 text-sm font-medium text-white/80 hover:bg-white/10 hover:text-white transition border-t border-white/10 shrink-0"
         >
           <LogOut className="w-4.5 h-4.5" strokeWidth={1.75} />
-          Deconnexion
+          Déconnexion
         </button>
       </aside>
 

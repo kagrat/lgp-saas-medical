@@ -48,7 +48,7 @@ def delete_reference_value(entry_id: str, db: Session = Depends(get_db),
         ReferenceValue.id == entry_id, ReferenceValue.establishment_id == current_user.establishment_id
     ).first()
     if not entry:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Valeur de reference introuvable")
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Valeur de référence introuvable")
     db.delete(entry)
     db.commit()
 
@@ -79,7 +79,7 @@ def update_equipment(equipment_id: str, payload: EquipmentCreate, db: Session = 
         Equipment.id == equipment_id, Equipment.establishment_id == current_user.establishment_id
     ).first()
     if not item:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Equipement introuvable")
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Équipement introuvable")
     item.name = payload.name
     item.status = payload.status
     item.notes = payload.notes
@@ -95,6 +95,6 @@ def delete_equipment(equipment_id: str, db: Session = Depends(get_db),
         Equipment.id == equipment_id, Equipment.establishment_id == current_user.establishment_id
     ).first()
     if not item:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Equipement introuvable")
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Équipement introuvable")
     db.delete(item)
     db.commit()

@@ -10,7 +10,8 @@ import uuid
 from typing import Optional
 
 from fastapi import APIRouter, Depends, HTTPException, status
-from sqlalchemy import func
+from sqlalchemy import func, or_
+from app.specialties import specialty_variants
 from sqlalchemy.orm import Session
 
 from app.database import get_db
@@ -41,7 +42,7 @@ def create_establishment(payload: EstablishmentCreate, db: Session = Depends(get
                           current_user: User = Depends(require_roles(UserRole.SUPER_ADMIN))):
     existing_admin = db.query(User).filter(User.email == payload.admin_email.lower()).first()
     if existing_admin:
-        raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail="Cet email admin est deja utilise")
+        raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail="Cet e-mail admin est déjà utilisé")
 
     latitude, longitude = payload.latitude, payload.longitude
     if latitude is None or longitude is None:
@@ -71,7 +72,7 @@ def create_establishment(payload: EstablishmentCreate, db: Session = Depends(get
     )
     db.add(admin_user)
     db.add(AuditLog(user_id=current_user.id, establishment_id=establishment.id,
-                     action="create_establishment", details=f"Creation de {establishment.name}"))
+                     action="create_establishment", details=f"Création de {establishment.name}"))
     db.commit()
     db.refresh(establishment)
     return establishment
@@ -86,10 +87,10 @@ def list_establishments(db: Session = Depends(get_db)):
 @router.get("/me", response_model=EstablishmentOut)
 def my_establishment(db: Session = Depends(get_db), current_user: User = Depends(get_current_user)):
     if not current_user.establishment_id:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Compte non rattache a un etablissement")
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Compte non rattaché à un établissement")
     establishment = db.query(Establishment).filter(Establishment.id == current_user.establishment_id).first()
     if not establishment:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Etablissement introuvable")
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Établissement introuvable")
     return establishment
 
 
@@ -103,7 +104,7 @@ def update_establishment_logo(payload: EstablishmentLogoUpdate, db: Session = De
     """
     establishment = db.query(Establishment).filter(Establishment.id == current_user.establishment_id).first()
     if not establishment:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Etablissement introuvable")
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Établissement introuvable")
     establishment.logo_url = payload.logo_url
     db.commit()
     db.refresh(establishment)
@@ -121,14 +122,14 @@ def update_my_establishment(payload: EstablishmentSelfUpdate, db: Session = Depe
     """
     establishment = db.query(Establishment).filter(Establishment.id == current_user.establishment_id).first()
     if not establishment:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Etablissement introuvable")
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Établissement introuvable")
 
     update_data = payload.model_dump(exclude_unset=True)
     for field, value in update_data.items():
         setattr(establishment, field, value)
 
     db.add(AuditLog(user_id=current_user.id, establishment_id=establishment.id,
-                     action="update_establishment_self", details="Etablissement modifie par son propre admin"))
+                     action="update_establishment_self", details="Établissement modifié par son propre admin"))
     db.commit()
     db.refresh(establishment)
     return establishment
@@ -152,7 +153,7 @@ def search_establishments(specialty: str, city: Optional[str] = None, db: Sessio
         .filter(
             Establishment.is_active == True,
             Doctor.is_active == True,
-            Doctor.specialty.ilike(f"%{specialty}%"),
+            or_(*[Doctor.specialty.ilike(f"%{v}%") for v in specialty_variants(specialty)]),
         )
         .group_by(Establishment.id)
         .all()
@@ -185,7 +186,7 @@ def update_establishment(establishment_id: str, payload: EstablishmentUpdate, db
                           current_user: User = Depends(require_roles(UserRole.SUPER_ADMIN))):
     establishment = db.query(Establishment).filter(Establishment.id == establishment_id).first()
     if not establishment:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Etablissement introuvable")
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Établissement introuvable")
 
     update_data = payload.model_dump(exclude_unset=True)
     for field, value in update_data.items():
@@ -210,7 +211,7 @@ def update_establishment_status(establishment_id: str, payload: EstablishmentSta
                                  current_user: User = Depends(require_roles(UserRole.SUPER_ADMIN))):
     establishment = db.query(Establishment).filter(Establishment.id == establishment_id).first()
     if not establishment:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Etablissement introuvable")
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Établissement introuvable")
 
     establishment.is_active = payload.is_active
     if payload.subscription_status:
@@ -218,7 +219,7 @@ def update_establishment_status(establishment_id: str, payload: EstablishmentSta
 
     action = "suspend_establishment" if not payload.is_active else "reactivate_establishment"
     db.add(AuditLog(user_id=current_user.id, establishment_id=establishment.id, action=action,
-                     details=f"Statut mis a jour: is_active={payload.is_active}"))
+                     details=f"Statut mis à jour: is_active={payload.is_active}"))
     db.commit()
     db.refresh(establishment)
     return establishment
@@ -250,19 +251,19 @@ def create_staff_member(payload: StaffCreate, db: Session = Depends(get_db),
     if payload.role not in ALLOWED_STAFF_ROLES:
         raise HTTPException(
             status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
-            detail="Role invalide - utilise secretary, pharmacist, lab_technician, nurse, receptionist, accountant ou hr_manager",
+            detail="Rôle invalide - utilise secretary, pharmacist, lab_technician, nurse, receptionist, accountant ou hr_manager",
         )
 
     existing = db.query(User).filter(User.email == payload.email.lower()).first()
     if existing:
-        raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail="Cet email est deja utilise")
+        raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail="Cet e-mail est déjà utilisé")
 
     if payload.department_id:
         dept = db.query(Department).filter(
             Department.id == payload.department_id, Department.establishment_id == current_user.establishment_id
         ).first()
         if not dept:
-            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Departement introuvable")
+            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Département introuvable")
 
     staff_user = User(
         id=str(uuid.uuid4()),
@@ -287,7 +288,7 @@ def create_staff_member(payload: StaffCreate, db: Session = Depends(get_db),
     db.add(profile)
 
     db.add(AuditLog(user_id=current_user.id, establishment_id=current_user.establishment_id,
-                     action="create_staff", details=f"Compte {payload.role.value} cree: {payload.full_name}"))
+                     action="create_staff", details=f"Compte {payload.role.value} créé: {payload.full_name}"))
     db.commit()
     db.refresh(staff_user)
     return _to_staff_out(db, staff_user)
@@ -352,7 +353,7 @@ def update_staff_profile(staff_id: str, payload: StaffProfileUpdate, db: Session
             Department.id == payload.department_id, Department.establishment_id == current_user.establishment_id
         ).first()
         if not dept:
-            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Departement introuvable")
+            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Département introuvable")
 
     profile = db.query(StaffProfile).filter(StaffProfile.user_id == staff_user.id).first()
     if not profile:
@@ -383,7 +384,7 @@ def create_department(payload: DepartmentCreate, db: Session = Depends(get_db),
     department = Department(id=str(uuid.uuid4()), establishment_id=current_user.establishment_id, name=payload.name)
     db.add(department)
     db.add(AuditLog(user_id=current_user.id, establishment_id=current_user.establishment_id,
-                     action="create_department", details=f"Departement cree: {payload.name}"))
+                     action="create_department", details=f"Département créé: {payload.name}"))
     db.commit()
     db.refresh(department)
     return DepartmentOut(id=department.id, name=department.name, head_user_id=None, head_user_name=None, staff_count=0)
@@ -392,7 +393,7 @@ def create_department(payload: DepartmentCreate, db: Session = Depends(get_db),
 @router.get("/departments", response_model=list[DepartmentOut])
 def list_departments(db: Session = Depends(get_db), current_user: User = Depends(get_current_user)):
     if not current_user.establishment_id:
-        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Compte non rattache a un etablissement")
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Compte non rattaché à un établissement")
     departments = db.query(Department).filter(Department.establishment_id == current_user.establishment_id).order_by(Department.name).all()
 
     results = []
@@ -413,7 +414,7 @@ def update_department(department_id: str, payload: DepartmentUpdate, db: Session
         Department.id == department_id, Department.establishment_id == current_user.establishment_id
     ).first()
     if not dept:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Departement introuvable")
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Département introuvable")
 
     if payload.head_user_id is not None:
         # NOUVEAU: "chef de service" - un membre du personnel (medecin ou
@@ -423,7 +424,7 @@ def update_department(department_id: str, payload: DepartmentUpdate, db: Session
         # techniques pour une simple fonction de supervision).
         head = db.query(User).filter(User.id == payload.head_user_id, User.establishment_id == current_user.establishment_id).first()
         if not head:
-            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Utilisateur introuvable pour ce role de chef de service")
+            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Utilisateur introuvable pour ce rôle de chef de service")
         dept.head_user_id = payload.head_user_id
     if payload.name:
         dept.name = payload.name

@@ -46,7 +46,7 @@ export default function Navbar() {
             </Link>
           ) : (
             <button onClick={handleLogout} className="px-4 py-2 rounded-full border border-forest-300 hover:bg-forest-50 transition">
-              Deconnexion
+              Déconnexion
             </button>
           )}
         </nav>
