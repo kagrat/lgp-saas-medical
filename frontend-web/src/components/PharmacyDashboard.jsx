@@ -8,7 +8,7 @@ import { StatusBadge } from './OrderStatus'
  * "Statistiques"), puis en dessous un raccourci des commandes en cours
  * de traitement (nombre limite, pas la liste complete).
  */
-export default function PharmacyDashboard({ onSelectOrder }) {
+export default function PharmacyDashboard({ onSelectOrder, onNavigate }) {
   const [stats, setStats] = useState(null)
   const [summary, setSummary] = useState(null)
   const [error, setError] = useState('')
@@ -31,10 +31,17 @@ export default function PharmacyDashboard({ onSelectOrder }) {
   return (
     <div>
       <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
-        <StatBox label="Commandes en attente" value={stats.pending_orders} highlight={stats.pending_orders > 0} />
-        <StatBox label="Livraisons en cours" value={stats.deliveries_in_progress} />
-        <StatBox label="Alertes de stock" value={stats.low_stock_items} highlight={stats.low_stock_items > 0} />
-        <StatBox label="Chiffre d'affaires du jour" value={`${stats.revenue_today.toLocaleString('fr-FR')} FCFA`} />
+        {/* CORRIGE (demande explicite de M. Faustin: "la grille du tableau de
+            bord de la pharmacie doit etre cliquable, pas juste figee") -
+            chaque rectangle mene directement a ce qu'il compte. */}
+        <StatBox label="Commandes en attente" value={stats.pending_orders} highlight={stats.pending_orders > 0}
+          hint="Voir les commandes" onClick={onNavigate && (() => onNavigate('pending_orders'))} />
+        <StatBox label="Livraisons en cours" value={stats.deliveries_in_progress}
+          hint="Voir les livraisons" onClick={onNavigate && (() => onNavigate('deliveries'))} />
+        <StatBox label="Alertes de stock" value={stats.low_stock_items} highlight={stats.low_stock_items > 0}
+          hint="Voir les produits concernés" onClick={onNavigate && (() => onNavigate('stock_alerts'))} />
+        <StatBox label="Chiffre d'affaires du jour" value={`${stats.revenue_today.toLocaleString('fr-FR')} FCFA`}
+          hint="Voir les rapports" onClick={onNavigate && (() => onNavigate('revenue'))} />
       </div>
 
       <p className="text-sm font-medium text-forest-900 mb-3">Commandes en cours de traitement</p>
@@ -78,11 +85,24 @@ export default function PharmacyDashboard({ onSelectOrder }) {
   )
 }
 
-function StatBox({ label, value, highlight }) {
-  return (
-    <div className={`rounded-xl border p-5 ${highlight ? 'border-clay-500 bg-clay-500/5' : 'border-forest-100 bg-white'}`}>
+function StatBox({ label, value, highlight, hint, onClick }) {
+  const classes = `rounded-xl border p-5 text-left w-full ${highlight ? 'border-clay-500 bg-clay-500/5' : 'border-forest-100 bg-white'}`
+  const content = (
+    <>
       <p className="text-sm text-forest-700 mb-1">{label}</p>
       <p className={`font-display text-3xl font-semibold ${highlight ? 'text-clay-600' : 'text-forest-900'}`}>{value}</p>
-    </div>
+      {onClick && (
+        <p className="text-xs text-forest-700 mt-3 flex items-center gap-1">
+          {hint} <span aria-hidden="true">&rsaquo;</span>
+        </p>
+      )}
+    </>
+  )
+  if (!onClick) return <div className={classes}>{content}</div>
+  return (
+    <button type="button" onClick={onClick} aria-label={`${label} : ${hint}`}
+      className={`${classes} cursor-pointer transition hover:shadow-md hover:border-forest-300 focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--portal-accent)]`}>
+      {content}
+    </button>
   )
 }

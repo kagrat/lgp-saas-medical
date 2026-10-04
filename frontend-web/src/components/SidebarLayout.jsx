@@ -99,8 +99,8 @@ export default function SidebarLayout({
                 fond fonce proche des couleurs du logo lui-meme (vert
                 fonce du texte "Speed" sur un fond teal), ce qui nuirait
                 a la lisibilite sans ce fond neutre. */}
-            <div className="bg-white rounded-lg px-2.5 py-1.5 inline-block mb-1">
-              <img src={logo} alt="SpeedSanté+" className="h-6 w-auto" />
+            <div className="bg-white rounded-lg px-3 py-2 inline-block mb-1">
+              <img src={logo} alt="SpeedSanté+" className="h-7 w-auto" />
             </div>
             {portalLabel && <p className="text-xs text-white/70 uppercase tracking-wide">{portalLabel}</p>}
           </div>

@@ -29,6 +29,8 @@ export default function DesktopPharmacistDashboard() {
   const [updatingOrderId, setUpdatingOrderId] = useState(null)
   const [orderUpdateForm, setOrderUpdateForm] = useState({})
   const [expandedOrderId, setExpandedOrderId] = useState(null)
+  // Sous-onglet d'Inventaire a ouvrir (utilise par les rectangles du tableau de bord).
+  const [inventoryEntry, setInventoryEntry] = useState('produits')
   const [orderHistory, setOrderHistory] = useState({})
 
   useEffect(() => {
@@ -95,6 +97,22 @@ export default function DesktopPharmacistDashboard() {
   // tableau de bord, cliquer sur une commande doit directement l'ouvrir,
   // prete a traiter, dans l'onglet Commandes). "all" garantit que la
   // commande reste visible peu importe son statut actuel.
+  // NOUVEAU (demande explicite de M. Faustin: la grille du tableau de bord
+  // doit etre cliquable) - chaque rectangle mene a ce qu'il compte.
+  function navigateFromDashboard(target) {
+    setError('')
+    if (target === 'pending_orders' || target === 'deliveries') {
+      setOrderFilter(target === 'pending_orders' ? 'pending' : 'out_for_delivery')
+      setExpandedOrderId(null)
+      setTab('orders')
+    } else if (target === 'stock_alerts') {
+      setInventoryEntry('consultation')
+      setTab('inventory')
+    } else if (target === 'revenue') {
+      setTab('reports')
+    }
+  }
+
   function openOrderFromDashboard(orderId) {
     setTab('orders')
     setOrderFilter('all')
@@ -172,7 +190,7 @@ export default function DesktopPharmacistDashboard() {
       subtitle="Ton espace pharmacien."
       tabs={tabs}
       activeTab={tab}
-      onTabChange={(id) => { setTab(id); setError('') }}
+      onTabChange={(id) => { setTab(id); setError(''); setInventoryEntry('produits') }}
       accentColor="bg-success-700"
       headerRight={<div className="flex items-center gap-4"><NotificationBell /><UserProfileBadge /></div>}
     >
@@ -180,9 +198,9 @@ export default function DesktopPharmacistDashboard() {
 
       {tab === 'stats' && <PharmacyStatsCards />}
 
-      {tab === 'dashboard' && <PharmacyDashboard onSelectOrder={openOrderFromDashboard} />}
+      {tab === 'dashboard' && <PharmacyDashboard onSelectOrder={openOrderFromDashboard} onNavigate={navigateFromDashboard} />}
 
-      {tab === 'inventory' && <InventoryManager />}
+      {tab === 'inventory' && <InventoryManager initialSubTab={inventoryEntry} />}
 
       {tab === 'reports' && <PharmacyReportsManager />}
 

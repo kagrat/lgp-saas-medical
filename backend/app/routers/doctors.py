@@ -23,7 +23,7 @@ from app.schemas import (
     ClinicalFlagCreate, ClinicalFlagOut,
 )
 from app.deps import require_roles, get_current_user, get_current_user_optional
-from app.routers.messages import _resolve_thread_doctor_id
+from app.routers.messages import doctor_has_patient_relationship
 from app.routers.notifications import create_dossier_share_notification
 from app.security import hash_password
 from app.routers.health_records import _to_document_out
@@ -578,13 +578,13 @@ def my_patient_detail(patient_id: str, db: Session = Depends(get_db),
         .all()
     )
 
-    # Le fil de discussion appartient au medecin du rendez-vous le plus
-    # recent de ce patient dans l'etablissement (voir messages.py): on
-    # reprend EXACTEMENT cette regle pour ne jamais proposer un envoi qui
-    # serait refuse par le serveur.
+    # Un medecin ecrit a un patient qui a (ou a eu) un rendez-vous AVEC LUI
+    # (voir messages.py): on reprend EXACTEMENT cette regle pour ne jamais
+    # proposer un envoi qui serait refuse par le serveur. Sa conversation
+    # reste privee entre lui et le patient, quel que soit le nombre d'autres
+    # medecins qui ont traite ce patient.
     if current_user.role == UserRole.DOCTOR:
-        thread_doctor_id = _resolve_thread_doctor_id(db, patient_id, doctor.establishment_id)
-        can_message = thread_doctor_id is not None and thread_doctor_id == doctor.id
+        can_message = doctor_has_patient_relationship(db, doctor.id, patient_id)
 
     return DoctorPatientDetailOut(
         id=patient.id, full_name=patient.user.full_name, dossier_number=patient.dossier_number,

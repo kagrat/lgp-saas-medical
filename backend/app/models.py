@@ -858,6 +858,16 @@ class Message(Base):
     # donc systematiquement (TypeError), pour absolument tout le monde,
     # depuis toujours.
     doctor_id = Column(UUID(as_uuid=False), ForeignKey("doctors.id"), nullable=True)
+    # NOUVEAU (decision explicite de M. Faustin: "chaque message ou
+    # conversation reste entre les deux personnes qui conversent et
+    # personne d'autre"). Une conversation = (patient, etablissement,
+    # staff_user_id): le membre du personnel qui converse avec le patient.
+    # NULL = "guichet" d'une pharmacie ou d'un laboratoire (conversation
+    # avec l'etablissement lui-meme, pas avec une personne precise).
+    # AVANT: aucune identite individuelle n'etait enregistree - impossible
+    # de cloisonner correctement; l'acces se decidait par role, et l'admin
+    # ou le personnel pouvaient lire les conversations des medecins.
+    staff_user_id = Column(UUID(as_uuid=False), ForeignKey("users.id"), nullable=True, index=True)
     sender_role = Column(Enum(MessageSenderRole), nullable=False)
     sender_name = Column(String(200), nullable=False)
     content = Column(Text, nullable=False)

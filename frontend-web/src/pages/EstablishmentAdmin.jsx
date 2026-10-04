@@ -52,6 +52,8 @@ export default function EstablishmentAdmin() {
   const [expandedDoctorId, setExpandedDoctorId] = useState(null)
   const [updatingOrderId, setUpdatingOrderId] = useState(null)
   const [expandedOrderId, setExpandedOrderId] = useState(null)
+  // Sous-onglet d'Inventaire a ouvrir (utilise par les rectangles du tableau de bord pharmacie).
+  const [inventoryEntry, setInventoryEntry] = useState('produits')
   const [orderHistory, setOrderHistory] = useState({})
   const [orderUpdateForm, setOrderUpdateForm] = useState({})
   const [completingId, setCompletingId] = useState(null)
@@ -140,6 +142,23 @@ export default function EstablishmentAdmin() {
   // NOUVEAU (demande explicite de M. Faustin: depuis le raccourci du
   // tableau de bord, cliquer sur une commande doit directement l'ouvrir,
   // prete a traiter, dans l'onglet Commandes/Inventaire correspondant).
+  // NOUVEAU (demande explicite de M. Faustin: la grille du tableau de bord
+  // de la pharmacie doit etre cliquable) - chaque rectangle mene a ce
+  // qu'il compte.
+  function navigateFromDashboard(target) {
+    setError('')
+    if (target === 'pending_orders' || target === 'deliveries') {
+      setOrderFilter(target === 'pending_orders' ? 'pending' : 'out_for_delivery')
+      setExpandedOrderId(null)
+      setTab('orders')
+    } else if (target === 'stock_alerts') {
+      setInventoryEntry('consultation')
+      setTab('pharmacy')
+    } else if (target === 'revenue') {
+      setTab('reports')
+    }
+  }
+
   function openOrderFromDashboard(orderId) {
     setTab('orders')
     setOrderFilter('all')
@@ -535,7 +554,7 @@ export default function EstablishmentAdmin() {
       subtitle={isLab ? 'Gestion des demandes d\'analyses.' : isPharmacy ? 'Gestion de l\'inventaire et des commandes de ta pharmacie.' : 'Gestion des medecins, rendez-vous et pharmacie de ton etablissement.'}
       tabs={tabs}
       activeTab={tab}
-      onTabChange={(id) => { setTab(id); setError('') }}
+      onTabChange={(id) => { setTab(id); setError(''); setInventoryEntry('produits') }}
       accentColor={isLab ? 'bg-secondary-900' : isPharmacy ? 'bg-success-700' : 'bg-primary-500'}
       headerRight={<div className="flex items-center gap-4"><NotificationBell /><UserProfileBadge /></div>}
     >
@@ -872,11 +891,11 @@ export default function EstablishmentAdmin() {
         </div>
       )}
 
-      {tab === 'dashboard' && isPharmacy && <PharmacyDashboard onSelectOrder={openOrderFromDashboard} />}
+      {tab === 'dashboard' && isPharmacy && <PharmacyDashboard onSelectOrder={openOrderFromDashboard} onNavigate={navigateFromDashboard} />}
 
       {tab === 'hospitalizations' && !isLab && !isPharmacy && <Hospitalizations />}
 
-      {tab === 'pharmacy' && !isLab && <InventoryManager />}
+      {tab === 'pharmacy' && !isLab && <InventoryManager initialSubTab={inventoryEntry} />}
 
       {tab === 'orders' && !isLab && (
         <div>
@@ -1086,6 +1105,13 @@ export default function EstablishmentAdmin() {
 
       {tab === 'messages' && (
         <div>
+          {/* Regle de confidentialite (decision de M. Faustin). Pharmacie/labo:
+              le "guichet" est la conversation avec l'etablissement lui-meme. */}
+          <p className="text-xs text-forest-700 mb-3">
+            {(isPharmacy || isLab)
+              ? "Ces conversations sont celles de ton établissement avec ses patients : seul le personnel de cet établissement peut les lire."
+              : "Tes conversations avec les patients sont privées : seuls toi et le patient peuvent les lire. Les conversations entre un patient et un médecin ne te sont pas accessibles."}
+          </p>
           {conversations.length === 0 ? (
             <p className="text-forest-700">Aucune conversation pour le moment.</p>
           ) : (

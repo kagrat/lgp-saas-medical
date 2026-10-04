@@ -85,8 +85,8 @@ export default function DesktopLogin() {
         <div className="flex items-center justify-center mb-8">
           {/* NOUVEAU (demande explicite de M. Faustin: "voici le logo de
               speedsante+ que tu vas utiliser dans le systeme"). */}
-          <div className="bg-white rounded-xl px-4 py-2.5 inline-block">
-            <img src={logo} alt="SpeedSanté+" className="h-9 w-auto" />
+          <div className="bg-white rounded-xl px-5 py-3 inline-block">
+            <img src={logo} alt="SpeedSanté+" className="h-11 w-auto" />
           </div>
         </div>
         <div className="bg-white rounded-2xl p-8">

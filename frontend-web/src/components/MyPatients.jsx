@@ -563,7 +563,7 @@ export default function MyPatients() {
                     <p className="text-sm text-forest-700">
                       {detail.transferred_to
                         ? `Ce patient a été transféré à ${detail.transferred_to} : c'est lui qui poursuit la conversation.`
-                        : "La conversation avec ce patient est actuellement suivie par un autre médecin."}
+                        : "Tu n'as pas de rendez-vous avec ce patient : tu ne peux lui écrire que s'il a (ou a eu) un rendez-vous avec toi."}
                     </p>
                   </div>
                 )}

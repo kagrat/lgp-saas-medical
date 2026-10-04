@@ -567,7 +567,7 @@ export default function DesktopDoctorDashboard() {
                                 <p className="text-sm text-forest-700">
                                   {dossierDetail.transferred_to
                                     ? `Ce patient a été transféré à ${dossierDetail.transferred_to} : c'est lui qui poursuit la conversation.`
-                                    : "La conversation avec ce patient est actuellement suivie par un autre médecin."}
+                                    : "Tu n'as pas de rendez-vous avec ce patient : tu ne peux lui écrire que s'il a (ou a eu) un rendez-vous avec toi."}
                                 </p>
                               </div>
                             )}
@@ -753,7 +753,12 @@ export default function DesktopDoctorDashboard() {
               onStart={(p) => { setSelectedPatientId(p.patient_id); setSelectedPatientName(p.full_name) }}
             />
           </div>
-          {conversations.length === 0 && !selectedConversation ? (
+          {/* Regle de confidentialite (decision de M. Faustin): chaque conversation
+          reste entre les deux personnes qui conversent. */}
+      <p className="text-xs text-forest-700 mb-3">
+        Tes conversations avec les patients sont privées : seuls toi et le patient peuvent les lire.
+      </p>
+      {conversations.length === 0 && !selectedConversation ? (
             <p className="text-forest-700">Aucune conversation pour le moment.</p>
           ) : (
             <div className="grid sm:grid-cols-3 gap-4">

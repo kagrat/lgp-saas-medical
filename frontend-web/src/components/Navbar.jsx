@@ -20,7 +20,7 @@ export default function Navbar() {
     <header className="border-b border-forest-100 bg-paper/95 backdrop-blur sticky top-0 z-10">
       <div className="max-w-6xl mx-auto flex items-center justify-between px-6 py-4">
         <Link to="/" className="flex items-center">
-          <img src={logo} alt="SpeedSanté+" className="h-8 w-auto" />
+          <img src={logo} alt="SpeedSanté+" className="h-9 w-auto" />
         </Link>
         <nav className="flex items-center gap-6 text-sm font-medium text-forest-700">
           {!isStaffRole && (

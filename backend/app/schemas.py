@@ -1168,6 +1168,11 @@ class ConversationSummaryOut(BaseModel):
     patient_name: str
     last_message: Optional[str] = None
     last_message_at: Optional[datetime] = None
+    # NOUVEAU: avec QUI le patient converse dans cet etablissement (un
+    # medecin, un autre membre du personnel, ou None = guichet d'une
+    # pharmacie/laboratoire). Cote patient, une entree par interlocuteur.
+    counterparty_user_id: Optional[str] = None
+    counterparty_name: Optional[str] = None
 
 
 class InternalMessageCreate(BaseModel):

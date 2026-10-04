@@ -66,8 +66,8 @@ export function PatientSidebarChrome({ children }) {
           <div>
             {/* NOUVEAU (demande explicite de M. Faustin: "voici le logo
                 de speedsante+ que tu vas utiliser dans le systeme"). */}
-            <div className="bg-white rounded-lg px-2.5 py-1.5 inline-block mb-1">
-              <img src={logo} alt="SpeedSanté+" className="h-6 w-auto" />
+            <div className="bg-white rounded-lg px-3 py-2 inline-block mb-1">
+              <img src={logo} alt="SpeedSanté+" className="h-7 w-auto" />
             </div>
             <p className="text-xs text-white/70 uppercase tracking-wide">Portail Patient</p>
           </div>

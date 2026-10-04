@@ -31,8 +31,8 @@ const BATCH_STATUS_COLORS = {
  * 3. Consulter le stock (lots), avec un etat calcule automatiquement
  *    (jamais saisi a la main, pour rester toujours exact)
  */
-export default function InventoryManager() {
-  const [subTab, setSubTab] = useState('produits')
+export default function InventoryManager({ initialSubTab = 'produits' }) {
+  const [subTab, setSubTab] = useState(initialSubTab)
   const [products, setProducts] = useState([])
   const [batches, setBatches] = useState(null)
   const [consultationSearch, setConsultationSearch] = useState('')
@@ -269,6 +269,30 @@ export default function InventoryManager() {
         <div>
           {/* NOUVEAU (demande explicite de M. Faustin: barre de
               recherche de produits pour la consultation du stock). */}
+          {/* NOUVEAU (demande explicite de M. Faustin: le rectangle "Alertes de
+              stock" du tableau de bord doit etre cliquable). Meme condition
+              que le chiffre du tableau de bord (quantite <= seuil d'alerte,
+              cote serveur: low_stock_items) - le chiffre annonce et la liste
+              affichee ici sont donc toujours identiques. */}
+          {products.filter((p) => p.quantity <= p.alert_threshold).length > 0 && (
+            <div className="rounded-xl border border-clay-500 bg-clay-500/5 p-4 mb-4">
+              <p className="text-sm font-medium text-clay-600 mb-2">
+                Alertes de stock ({products.filter((p) => p.quantity <= p.alert_threshold).length})
+              </p>
+              <div className="max-h-56 overflow-y-auto space-y-1">
+                {products.filter((p) => p.quantity <= p.alert_threshold).map((p) => (
+                  <div key={p.id} className="flex items-center justify-between gap-3 bg-white rounded-lg px-3 py-1.5 text-sm">
+                    <span className="text-forest-900">
+                      {p.medication_name} <span className="text-xs text-forest-700">({p.reference})</span>
+                    </span>
+                    <span className="text-clay-600 font-medium shrink-0">
+                      Stock : {p.quantity} / seuil {p.alert_threshold}
+                    </span>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
           <input
             type="text"
             placeholder="Rechercher un produit..."
