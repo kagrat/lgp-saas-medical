@@ -766,6 +766,35 @@ class PatientRecordShare(Base):
     to_doctor = relationship("Doctor", foreign_keys=[to_doctor_id])
 
 
+class AppointmentTransferLog(Base):
+    """
+    NOUVEAU (demande explicite de M. Faustin: apres un transfert, le
+    rendez-vous disparait de la liste du medecin emetteur, MAIS "il doit y
+    avoir une trace dans les dossiers du medecin" - le patient reste
+    affiche dans sa liste de patients - et le medecin receveur doit pouvoir
+    engager une discussion par message avec ce patient).
+    Avant: un transfert ne faisait que changer appointment.doctor_id, sans
+    laisser aucune trace exploitable (seulement une ligne de journal
+    d'audit non interrogeable par medecin). Ce journal est conserve
+    definitivement: il alimente la liste "Mes patients" des DEUX medecins
+    et l'acces en lecture au dossier.
+    """
+    __tablename__ = "appointment_transfers"
+
+    id = Column(UUID(as_uuid=False), primary_key=True, default=gen_uuid)
+    appointment_id = Column(UUID(as_uuid=False), ForeignKey("appointments.id"), nullable=False)
+    patient_id = Column(UUID(as_uuid=False), ForeignKey("patients.id"), nullable=False, index=True)
+    establishment_id = Column(UUID(as_uuid=False), ForeignKey("establishments.id"), nullable=False)
+    from_doctor_id = Column(UUID(as_uuid=False), ForeignKey("doctors.id"), nullable=False, index=True)
+    to_doctor_id = Column(UUID(as_uuid=False), ForeignKey("doctors.id"), nullable=False, index=True)
+    transferred_by_user_id = Column(UUID(as_uuid=False), ForeignKey("users.id"), nullable=False)
+    created_at = Column(DateTime, default=datetime.utcnow)
+
+    patient = relationship("Patient")
+    from_doctor = relationship("Doctor", foreign_keys=[from_doctor_id])
+    to_doctor = relationship("Doctor", foreign_keys=[to_doctor_id])
+
+
 class LabTestStatus(str, enum.Enum):
     REQUESTED = "requested"
     SAMPLE_COLLECTED = "sample_collected"

@@ -561,7 +561,17 @@ export default function DesktopDoctorDashboard() {
                                 </div>
                               </div>
                             )}
-                            {dossierTab === 'messages' && (
+                            {dossierTab === 'messages' && !dossierDetail.can_message && (
+                              <div className="rounded-xl border border-forest-100 bg-forest-50 p-4">
+                                <p className="text-sm text-forest-900 font-medium mb-1">Tu ne peux pas écrire à ce patient depuis cette fiche.</p>
+                                <p className="text-sm text-forest-700">
+                                  {dossierDetail.transferred_to
+                                    ? `Ce patient a été transféré à ${dossierDetail.transferred_to} : c'est lui qui poursuit la conversation.`
+                                    : "La conversation avec ce patient est actuellement suivie par un autre médecin."}
+                                </p>
+                              </div>
+                            )}
+                            {dossierTab === 'messages' && dossierDetail.can_message && (
                               <div>
                                 {dossierConversation === null ? (
                                   <p className="text-sm text-forest-700">Chargement...</p>

@@ -1005,6 +1005,12 @@ class DoctorPatientOut(BaseModel):
     dossier_number: str
     last_visit: Optional[datetime] = None
     visits_count: int
+    # NOUVEAU (demande explicite de M. Faustin: trace d'un transfert).
+    # "transferred_out" = j'ai transfere ce patient, "transferred_in" = on
+    # me l'a transfere. transfer_counterpart = nom de l'autre medecin.
+    transfer_status: Optional[str] = None
+    transfer_counterpart: Optional[str] = None
+    transferred_at: Optional[datetime] = None
 
 
 class DoctorPatientAppointmentOut(BaseModel):
@@ -1050,6 +1056,16 @@ class DoctorPatientDetailOut(BaseModel):
     # cours chez un medecin") - information, pas un blocage: signale si
     # un medecin est actuellement EN CONSULTATION avec ce patient.
     currently_with_doctor: Optional[str] = None
+    # NOUVEAU (transfert de rendez-vous entre medecins): noms des medecins
+    # impliques dans le dernier transfert de ce patient concernant le
+    # medecin connecte, et possibilite reelle d'ecrire a ce patient. Le
+    # fil de discussion appartient au medecin du rendez-vous le plus
+    # recent: apres un transfert, c'est le medecin receveur qui peut
+    # ecrire, pas l'emetteur - can_message evite a l'interface de proposer
+    # un envoi voue a l'echec.
+    transferred_to: Optional[str] = None
+    transferred_from: Optional[str] = None
+    can_message: bool = True
 
 
 class PatientRecordShareCreate(BaseModel):

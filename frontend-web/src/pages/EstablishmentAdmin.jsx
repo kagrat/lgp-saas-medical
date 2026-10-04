@@ -62,6 +62,16 @@ export default function EstablishmentAdmin() {
   const [rescheduleSlots, setRescheduleSlots] = useState(null)
   const [loadingRescheduleSlots, setLoadingRescheduleSlots] = useState(false)
   const [expandedAppointmentId, setExpandedAppointmentId] = useState(null)
+  // CORRIGE (meme fonctionnalite deja construite cote medecin, jamais
+  // portee ici - un patient teste via un compte Admin d'etablissement ne
+  // voyait donc que l'ancien formulaire simple, jamais les onglets
+  // riches. Meme mecanisme exact que DesktopDoctorDashboard.jsx).
+  const [dossierPatientId, setDossierPatientId] = useState(null)
+  const [dossierDetail, setDossierDetail] = useState(null)
+  const [dossierTab, setDossierTab] = useState('consultation')
+  const [dossierConversation, setDossierConversation] = useState(null)
+  const [dossierConversationContent, setDossierConversationContent] = useState('')
+  const [dossierSendingMessage, setDossierSendingMessage] = useState(false)
   const [docForm, setDocForm] = useState({ document_type: 'consultation_note', title: '', content: '' })
   const [savingDoc, setSavingDoc] = useState(false)
   const [docMessage, setDocMessage] = useState('')
@@ -308,10 +318,17 @@ export default function EstablishmentAdmin() {
     }
   }
 
-  async function toggleAppointmentExpand(appointmentId) {
-    setExpandedAppointmentId(expandedAppointmentId === appointmentId ? null : appointmentId)
+  async function toggleAppointmentExpand(appointment) {
+    const opening = expandedAppointmentId !== appointment.id
+    setExpandedAppointmentId(opening ? appointment.id : null)
     setDocMessage('')
     setDocForm({ document_type: 'consultation_note', title: '', content: '' })
+    if (opening && appointment.status === 'completed') {
+      openFullDossier(appointment.patient_id, true)
+    } else {
+      setDossierPatientId(null)
+      setDossierDetail(null)
+    }
   }
 
   async function submitDocument(appointmentId) {
@@ -331,6 +348,48 @@ export default function EstablishmentAdmin() {
       setError(getErrorMessage(err, "Impossible d'ajouter ce document au dossier."))
     } finally {
       setSavingDoc(false)
+    }
+  }
+
+  async function openFullDossier(patientId, forceOpen) {
+    if (!forceOpen && dossierPatientId === patientId) {
+      setDossierPatientId(null)
+      setDossierDetail(null)
+      return
+    }
+    setDossierPatientId(patientId)
+    setDossierDetail(null)
+    setDossierTab('consultation')
+    setDossierConversation(null)
+    try {
+      const { data } = await api.get(`/doctors/me/patients/${patientId}`)
+      setDossierDetail(data)
+    } catch (err) {
+      setError(getErrorMessage(err, 'Impossible de charger le dossier complet.'))
+    }
+  }
+
+  async function loadDossierConversation() {
+    try {
+      const { data } = await api.get(`/messages/establishment/conversation/${dossierPatientId}`)
+      setDossierConversation(data)
+    } catch (err) {
+      setDossierConversation([])
+    }
+  }
+
+  async function sendDossierMessage(e) {
+    e.preventDefault()
+    if (!dossierConversationContent.trim()) return
+    setDossierSendingMessage(true)
+    try {
+      await api.post(`/messages/establishment/conversation/${dossierPatientId}`, { content: dossierConversationContent })
+      setDossierConversationContent('')
+      await loadDossierConversation()
+    } catch (err) {
+      setError(getErrorMessage(err, "Impossible d'envoyer ce message."))
+    } finally {
+      setDossierSendingMessage(false)
     }
   }
 
@@ -589,7 +648,7 @@ export default function EstablishmentAdmin() {
                   <span className="text-sm text-forest-700">{a.doctor_name || '—'}</span>
                   <AppointmentStatusBadge status={a.status} />
                   <button
-                    onClick={() => toggleAppointmentExpand(a.id)}
+                    onClick={() => toggleAppointmentExpand(a)}
                     className="text-sm rounded-full bg-[var(--portal-accent)] text-white px-5 py-1.5 hover:brightness-90 transition justify-self-start sm:justify-self-end"
                   >
                     {expandedAppointmentId === a.id ? 'Fermer' : 'Ouvrir'}
@@ -666,6 +725,105 @@ export default function EstablishmentAdmin() {
                               ))}
                             </div>
                           )
+                        )}
+                      </div>
+                    )}
+
+                    {dossierPatientId === a.patient_id && (
+                      <div className="mt-3 rounded-xl border border-forest-300 bg-white overflow-hidden">
+                        {dossierDetail === null ? (
+                          <p className="text-sm text-forest-700 p-5">Chargement...</p>
+                        ) : (
+                          <div>
+                            <div className="flex gap-1 px-5 border-b border-forest-100">
+                              {[
+                                { id: 'consultation', label: 'Consultation' },
+                                { id: 'historique', label: 'Historique' },
+                                { id: 'documents', label: 'Documents' },
+                                { id: 'messages', label: 'Messages' },
+                              ].map((t) => (
+                                <button
+                                  key={t.id}
+                                  onClick={() => { setDossierTab(t.id); if (t.id === 'messages' && dossierConversation === null) loadDossierConversation() }}
+                                  className={`px-4 py-3 text-sm font-medium border-b-2 -mb-px transition ${dossierTab === t.id ? 'border-secondary-500 text-forest-900' : 'border-transparent text-forest-700 hover:text-forest-900'}`}
+                                >
+                                  {t.label}
+                                </button>
+                              ))}
+                            </div>
+                            <div className="p-5">
+                              {dossierTab === 'consultation' && (
+                                <div>
+                                  <p className="text-sm font-medium text-forest-900 mb-2">Éléments cliniques</p>
+                                  {dossierDetail.clinical_flags.length === 0 ? (
+                                    <p className="text-sm text-forest-700 mb-4">Aucun élément clinique renseigné.</p>
+                                  ) : (
+                                    <div className="flex flex-wrap gap-2 mb-4">
+                                      {dossierDetail.clinical_flags.map((f) => (
+                                        <span key={f.id} className="text-xs px-3 py-1 rounded-full bg-forest-50 text-forest-900">{f.label}</span>
+                                      ))}
+                                    </div>
+                                  )}
+                                  <p className="text-xs text-forest-500">Pour ajouter une note ou une ordonnance, utilise "Ajouter au dossier" ci-dessous.</p>
+                                </div>
+                              )}
+                              {dossierTab === 'historique' && (
+                                <div>
+                                  <p className="text-sm font-medium text-forest-900 mb-2">Consultations passées</p>
+                                  {dossierDetail.appointments.length === 0 && <p className="text-sm text-forest-700">Aucune consultation enregistrée.</p>}
+                                  <div className="space-y-2">
+                                    {dossierDetail.appointments.map((ap) => (
+                                      <div key={ap.id} className="bg-forest-50 rounded-lg p-3 text-sm text-forest-900">
+                                        {new Date(ap.scheduled_at).toLocaleString('fr-FR')}
+                                      </div>
+                                    ))}
+                                  </div>
+                                </div>
+                              )}
+                              {dossierTab === 'documents' && (
+                                <div>
+                                  <p className="text-sm font-medium text-forest-900 mb-2">Documents du dossier</p>
+                                  {dossierDetail.documents.length === 0 && <p className="text-sm text-forest-700">Aucun document pour le moment.</p>}
+                                  <div className="space-y-2">
+                                    {dossierDetail.documents.map((d) => (
+                                      <div key={d.id} className="bg-forest-50 rounded-lg p-3">
+                                        <p className="text-sm font-medium text-forest-900">{d.title}</p>
+                                        <p className="text-xs text-forest-700 mb-1">{new Date(d.created_at).toLocaleDateString('fr-FR')}</p>
+                                        <p className="text-sm text-forest-700 whitespace-pre-wrap">{d.content}</p>
+                                      </div>
+                                    ))}
+                                  </div>
+                                </div>
+                              )}
+                              {dossierTab === 'messages' && (
+                                <div>
+                                  {dossierConversation === null ? (
+                                    <p className="text-sm text-forest-700">Chargement...</p>
+                                  ) : (
+                                    <div className="rounded-xl border border-forest-100 bg-white flex flex-col h-[320px]">
+                                      <div className="flex-1 overflow-y-auto p-4 space-y-2">
+                                        {dossierConversation.length === 0 && <p className="text-sm text-forest-700">Aucun message pour le moment.</p>}
+                                        {dossierConversation.map((m) => (
+                                          <div key={m.id} className={`max-w-[75%] rounded-2xl px-3 py-2 text-sm ${m.sender_role === 'patient' ? 'bg-forest-50 text-forest-900' : 'bg-[var(--portal-accent)] text-white ml-auto'}`}>
+                                            {m.content}
+                                          </div>
+                                        ))}
+                                      </div>
+                                      <form onSubmit={sendDossierMessage} className="p-3 border-t border-forest-100 flex gap-2">
+                                        <input value={dossierConversationContent} onChange={(e) => setDossierConversationContent(e.target.value)}
+                                          placeholder="Écrire au patient..."
+                                          className="flex-1 rounded-full border border-forest-100 px-4 py-2 text-sm" />
+                                        <button type="submit" disabled={dossierSendingMessage || !dossierConversationContent.trim()}
+                                          className="rounded-full bg-[var(--portal-accent)] text-white px-5 py-2 text-sm font-medium hover:brightness-90 transition disabled:opacity-50">
+                                          Envoyer
+                                        </button>
+                                      </form>
+                                    </div>
+                                  )}
+                                </div>
+                              )}
+                            </div>
+                          </div>
                         )}
                       </div>
                     )}

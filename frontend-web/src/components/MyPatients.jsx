@@ -346,6 +346,16 @@ export default function MyPatients() {
                         Dossier consulte en lecture seule - partage par {detail.viewed_via_share_from}
                       </p>
                     )}
+                    {detail.transferred_to && (
+                      <p className="text-xs text-amber-600 font-medium mt-1">
+                        Patient transféré à {detail.transferred_to} - tu gardes la trace de ce dossier en lecture seule.
+                      </p>
+                    )}
+                    {detail.transferred_from && (
+                      <p className="text-xs text-primary-700 font-medium mt-1">
+                        Patient transféré par {detail.transferred_from} - tu hérites de son historique en lecture seule.
+                      </p>
+                    )}
                   </div>
                 </div>
                 <button onClick={closePatient} className="text-sm text-forest-700 hover:text-forest-900 hover:underline">Fermer</button>
@@ -547,7 +557,18 @@ export default function MyPatients() {
                   </div>
                 )}
 
-                {panelTab === 'messages' && (
+                {panelTab === 'messages' && !detail.can_message && (
+                  <div className="rounded-xl border border-forest-100 bg-forest-50 p-4">
+                    <p className="text-sm text-forest-900 font-medium mb-1">Tu ne peux pas écrire à ce patient depuis cette fiche.</p>
+                    <p className="text-sm text-forest-700">
+                      {detail.transferred_to
+                        ? `Ce patient a été transféré à ${detail.transferred_to} : c'est lui qui poursuit la conversation.`
+                        : "La conversation avec ce patient est actuellement suivie par un autre médecin."}
+                    </p>
+                  </div>
+                )}
+
+                {panelTab === 'messages' && detail.can_message && (
                   <div>
                     {conversationThread === null ? (
                       <p className="text-sm text-forest-700">Chargement...</p>
@@ -591,12 +612,34 @@ export default function MyPatients() {
             className="w-full text-left rounded-xl border border-forest-100 bg-white p-4 flex justify-between items-center hover:border-forest-300 transition"
           >
             <div>
-              <p className="text-forest-900 font-medium">{p.full_name}</p>
-              <p className="text-sm text-forest-700">Dossier {p.dossier_number} - {p.visits_count} consultation{p.visits_count > 1 ? 's' : ''}</p>
+              <div className="flex items-center gap-2 flex-wrap">
+                <p className="text-forest-900 font-medium">{p.full_name}</p>
+                {/* NOUVEAU (demande explicite de M. Faustin: apres un
+                    transfert, une trace dans la liste des patients du
+                    medecin emetteur - et le receveur retrouve le patient
+                    qu'on lui a transfere). */}
+                {p.transfer_status === 'transferred_out' && (
+                  <span className="text-xs px-2 py-0.5 rounded-full bg-amber-500/10 text-amber-600 font-medium">
+                    Transféré à {p.transfer_counterpart}
+                  </span>
+                )}
+                {p.transfer_status === 'transferred_in' && (
+                  <span className="text-xs px-2 py-0.5 rounded-full bg-primary-50 text-primary-700 font-medium">
+                    Reçu de {p.transfer_counterpart}
+                  </span>
+                )}
+              </div>
+              <p className="text-sm text-forest-700">
+                Dossier {p.dossier_number} - {p.visits_count === 0 ? 'aucune consultation terminée' : `${p.visits_count} consultation${p.visits_count > 1 ? 's' : ''}`}
+              </p>
             </div>
-            {p.last_visit && (
+            {p.last_visit ? (
               <p className="text-xs text-forest-700">Derniere visite: {new Date(p.last_visit).toLocaleDateString('fr-FR')}</p>
-            )}
+            ) : p.transferred_at ? (
+              <p className="text-xs text-forest-700">
+                {p.transfer_status === 'transferred_in' ? 'Reçu' : 'Transféré'} le {new Date(p.transferred_at).toLocaleDateString('fr-FR')}
+              </p>
+            ) : null}
           </button>
         ))}
       </div>

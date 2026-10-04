@@ -13,6 +13,7 @@ from app.database import get_db
 from app.models import (
     Doctor, User, UserRole, DoctorAvailability, DoctorAbsence, Establishment,
     DoctorReview, Patient, Appointment, AppointmentStatus, MedicalDocument, PatientRecordShare, ClinicalFlag,
+    AppointmentTransferLog,
 )
 from app.schemas import (
     DoctorCreate, DoctorOut, DoctorAvailabilityCreate, DoctorAbsenceCreate, DoctorAbsenceOut,
@@ -22,6 +23,7 @@ from app.schemas import (
     ClinicalFlagCreate, ClinicalFlagOut,
 )
 from app.deps import require_roles, get_current_user, get_current_user_optional
+from app.routers.messages import _resolve_thread_doctor_id
 from app.routers.notifications import create_dossier_share_notification
 from app.security import hash_password
 from app.routers.health_records import _to_document_out
@@ -388,20 +390,56 @@ def my_patients(search: Optional[str] = None, db: Session = Depends(get_db),
     for appt in completed:
         by_patient.setdefault(appt.patient_id, []).append(appt)
 
+    # NOUVEAU (demande explicite de M. Faustin: "meme si le dossier
+    # disparait des rendez-vous apres transfert, il doit y avoir une trace
+    # - afficher le patient dans la liste des patients du medecin qui a
+    # fait le transfert", et le medecin receveur doit pouvoir engager une
+    # discussion avec le patient qu'on lui a transfere). Avant, cette
+    # liste ne se construisait QUE depuis les rendez-vous TERMINES: ni
+    # l'emetteur (trace perdue) ni le receveur (patient pas encore
+    # consulte, donc introuvable par la recherche de conversation) ne
+    # voyaient le patient transfere. Le transfert le plus recent de chaque
+    # patient donne son etat pour CE medecin.
+    transfers = (
+        db.query(AppointmentTransferLog)
+        .filter((AppointmentTransferLog.from_doctor_id == doctor.id) | (AppointmentTransferLog.to_doctor_id == doctor.id))
+        .order_by(AppointmentTransferLog.created_at.desc())
+        .all()
+    )
+    latest_transfer_by_patient: dict[str, AppointmentTransferLog] = {}
+    for t in transfers:
+        latest_transfer_by_patient.setdefault(t.patient_id, t)
+
+    patient_ids = set(by_patient.keys()) | set(latest_transfer_by_patient.keys())
+
     results = []
-    for patient_id, appts in by_patient.items():
+    for patient_id in patient_ids:
         patient = db.query(Patient).filter(Patient.id == patient_id).first()
         if not patient:
             continue
         if search and search.strip() and search.strip().lower() not in patient.user.full_name.lower():
             continue
-        last_visit = max(a.scheduled_at for a in appts)
+        appts = by_patient.get(patient_id, [])
+        last_visit = max((a.scheduled_at for a in appts), default=None)
+
+        transfer = latest_transfer_by_patient.get(patient_id)
+        transfer_status = transfer_counterpart = transferred_at = None
+        if transfer:
+            transferred_at = transfer.created_at
+            if transfer.from_doctor_id == doctor.id:
+                transfer_status = "transferred_out"
+                transfer_counterpart = transfer.to_doctor.user.full_name
+            else:
+                transfer_status = "transferred_in"
+                transfer_counterpart = transfer.from_doctor.user.full_name
+
         results.append(DoctorPatientOut(
             id=patient.id, full_name=patient.user.full_name, dossier_number=patient.dossier_number,
             last_visit=last_visit, visits_count=len(appts),
+            transfer_status=transfer_status, transfer_counterpart=transfer_counterpart, transferred_at=transferred_at,
         ))
 
-    results.sort(key=lambda p: p.last_visit or datetime.min, reverse=True)
+    results.sort(key=lambda p: max(d for d in (p.last_visit, p.transferred_at, datetime.min) if d is not None), reverse=True)
     return results
 
 
@@ -421,6 +459,9 @@ def my_patient_detail(patient_id: str, db: Session = Depends(get_db),
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Patient introuvable")
 
     currently_with_doctor = None
+    transferred_to = None
+    transferred_from = None
+    can_message = True
 
     if current_user.role == UserRole.ESTABLISHMENT_ADMIN:
         # Tout patient ayant deja eu un rendez-vous DANS cet etablissement -
@@ -460,9 +501,41 @@ def my_patient_detail(patient_id: str, db: Session = Depends(get_db),
         )
 
         viewed_via_share_from = None
-        if own_appointments:
-            source_appointments = own_appointments
-            can_add_document = True
+
+        # NOUVEAU (demande explicite de M. Faustin): un patient TRANSFERE
+        # reste accessible aux deux medecins concernes. Le receveur herite
+        # de l'historique (rendez-vous termines) de l'emetteur, en lecture
+        # seule - "transferer le dossier" - et le garde meme apres avoir
+        # termine le rendez-vous transfere. L'emetteur garde la trace.
+        transfers = (
+            db.query(AppointmentTransferLog)
+            .filter(
+                AppointmentTransferLog.patient_id == patient_id,
+                (AppointmentTransferLog.from_doctor_id == doctor.id) | (AppointmentTransferLog.to_doctor_id == doctor.id),
+            )
+            .order_by(AppointmentTransferLog.created_at.desc())
+            .all()
+        )
+        inherited_from_ids = {t.from_doctor_id for t in transfers if t.to_doctor_id == doctor.id}
+        inherited_appointments = (
+            db.query(Appointment)
+            .filter(Appointment.doctor_id.in_(inherited_from_ids), Appointment.patient_id == patient_id,
+                    Appointment.status == AppointmentStatus.COMPLETED)
+            .all() if inherited_from_ids else []
+        )
+        if transfers:
+            latest = transfers[0]
+            if latest.from_doctor_id == doctor.id:
+                transferred_to = latest.to_doctor.user.full_name
+            else:
+                transferred_from = latest.from_doctor.user.full_name
+
+        if own_appointments or transfers:
+            source_appointments = sorted(
+                list(own_appointments) + list(inherited_appointments),
+                key=lambda a: a.scheduled_at, reverse=True,
+            )
+            can_add_document = bool(own_appointments)
         else:
             # Pas son propre patient: n'autorise la consultation que si un
             # confrere lui a explicitement partage ce dossier (lecture seule -
@@ -505,6 +578,14 @@ def my_patient_detail(patient_id: str, db: Session = Depends(get_db),
         .all()
     )
 
+    # Le fil de discussion appartient au medecin du rendez-vous le plus
+    # recent de ce patient dans l'etablissement (voir messages.py): on
+    # reprend EXACTEMENT cette regle pour ne jamais proposer un envoi qui
+    # serait refuse par le serveur.
+    if current_user.role == UserRole.DOCTOR:
+        thread_doctor_id = _resolve_thread_doctor_id(db, patient_id, doctor.establishment_id)
+        can_message = thread_doctor_id is not None and thread_doctor_id == doctor.id
+
     return DoctorPatientDetailOut(
         id=patient.id, full_name=patient.user.full_name, dossier_number=patient.dossier_number,
         phone=patient.user.phone, date_of_birth=patient.date_of_birth,
@@ -517,6 +598,9 @@ def my_patient_detail(patient_id: str, db: Session = Depends(get_db),
         can_add_document=can_add_document,
         viewed_via_share_from=viewed_via_share_from,
         currently_with_doctor=currently_with_doctor,
+        transferred_to=transferred_to,
+        transferred_from=transferred_from,
+        can_message=can_message,
     )
 
 

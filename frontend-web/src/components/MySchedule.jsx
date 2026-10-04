@@ -245,7 +245,8 @@ export default function MySchedule() {
             s'affichaient d'un coup (une programmation sur 1 mois pouvant
             en generer des dizaines), rendant la page interminable. */}
         {upcomingShifts.length > SHIFTS_COLLAPSED_LIMIT && (
-          <button onClick={() => setShiftsExpanded((v) => !v)} className="text-sm text-forest-700 font-medium hover:underline">
+          <button onClick={() => setShiftsExpanded((v) => !v)}
+            className="text-sm rounded-full border border-forest-300 text-forest-900 font-medium px-4 py-1.5 hover:bg-forest-50 transition">
             {shiftsExpanded ? 'Réduire' : `Voir toutes les gardes (${upcomingShifts.length})`}
           </button>
         )}

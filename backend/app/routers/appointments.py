@@ -13,7 +13,7 @@ from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
 
 from app.database import get_db
-from app.models import Appointment, Doctor, Patient, User, UserRole, AppointmentStatus, AuditLog, VitalSigns, Establishment, DoctorAvailability
+from app.models import Appointment, Doctor, Patient, User, UserRole, AppointmentStatus, AuditLog, VitalSigns, Establishment, DoctorAvailability, AppointmentTransferLog
 from app.schemas import (
     AppointmentCreate, AppointmentOut, AppointmentSearchRequest, AppointmentSearchResponse, AppointmentReschedule,
     VitalSignsCreate, VitalSignsOut, SuggestionSlot, AppointmentBookForPatient, AvailableSlotsResponse, AppointmentTransfer,
@@ -365,6 +365,15 @@ def transfer_appointment(appointment_id: str, payload: AppointmentTransfer, db: 
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Acces refuse")
     if appointment.status not in (AppointmentStatus.CONFIRMED, AppointmentStatus.ARRIVED):
         raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail="Ce rendez-vous ne peut plus etre transfere")
+    # CORRIGE (trouve en relisant ce code pour y ajouter la trace de
+    # transfert): n'importe quel medecin de l'etablissement pouvait
+    # transferer le rendez-vous D'UN AUTRE medecin - seul le controle
+    # d'etablissement existait. Un medecin ne transfere desormais que SES
+    # propres rendez-vous (admin/secretariat gardent la vue d'ensemble).
+    if current_user.role == UserRole.DOCTOR:
+        acting_doctor = db.query(Doctor).filter(Doctor.user_id == current_user.id).first()
+        if not acting_doctor or appointment.doctor_id != acting_doctor.id:
+            raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Tu ne peux transferer que tes propres rendez-vous")
 
     new_doctor = db.query(Doctor).filter(
         Doctor.id == payload.new_doctor_id, Doctor.establishment_id == current_user.establishment_id,
@@ -389,6 +398,13 @@ def transfer_appointment(appointment_id: str, payload: AppointmentTransfer, db: 
 
     old_doctor_id = appointment.doctor_id
     appointment.doctor_id = new_doctor.id
+    # NOUVEAU (demande explicite de M. Faustin): trace durable et
+    # interrogeable - alimente "Mes patients" des deux medecins.
+    db.add(AppointmentTransferLog(
+        id=str(uuid.uuid4()), appointment_id=appointment.id, patient_id=appointment.patient_id,
+        establishment_id=appointment.establishment_id, from_doctor_id=old_doctor_id,
+        to_doctor_id=new_doctor.id, transferred_by_user_id=current_user.id,
+    ))
     db.add(AuditLog(user_id=current_user.id, establishment_id=appointment.establishment_id,
                      action="transfer_appointment",
                      details=f"RDV {appointment.id} transfere du medecin {old_doctor_id} vers {new_doctor.id}"))
