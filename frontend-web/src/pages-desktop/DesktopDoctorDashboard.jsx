@@ -8,7 +8,6 @@ import StartConversation from '../components/StartConversation'
 import InternalMessaging from '../components/InternalMessaging'
 import AdmitPatientShortcut from '../components/AdmitPatientShortcut'
 import UserProfileBadge from '../components/UserProfileBadge'
-import QuickMessageBox from '../components/QuickMessageBox'
 import ExternalReferralForm from '../components/ExternalReferralForm'
 import MyPatients from '../components/MyPatients'
 import Hospitalizations from '../components/Hospitalizations'
@@ -284,7 +283,15 @@ export default function DesktopDoctorDashboard() {
       const { data } = await api.get(`/doctors/me/patients/${patientId}`)
       setDossierDetail(data)
     } catch (err) {
-      setError(getErrorMessage(err, 'Impossible de charger le dossier complet.'))
+      if (err.response && err.response.status === 403) {
+        // Premier rendez-vous avec ce patient: pas encore de dossier chez ce medecin.
+        // Ce n'est pas une erreur - les onglets s'ouvrent vides, l'onglet Consultation
+        // (constantes, note, orientation) reste pleinement utilisable.
+        setDossierDetail({ appointments: [], documents: [], clinical_flags: [], can_add_document: false,
+                           can_message: true, transferred_to: null, transferred_from: null })
+      } else {
+        setError(getErrorMessage(err, 'Impossible de charger le dossier complet.'))
+      }
     }
   }
 
@@ -388,7 +395,7 @@ export default function DesktopDoctorDashboard() {
                   onClick={() => {
                     const opening = expandedAppointmentId !== a.id
                     setExpandedAppointmentId(opening ? a.id : null)
-                    if (opening && a.status === 'completed') {
+                    if (opening) {
                       openFullDossier(a.patient_id, true)
                     } else {
                       setDossierPatientId(null)
@@ -410,197 +417,58 @@ export default function DesktopDoctorDashboard() {
                       logique. Regroupes maintenant par intention:
                       "Actions" (fait avancer le rendez-vous) puis
                       "Outils" (utilises pendant la consultation). */}
-                  <div>
-                    <p className="text-xs font-medium text-forest-700 uppercase tracking-wide mb-1.5">Actions</p>
-                    <div className="flex items-center gap-2 flex-wrap">
-                      {a.status === 'confirmed' && (
-                        <button
-                          onClick={() => markArrived(a.id)}
-                          disabled={arrivingId === a.id}
-                          className="text-sm rounded-full border border-forest-300 text-forest-900 px-4 py-1.5 hover:bg-forest-50 transition disabled:opacity-50"
-                        >
-                          {arrivingId === a.id ? '...' : 'Marquer arrivé'}
-                        </button>
-                      )}
-                      {(a.status === 'confirmed' || a.status === 'arrived') && (
-                        <button
-                          onClick={() => markCompleted(a.id)}
-                          disabled={completingId === a.id}
-                          className="text-sm rounded-full bg-[var(--portal-accent)] text-white px-4 py-1.5 hover:brightness-90 transition disabled:opacity-50"
-                        >
-                          {completingId === a.id ? 'Mise à jour...' : 'Marquer terminé'}
-                        </button>
-                      )}
-                      {a.status === 'confirmed' && (
-                        <>
+                  {(a.status === 'confirmed' || a.status === 'arrived') && (
+                    <div>
+                      <p className="text-xs font-medium text-forest-700 uppercase tracking-wide mb-1.5">Actions</p>
+                      <div className="flex items-center gap-2 flex-wrap">
+                        {a.status === 'confirmed' && (
                           <button
-                            onClick={() => toggleReschedule(a.id)}
-                            className="text-sm rounded-full border border-forest-300 text-forest-700 px-4 py-1.5 hover:bg-forest-50 transition"
+                            onClick={() => markArrived(a.id)}
+                            disabled={arrivingId === a.id}
+                            className="text-sm rounded-full border border-forest-300 text-forest-900 px-4 py-1.5 hover:bg-forest-50 transition disabled:opacity-50"
                           >
-                            Reporter
+                            {arrivingId === a.id ? '...' : 'Marquer arrivé'}
                           </button>
+                        )}
+                        {(a.status === 'confirmed' || a.status === 'arrived') && (
                           <button
-                            onClick={() => toggleTransfer(a.id)}
-                            className="text-sm rounded-full border border-forest-300 text-forest-700 px-4 py-1.5 hover:bg-forest-50 transition"
+                            onClick={() => markCompleted(a.id)}
+                            disabled={completingId === a.id}
+                            className="text-sm rounded-full bg-[var(--portal-accent)] text-white px-4 py-1.5 hover:brightness-90 transition disabled:opacity-50"
                           >
-                            Transférer à un collègue
+                            {completingId === a.id ? 'Mise à jour...' : 'Marquer terminé'}
                           </button>
-                        </>
-                      )}
-                      {/* NOUVEAU (demande explicite de M. Faustin:
-                          "reorienter vers un medecin externe si
-                          l'hopital ne dispose pas en interne"). */}
-                      {(a.status === 'confirmed' || a.status === 'arrived') && (
-                        <ExternalReferralForm patientId={a.patient_id} />
-                      )}
-                      {/* CORRIGE (demande explicite de M. Faustin: "le
-                          medecin ne doit pas annuler les RDV, il peut
-                          soit traiter soit reorienter vers un autre
-                          medecin interne ou externe") - bouton Annuler
-                          retire du portail medecin. Reste disponible
-                          cote etablissement/reception, qui gardent la
-                          responsabilite administrative d'un RDV annule. */}
-                    </div>
-                  </div>
-
-                  <div>
-                    <p className="text-xs font-medium text-forest-700 uppercase tracking-wide mb-1.5">Outils</p>
-                    <div className="flex items-center gap-2 flex-wrap">
-                      <button
-                        onClick={() => toggleVitals(a.id)}
-                        className="text-sm rounded-full border border-forest-300 text-forest-700 px-4 py-1.5 hover:bg-forest-50 transition"
-                      >
-                        {vitalsAppointmentId === a.id ? 'Fermer les constantes' : 'Constantes'}
-                      </button>
-                      {/* CORRIGE (audit complet: envoyer un message
-                          directement depuis la consultation). */}
-                      <QuickMessageBox patientId={a.patient_id} />
-                      {(a.status === 'confirmed' || a.status === 'arrived') && (
-                        <AdmitPatientShortcut patientId={a.patient_id} patientName={a.patient_name} onAdmitted={loadAppointments} />
-                      )}
-                      {/* NOUVEAU (demande explicite de M. Faustin, capture
-                          jointe: "apres avoir termine la consultation, le
-                          medecin doit avoir acces aux options qui
-                          apparaissent lorsqu'on affiche le dossier
-                          patient" - memes onglets qu'au niveau "Mes
-                          patients": Consultation/Historique/Documents/Messages). */}
-                      {a.status === 'completed' && (
-                        <button
-                          onClick={() => openFullDossier(a.patient_id)}
-                          className="text-sm rounded-full border border-forest-300 text-forest-700 px-4 py-1.5 hover:bg-forest-50 transition"
-                        >
-                          {dossierPatientId === a.patient_id ? 'Fermer le dossier' : 'Voir le dossier complet'}
-                        </button>
-                      )}
-                    </div>
-                  </div>
-
-                  {dossierPatientId === a.patient_id && (
-                    <div className="mt-3 rounded-xl border border-forest-300 bg-white overflow-hidden">
-                      {dossierDetail === null ? (
-                        <p className="text-sm text-forest-700 p-5">Chargement...</p>
-                      ) : (
-                        <div>
-                          <div className="flex gap-1 px-5 border-b border-forest-100">
-                            {[
-                              { id: 'consultation', label: 'Consultation' },
-                              { id: 'historique', label: 'Historique' },
-                              { id: 'documents', label: 'Documents' },
-                              { id: 'messages', label: 'Messages' },
-                            ].map((t) => (
-                              <button
-                                key={t.id}
-                                onClick={() => { setDossierTab(t.id); if (t.id === 'messages' && dossierConversation === null) loadDossierConversation() }}
-                                className={`px-4 py-3 text-sm font-medium border-b-2 -mb-px transition ${dossierTab === t.id ? 'border-secondary-500 text-forest-900' : 'border-transparent text-forest-700 hover:text-forest-900'}`}
-                              >
-                                {t.label}
-                              </button>
-                            ))}
-                          </div>
-                          <div className="p-5">
-                            {dossierTab === 'consultation' && (
-                              <div>
-                                <p className="text-sm font-medium text-forest-900 mb-2">Éléments cliniques</p>
-                                {dossierDetail.clinical_flags.length === 0 ? (
-                                  <p className="text-sm text-forest-700 mb-4">Aucun élément clinique renseigné.</p>
-                                ) : (
-                                  <div className="flex flex-wrap gap-2 mb-4">
-                                    {dossierDetail.clinical_flags.map((f) => (
-                                      <span key={f.id} className="text-xs px-3 py-1 rounded-full bg-forest-50 text-forest-900">{f.label}</span>
-                                    ))}
-                                  </div>
-                                )}
-                                <p className="text-xs text-forest-500">Pour ajouter une note ou une ordonnance, utilise "Ajouter au dossier" ci-dessus.</p>
-                              </div>
-                            )}
-                            {dossierTab === 'historique' && (
-                              <div>
-                                <p className="text-sm font-medium text-forest-900 mb-2">Consultations passées</p>
-                                {dossierDetail.appointments.length === 0 && <p className="text-sm text-forest-700">Aucune consultation enregistrée.</p>}
-                                <div className="space-y-2">
-                                  {dossierDetail.appointments.map((ap) => (
-                                    <div key={ap.id} className="bg-forest-50 rounded-lg p-3 text-sm text-forest-900">
-                                      {new Date(ap.scheduled_at).toLocaleString('fr-FR')}
-                                    </div>
-                                  ))}
-                                </div>
-                              </div>
-                            )}
-                            {dossierTab === 'documents' && (
-                              <div>
-                                <p className="text-sm font-medium text-forest-900 mb-2">Documents du dossier</p>
-                                {dossierDetail.documents.length === 0 && <p className="text-sm text-forest-700">Aucun document pour le moment.</p>}
-                                <div className="space-y-2">
-                                  {dossierDetail.documents.map((d) => (
-                                    <div key={d.id} className="bg-forest-50 rounded-lg p-3">
-                                      <p className="text-sm font-medium text-forest-900">{d.title}</p>
-                                      <p className="text-xs text-forest-700 mb-1">{new Date(d.created_at).toLocaleDateString('fr-FR')}</p>
-                                      <p className="text-sm text-forest-700 whitespace-pre-wrap">{d.content}</p>
-                                    </div>
-                                  ))}
-                                </div>
-                              </div>
-                            )}
-                            {dossierTab === 'messages' && !dossierDetail.can_message && (
-                              <div className="rounded-xl border border-forest-100 bg-forest-50 p-4">
-                                <p className="text-sm text-forest-900 font-medium mb-1">Tu ne peux pas écrire à ce patient depuis cette fiche.</p>
-                                <p className="text-sm text-forest-700">
-                                  {dossierDetail.transferred_to
-                                    ? `Ce patient a été transféré à ${dossierDetail.transferred_to} : c'est lui qui poursuit la conversation.`
-                                    : "Tu n'as pas de rendez-vous avec ce patient : tu ne peux lui écrire que s'il a (ou a eu) un rendez-vous avec toi."}
-                                </p>
-                              </div>
-                            )}
-                            {dossierTab === 'messages' && dossierDetail.can_message && (
-                              <div>
-                                {dossierConversation === null ? (
-                                  <p className="text-sm text-forest-700">Chargement...</p>
-                                ) : (
-                                  <div className="rounded-xl border border-forest-100 bg-white flex flex-col h-[320px]">
-                                    <div className="flex-1 overflow-y-auto p-4 space-y-2">
-                                      {dossierConversation.length === 0 && <p className="text-sm text-forest-700">Aucun message pour le moment.</p>}
-                                      {dossierConversation.map((m) => (
-                                        <div key={m.id} className={`max-w-[75%] rounded-2xl px-3 py-2 text-sm ${m.sender_role === 'patient' ? 'bg-forest-50 text-forest-900' : 'bg-[var(--portal-accent)] text-white ml-auto'}`}>
-                                          {m.content}
-                                        </div>
-                                      ))}
-                                    </div>
-                                    <form onSubmit={sendDossierMessage} className="p-3 border-t border-forest-100 flex gap-2">
-                                      <input value={dossierConversationContent} onChange={(e) => setDossierConversationContent(e.target.value)}
-                                        placeholder="Écrire au patient..."
-                                        className="flex-1 rounded-full border border-forest-100 px-4 py-2 text-sm" />
-                                      <button type="submit" disabled={dossierSendingMessage || !dossierConversationContent.trim()}
-                                        className="rounded-full bg-[var(--portal-accent)] text-white px-5 py-2 text-sm font-medium hover:brightness-90 transition disabled:opacity-50">
-                                        Envoyer
-                                      </button>
-                                    </form>
-                                  </div>
-                                )}
-                              </div>
-                            )}
-                          </div>
-                        </div>
-                      )}
+                        )}
+                        {a.status === 'confirmed' && (
+                          <>
+                            <button
+                              onClick={() => toggleReschedule(a.id)}
+                              className="text-sm rounded-full border border-forest-300 text-forest-700 px-4 py-1.5 hover:bg-forest-50 transition"
+                            >
+                              Reporter
+                            </button>
+                            <button
+                              onClick={() => toggleTransfer(a.id)}
+                              className="text-sm rounded-full border border-forest-300 text-forest-700 px-4 py-1.5 hover:bg-forest-50 transition"
+                            >
+                              Transférer à un collègue
+                            </button>
+                          </>
+                        )}
+                        {/* NOUVEAU (demande explicite de M. Faustin:
+                            "reorienter vers un medecin externe si
+                            l'hopital ne dispose pas en interne"). */}
+                        {(a.status === 'confirmed' || a.status === 'arrived') && (
+                          <ExternalReferralForm patientId={a.patient_id} />
+                        )}
+                        {/* CORRIGE (demande explicite de M. Faustin: "le
+                            medecin ne doit pas annuler les RDV, il peut
+                            soit traiter soit reorienter vers un autre
+                            medecin interne ou externe") - bouton Annuler
+                            retire du portail medecin. Reste disponible
+                            cote etablissement/reception, qui gardent la
+                            responsabilite administrative d'un RDV annule. */}
+                      </div>
                     </div>
                   )}
 
@@ -621,48 +489,89 @@ export default function DesktopDoctorDashboard() {
                       )}
                     </div>
                   )}
-                </div>
-              )}
 
-              {reschedulingId === a.id && (
-                <div className="mt-3 pt-3 border-t border-forest-100">
-                  {/* NOUVEAU (demande explicite de M. Faustin: "le medecin
-                      pourra reporter un rendez-vous... sur ces
-                      disponibilites dans les semaines a venir") - avant,
-                      le medecin tapait une date/heure a l'aveugle, sans
-                      voir si le creneau etait meme libre. Reutilise le
-                      meme mecanisme deja teste (tous les creneaux
-                      reellement libres, pas de limite de date). */}
-                  <form onSubmit={checkRescheduleSlots} className="flex items-end gap-2 mb-3">
-                    <div>
-                      <label className="block text-xs text-forest-700 mb-1">Nouvelle date</label>
-                      <input type="date" required value={rescheduleDate} min={new Date().toISOString().slice(0, 10)}
-                        onChange={(e) => setRescheduleDate(e.target.value)}
-                        className="rounded-lg border border-forest-100 px-3 py-1.5 text-sm" />
-                    </div>
-                    <button type="submit" disabled={loadingRescheduleSlots}
-                      className="rounded-full border border-forest-300 px-4 py-1.5 text-sm hover:bg-forest-50 transition disabled:opacity-50">
-                      {loadingRescheduleSlots ? '...' : 'Voir les créneaux libres'}
-                    </button>
-                  </form>
-
-                  {rescheduleSlots && (
-                    rescheduleSlots.length === 0 ? (
-                      <p className="text-sm text-forest-700">Aucun créneau libre à cette date.</p>
-                    ) : (
-                      <div className="grid grid-cols-4 sm:grid-cols-6 gap-2">
-                        {rescheduleSlots.map((slot, idx) => (
-                          <button key={idx} onClick={() => submitReschedule(a.id, slot.slot_start)}
-                            className="rounded-lg border border-forest-100 bg-white py-2 text-sm font-medium text-forest-900 hover:border-primary-500 hover:bg-primary-50 transition">
-                            {new Date(slot.slot_start).toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' })}
-                          </button>
-                        ))}
+                {reschedulingId === a.id && (
+                  <div className="mt-3 pt-3 border-t border-forest-100">
+                    {/* NOUVEAU (demande explicite de M. Faustin: "le medecin
+                        pourra reporter un rendez-vous... sur ces
+                        disponibilites dans les semaines a venir") - avant,
+                        le medecin tapait une date/heure a l'aveugle, sans
+                        voir si le creneau etait meme libre. Reutilise le
+                        meme mecanisme deja teste (tous les creneaux
+                        reellement libres, pas de limite de date). */}
+                    <form onSubmit={checkRescheduleSlots} className="flex items-end gap-2 mb-3">
+                      <div>
+                        <label className="block text-xs text-forest-700 mb-1">Nouvelle date</label>
+                        <input type="date" required value={rescheduleDate} min={new Date().toISOString().slice(0, 10)}
+                          onChange={(e) => setRescheduleDate(e.target.value)}
+                          className="rounded-lg border border-forest-100 px-3 py-1.5 text-sm" />
                       </div>
-                    )
-                  )}
-                </div>
-              )}
+                      <button type="submit" disabled={loadingRescheduleSlots}
+                        className="rounded-full border border-forest-300 px-4 py-1.5 text-sm hover:bg-forest-50 transition disabled:opacity-50">
+                        {loadingRescheduleSlots ? '...' : 'Voir les créneaux libres'}
+                      </button>
+                    </form>
 
+                    {rescheduleSlots && (
+                      rescheduleSlots.length === 0 ? (
+                        <p className="text-sm text-forest-700">Aucun créneau libre à cette date.</p>
+                      ) : (
+                        <div className="grid grid-cols-4 sm:grid-cols-6 gap-2">
+                          {rescheduleSlots.map((slot, idx) => (
+                            <button key={idx} onClick={() => submitReschedule(a.id, slot.slot_start)}
+                              className="rounded-lg border border-forest-100 bg-white py-2 text-sm font-medium text-forest-900 hover:border-primary-500 hover:bg-primary-50 transition">
+                              {new Date(slot.slot_start).toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' })}
+                            </button>
+                          ))}
+                        </div>
+                      )
+                    )}
+                  </div>
+                )}
+
+                  {/* REORGANISE (demande explicite de M. Faustin, capture jointe: "tout ce
+                      qui est la soit regroupe dans l'option Consultation - outils,
+                      constantes, note de consultation, orienter ce patient vers un
+                      laboratoire - et enlever Fermer le dossier et Envoyer un
+                      message de la liste des outils"). Les onglets sont maintenant
+                      toujours presents des qu'un rendez-vous est ouvert; l'onglet
+                      Consultation regroupe tout ce qui sert PENDANT la consultation.
+                      Les "Actions" (arrive / termine / reporter / transferer /
+                      reorienter) restent au-dessus: elles font avancer le rendez-vous
+                      et doivent rester accessibles quel que soit l'onglet. */}
+                  <div className="rounded-xl border border-forest-300 bg-white overflow-hidden">
+                          <div className="flex gap-1 px-5 border-b border-forest-100">
+                            {[
+                              { id: 'consultation', label: 'Consultation' },
+                              { id: 'historique', label: 'Historique' },
+                              { id: 'documents', label: 'Documents' },
+                              { id: 'messages', label: 'Messages' },
+                            ].map((t) => (
+                              <button
+                                key={t.id}
+                                onClick={() => { setDossierTab(t.id); if (t.id === 'messages' && dossierConversation === null) loadDossierConversation() }}
+                                className={`px-4 py-3 text-sm font-medium border-b-2 -mb-px transition ${dossierTab === t.id ? 'border-secondary-500 text-forest-900' : 'border-transparent text-forest-700 hover:text-forest-900'}`}
+                              >
+                                {t.label}
+                              </button>
+                            ))}
+                          </div>
+                    <div className="p-5">
+                      {dossierTab === 'consultation' && (
+                        <div className="space-y-5">
+                          <div>
+                            <p className="text-xs font-medium text-forest-700 uppercase tracking-wide mb-1.5">Outils</p>
+                            <div className="flex items-center gap-2 flex-wrap">
+                      <button
+                        onClick={() => toggleVitals(a.id)}
+                        className="text-sm rounded-full border border-forest-300 text-forest-700 px-4 py-1.5 hover:bg-forest-50 transition"
+                      >
+                        {vitalsAppointmentId === a.id ? 'Fermer les constantes' : 'Constantes'}
+                      </button>
+                      {(a.status === 'confirmed' || a.status === 'arrived') && (
+                        <AdmitPatientShortcut patientId={a.patient_id} patientName={a.patient_name} onAdmitted={loadAppointments} />
+                      )}
+                            </div>
               {vitalsAppointmentId === a.id && (
                 <div className="mt-4 pt-4 border-t border-forest-100">
                   {loadingVitals && <p className="text-sm text-forest-700">Chargement...</p>}
@@ -684,8 +593,23 @@ export default function DesktopDoctorDashboard() {
                   </div>
                 </div>
               )}
+                          </div>
 
-              {expandedAppointmentId === a.id && (
+                          <div>
+                            <p className="text-sm font-medium text-forest-900 mb-2">Éléments cliniques</p>
+                            {dossierDetail === null ? (
+                              <p className="text-sm text-forest-700">Chargement...</p>
+                            ) : dossierDetail.clinical_flags.length === 0 ? (
+                              <p className="text-sm text-forest-700">Aucun élément clinique renseigné.</p>
+                            ) : (
+                              <div className="flex flex-wrap gap-2">
+                                {dossierDetail.clinical_flags.map((f) => (
+                                  <span key={f.id} className="text-xs px-3 py-1 rounded-full bg-forest-50 text-forest-900">{f.label}</span>
+                                ))}
+                              </div>
+                            )}
+                          </div>
+
                 <div className="mt-4 pt-4 border-t border-forest-100">
                   {docMessage && <p className="text-forest-900 bg-forest-50 border border-forest-300 rounded-xl p-3 mb-3 text-sm">{docMessage}</p>}
                   <div className="grid sm:grid-cols-2 gap-3 mb-3">
@@ -725,6 +649,79 @@ export default function DesktopDoctorDashboard() {
                   </button>
 
                   <LabReferralForm appointmentId={a.id} onDone={() => {}} />
+                </div>
+                        </div>
+                      )}
+                      {dossierDetail === null && dossierTab !== 'consultation' && (
+                        <p className="text-sm text-forest-700">Chargement...</p>
+                      )}
+{dossierDetail && dossierTab === 'historique' && (
+                              <div>
+                                <p className="text-sm font-medium text-forest-900 mb-2">Consultations passées</p>
+                                {dossierDetail.appointments.length === 0 && <p className="text-sm text-forest-700">Aucune consultation enregistrée.</p>}
+                                <div className="space-y-2">
+                                  {dossierDetail.appointments.map((ap) => (
+                                    <div key={ap.id} className="bg-forest-50 rounded-lg p-3 text-sm text-forest-900">
+                                      {new Date(ap.scheduled_at).toLocaleString('fr-FR')}
+                                    </div>
+                                  ))}
+                                </div>
+                              </div>
+                            )}
+                            {dossierDetail && dossierTab === 'documents' && (
+                              <div>
+                                <p className="text-sm font-medium text-forest-900 mb-2">Documents du dossier</p>
+                                {dossierDetail.documents.length === 0 && <p className="text-sm text-forest-700">Aucun document pour le moment.</p>}
+                                <div className="space-y-2">
+                                  {dossierDetail.documents.map((d) => (
+                                    <div key={d.id} className="bg-forest-50 rounded-lg p-3">
+                                      <p className="text-sm font-medium text-forest-900">{d.title}</p>
+                                      <p className="text-xs text-forest-700 mb-1">{new Date(d.created_at).toLocaleDateString('fr-FR')}</p>
+                                      <p className="text-sm text-forest-700 whitespace-pre-wrap">{d.content}</p>
+                                    </div>
+                                  ))}
+                                </div>
+                              </div>
+                            )}
+                            {dossierDetail && dossierTab === 'messages' && !dossierDetail.can_message && (
+                              <div className="rounded-xl border border-forest-100 bg-forest-50 p-4">
+                                <p className="text-sm text-forest-900 font-medium mb-1">Tu ne peux pas écrire à ce patient depuis cette fiche.</p>
+                                <p className="text-sm text-forest-700">
+                                  {dossierDetail.transferred_to
+                                    ? `Ce patient a été transféré à ${dossierDetail.transferred_to} : c'est lui qui poursuit la conversation.`
+                                    : "Tu n'as pas de rendez-vous avec ce patient : tu ne peux lui écrire que s'il a (ou a eu) un rendez-vous avec toi."}
+                                </p>
+                              </div>
+                            )}
+                            {dossierDetail && dossierTab === 'messages' && dossierDetail.can_message && (
+                              <div>
+                                {dossierConversation === null ? (
+                                  <p className="text-sm text-forest-700">Chargement...</p>
+                                ) : (
+                                  <div className="rounded-xl border border-forest-100 bg-white flex flex-col h-[320px]">
+                                    <div className="flex-1 overflow-y-auto p-4 space-y-2">
+                                      {dossierConversation.length === 0 && <p className="text-sm text-forest-700">Aucun message pour le moment.</p>}
+                                      {dossierConversation.map((m) => (
+                                        <div key={m.id} className={`max-w-[75%] rounded-2xl px-3 py-2 text-sm ${m.sender_role === 'patient' ? 'bg-forest-50 text-forest-900' : 'bg-[var(--portal-accent)] text-white ml-auto'}`}>
+                                          {m.content}
+                                        </div>
+                                      ))}
+                                    </div>
+                                    <form onSubmit={sendDossierMessage} className="p-3 border-t border-forest-100 flex gap-2">
+                                      <input value={dossierConversationContent} onChange={(e) => setDossierConversationContent(e.target.value)}
+                                        placeholder="Écrire au patient..."
+                                        className="flex-1 rounded-full border border-forest-100 px-4 py-2 text-sm" />
+                                      <button type="submit" disabled={dossierSendingMessage || !dossierConversationContent.trim()}
+                                        className="rounded-full bg-[var(--portal-accent)] text-white px-5 py-2 text-sm font-medium hover:brightness-90 transition disabled:opacity-50">
+                                        Envoyer
+                                      </button>
+                                    </form>
+                                  </div>
+                                )}
+                              </div>
+                            )}
+                    </div>
+                  </div>
                 </div>
               )}
             </div>

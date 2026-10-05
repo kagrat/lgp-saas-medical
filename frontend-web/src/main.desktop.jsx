@@ -2,6 +2,7 @@ import React from 'react'
 import ReactDOM from 'react-dom/client'
 import { HashRouter } from 'react-router-dom'
 import AppDesktop from './AppDesktop.jsx'
+import MaintenanceGate from './components/MaintenanceGate.jsx'
 import './index.css'
 
 // CORRECTIF (bug reel decouvert en test): avec BrowserRouter, naviguer vers
@@ -16,8 +17,11 @@ import './index.css'
 // sur l'application etablissement, quel que soit l'ecran affiche.
 ReactDOM.createRoot(document.getElementById('root')).render(
   <React.StrictMode>
-    <HashRouter>
-      <AppDesktop />
-    </HashRouter>
+    {/* Interrupteur de suspension d'acces (voir MaintenanceGate.jsx): eteint par defaut. */}
+    <MaintenanceGate>
+      <HashRouter>
+        <AppDesktop />
+      </HashRouter>
+    </MaintenanceGate>
   </React.StrictMode>,
 )
