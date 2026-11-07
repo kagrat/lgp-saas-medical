@@ -2,6 +2,10 @@ fastapi==0.115.0
 uvicorn[standard]==0.30.6
 sqlalchemy==2.0.35
 pg8000==1.31.1
+# pg8000 1.31.1 exige seulement scramp>=1.4.4 (sans limite haute). scramp 1.5.0 (publie le 2026-10-25)
+# a supprime make_channel_binding, que pg8000 1.31.1 appelle des qu'il se connecte en SSL (cas de Railway):
+# le serveur ne demarre plus (AttributeError). A garder fige tant que pg8000 n'est pas mis a jour.
+scramp==1.4.18
 pydantic==2.9.2
 pydantic-settings==2.5.2
 pydantic[email]==2.9.2
