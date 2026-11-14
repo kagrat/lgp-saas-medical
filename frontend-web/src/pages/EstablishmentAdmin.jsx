@@ -22,6 +22,7 @@ import DoctorReviewsList from '../components/DoctorReviewsList'
 import ReservationReviewForm from '../components/ReservationReviewForm'
 import GuestOrderPrescriptionPanel from '../components/GuestOrderPrescriptionPanel'
 import NotificationBell from '../components/NotificationBell'
+import ConsultationHistory, { DocumentIdentity } from '../components/ConsultationHistory'
 import UserProfileBadge from '../components/UserProfileBadge'
 import ReportsManager from '../components/ReportsManager'
 import InvoiceManager from '../components/InvoiceManager'
@@ -41,7 +42,11 @@ export default function EstablishmentAdmin() {
   const [stats, setStats] = useState(null)
   const [doctors, setDoctors] = useState([])
   const [appointments, setAppointments] = useState([])
-  const [appointmentFilter, setAppointmentFilter] = useState('all')
+  // Par defaut: seulement les RDV a traiter. Un RDV termine quitte cette liste et
+  // son dossier vit dans "Patients" (demande de M. Faustin); l'onglet "Terminés" sert d'archive.
+  const [appointmentFilter, setAppointmentFilter] = useState('active')
+  const [focusPatientId, setFocusPatientId] = useState(null)
+  const [notice, setNotice] = useState('')
   const [orders, setOrders] = useState([])
   const [orderFilter, setOrderFilter] = useState('pending')
   const [labTests, setLabTests] = useState([])
@@ -261,8 +266,18 @@ export default function EstablishmentAdmin() {
     setCompletingId(appointmentId)
     setError('')
     try {
+      const finished = appointments.find((a) => a.id === appointmentId)
       await api.post(`/appointments/${appointmentId}/complete`)
       await loadAll()
+      // Le dossier quitte la liste des RDV et s'ouvre dans "Patients".
+      setExpandedAppointmentId(null)
+      setDossierPatientId(null)
+      setDossierDetail(null)
+      if (finished && showPatientsTab) {
+        setFocusPatientId(finished.patient_id)
+        setNotice(`Consultation terminée : le dossier de ${finished.patient_name} est maintenant dans « Patients ».`)
+        setTab('patients')
+      }
     } catch (err) {
       setError(getErrorMessage(err, "Impossible de marquer ce rendez-vous comme terminé."))
     } finally {
@@ -334,6 +349,26 @@ export default function EstablishmentAdmin() {
       await loadAll()
     } catch (err) {
       setError(getErrorMessage(err, 'Impossible de reporter ce rendez-vous.'))
+    }
+  }
+
+  // Clic sur une notification de la cloche: ouvre directement le rendez-vous / le dossier.
+  function handleNotificationOpen(n) {
+    setError('')
+    setNotice('')
+    const target = n.appointment_id ? appointments.find((a) => a.id === n.appointment_id) : null
+    if (target && target.status !== 'completed') {
+      setTab('appointments')
+      setAppointmentFilter('active')
+      setExpandedAppointmentId(target.id)
+      setDossierPatientId(null)
+      setDossierDetail(null)
+      setTimeout(() => document.getElementById(`rdv-${target.id}`)?.scrollIntoView({ behavior: 'smooth', block: 'center' }), 150)
+    } else if (n.patient_id && showPatientsTab) {
+      setFocusPatientId(null)
+      setTimeout(() => { setFocusPatientId(n.patient_id); setTab('patients') }, 0)
+    } else if (showPatientsTab) {
+      setTab('appointments')
     }
   }
 
@@ -528,13 +563,18 @@ export default function EstablishmentAdmin() {
   const selectedConversation = conversations.find((c) => c.patient_id === selectedPatientId)
 
   const appointmentFilterOptions = [
-    { value: 'all', label: 'Tous' },
+    { value: 'active', label: 'À traiter' },
     { value: 'confirmed', label: 'Confirmés' },
     { value: 'arrived', label: 'Arrivés' },
     { value: 'completed', label: 'Terminés' },
     { value: 'cancelled', label: 'Annulés' },
+    { value: 'all', label: 'Tous' },
   ]
-  const filteredAppointments = appointmentFilter === 'all' ? appointments : appointments.filter((a) => a.status === appointmentFilter)
+  const filteredAppointments = appointmentFilter === 'all'
+    ? appointments
+    : appointmentFilter === 'active'
+      ? appointments.filter((a) => a.status === 'confirmed' || a.status === 'arrived')
+      : appointments.filter((a) => a.status === appointmentFilter)
 
   const orderFilterOptions = [{ value: 'all', label: 'Tous' }, ...RESERVATION_STATUSES.map((s) => ({ value: s, label: RESERVATION_STATUS_LABELS[s] }))]
   const filteredOrders = orderFilter === 'all' ? orders : orders.filter((o) => o.status === orderFilter)
@@ -554,9 +594,9 @@ export default function EstablishmentAdmin() {
       subtitle={isLab ? 'Gestion des demandes d\'analyses.' : isPharmacy ? 'Gestion de l\'inventaire et des commandes de ta pharmacie.' : 'Gestion des médecins, rendez-vous et pharmacie de ton établissement.'}
       tabs={tabs}
       activeTab={tab}
-      onTabChange={(id) => { setTab(id); setError(''); setInventoryEntry('produits') }}
+      onTabChange={(id) => { setTab(id); setError(''); setNotice(''); setInventoryEntry('produits'); if (id !== 'patients') setFocusPatientId(null) }}
       accentColor={isLab ? 'bg-secondary-900' : isPharmacy ? 'bg-success-700' : 'bg-primary-500'}
-      headerRight={<div className="flex items-center gap-4"><NotificationBell /><UserProfileBadge /></div>}
+      headerRight={<div className="flex items-center gap-4"><NotificationBell onOpen={handleNotificationOpen} /><UserProfileBadge /></div>}
     >
       {error && <p className="text-clay-600 mb-6">{error}</p>}
 
@@ -658,7 +698,7 @@ export default function EstablishmentAdmin() {
           <div className="space-y-2">
             {filteredAppointments.length === 0 && <p className="text-forest-700 px-4">Aucun rendez-vous dans cette catégorie.</p>}
             {filteredAppointments.map((a) => (
-              <div key={a.id} className="rounded-xl border border-forest-100 bg-white p-4">
+              <div key={a.id} id={`rdv-${a.id}`} className="rounded-xl border border-forest-100 bg-white p-4">
                 <div className="grid sm:grid-cols-[1.3fr_1fr_1fr_0.8fr_1.2fr_auto_auto] gap-3 items-center">
                   <span className="text-forest-900 font-medium">{a.patient_name}</span>
                   <span className="text-sm text-forest-700">{a.dossier_number || '—'}</span>
@@ -789,14 +829,7 @@ export default function EstablishmentAdmin() {
                               {dossierTab === 'historique' && (
                                 <div>
                                   <p className="text-sm font-medium text-forest-900 mb-2">Consultations passées</p>
-                                  {dossierDetail.appointments.length === 0 && <p className="text-sm text-forest-700">Aucune consultation enregistrée.</p>}
-                                  <div className="space-y-2">
-                                    {dossierDetail.appointments.map((ap) => (
-                                      <div key={ap.id} className="bg-forest-50 rounded-lg p-3 text-sm text-forest-900">
-                                        {new Date(ap.scheduled_at).toLocaleString('fr-FR')}
-                                      </div>
-                                    ))}
-                                  </div>
+                                  <ConsultationHistory appointments={dossierDetail.appointments} />
                                 </div>
                               )}
                               {dossierTab === 'documents' && (
@@ -807,7 +840,7 @@ export default function EstablishmentAdmin() {
                                     {dossierDetail.documents.map((d) => (
                                       <div key={d.id} className="bg-forest-50 rounded-lg p-3">
                                         <p className="text-sm font-medium text-forest-900">{d.title}</p>
-                                        <p className="text-xs text-forest-700 mb-1">{new Date(d.created_at).toLocaleDateString('fr-FR')}</p>
+                                        <DocumentIdentity doc={d} />
                                         <p className="text-sm text-forest-700 whitespace-pre-wrap">{d.content}</p>
                                       </div>
                                     ))}
@@ -1101,7 +1134,12 @@ export default function EstablishmentAdmin() {
         </div>
       )}
 
-      {tab === 'patients' && <PatientDirectory />}
+      {tab === 'patients' && (
+        <>
+          {notice && <p className="mb-4 rounded-lg bg-forest-50 border border-forest-100 text-forest-900 text-sm px-4 py-3" role="status">{notice}</p>}
+          <PatientDirectory initialPatientId={focusPatientId} />
+        </>
+      )}
 
       {tab === 'messages' && (
         <div>

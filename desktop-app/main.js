@@ -1,5 +1,5 @@
 /**
- * Application Desktop LGP HOLDINGS - shell Electron.
+ * Application Desktop SpeedSanté+ - shell Electron.
  *
  * IMPORTANT: charge desormais /desktop.html, une application distincte du
  * portail web public (voir frontend-web/desktop.html, AppDesktop.jsx).
@@ -35,7 +35,7 @@ function createWindow() {
   const win = new BrowserWindow({
     width: 1280,
     height: 800,
-    title: 'LGP Console - Espace Etablissement',
+    title: 'SpeedSanté+ - Espace Établissement',
     webPreferences: {
       preload: path.join(__dirname, 'preload.js'),
       contextIsolation: true,
@@ -49,7 +49,7 @@ function createWindow() {
     win.webContents.executeJavaScript(
       `document.body.innerHTML = '<div style="font-family:sans-serif;padding:40px;text-align:center;">
         <h2>Connexion au serveur impossible</h2>
-        <p>Verifie ta connexion internet.</p>
+        <p>Vérifie ta connexion internet.</p>
       </div>'`
     )
   })
@@ -76,7 +76,7 @@ function createWindow() {
           click: () => win.webContents.reload(),
         },
         {
-          label: 'Outils de developpement',
+          label: 'Outils de développement',
           accelerator: 'CmdOrCtrl+Shift+I',
           click: () => win.webContents.toggleDevTools(),
         },

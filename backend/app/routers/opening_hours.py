@@ -9,6 +9,7 @@ from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
 
 from app.database import get_db
+from app.ratelimit import rate_limit
 from app.models import OpeningHours, Establishment, User, UserRole
 from app.schemas import OpeningHoursCreate, OpeningHoursOut
 from app.deps import require_roles
@@ -16,7 +17,7 @@ from app.deps import require_roles
 router = APIRouter(prefix="/opening-hours", tags=["horaires"])
 
 
-@router.get("/establishment/{establishment_id}", response_model=list[OpeningHoursOut])
+@router.get("/establishment/{establishment_id}", response_model=list[OpeningHoursOut], dependencies=[Depends(rate_limit("public-read", 120, 60))])
 def public_opening_hours(establishment_id: str, db: Session = Depends(get_db)):
     """Public - affiche sur le profil medecin / la recherche pharmacie ou labo."""
     establishment = db.query(Establishment).filter(Establishment.id == establishment_id).first()

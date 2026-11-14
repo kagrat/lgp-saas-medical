@@ -21,6 +21,7 @@ Nouveau flux:
 import uuid
 import secrets
 from datetime import datetime, timedelta
+from app.timeutils import utcnow
 from typing import Optional
 
 from fastapi import APIRouter, Depends, HTTPException, status
@@ -28,6 +29,7 @@ from sqlalchemy import func
 from sqlalchemy.orm import Session
 
 from app.database import get_db
+from app.ratelimit import rate_limit
 from app.security import hash_password
 from app.models import (
     PharmacyStock, PharmacyReservation, PharmacyOrderItem, PharmacyReservationStatusHistory,
@@ -53,6 +55,10 @@ _PHARMACY_ONLY = Depends(require_establishment_types(EstablishmentType.PHARMACIE
 
 router = APIRouter(prefix="/pharmacy", tags=["pharmacie"])
 
+# Commande sans compte: plafond par numero de telephone (voir create_guest_reservation).
+GUEST_EMAIL_PATTERN = "invite-%@sans-compte.speedsante.local"
+GUEST_ORDERS_PER_PHONE_PER_DAY = 5
+
 # Statuts que l'ancien endpoint generique n'a plus le droit de definir -
 # ils passent desormais obligatoirement par les endpoints dedies.
 PROTECTED_STATUSES = {ReservationStatus.PENDING, ReservationStatus.CONFIRMED, ReservationStatus.AWAITING_CONFIRMATION}
@@ -77,7 +83,7 @@ PHARMACY_EXPIRY_WARNING_DAYS = 60
 
 
 def _to_batch_out(batch: PharmacyStockBatch, stock_item: PharmacyStock) -> PharmacyBatchOut:
-    today = datetime.utcnow().date()
+    today = utcnow().date()
     days_to_expiry = (batch.expiration_date - today).days
 
     if days_to_expiry < 0:
@@ -231,7 +237,7 @@ def list_stock(db: Session = Depends(get_db),
     return [_to_stock_out(i) for i in items]
 
 
-@router.get("/search", response_model=list[StockItemOut])
+@router.get("/search", response_model=list[StockItemOut], dependencies=[Depends(rate_limit("public-read", 120, 60))])
 def search_medication(name: str, db: Session = Depends(get_db)):
     """ANCIEN comportement (recherche directe par medicament, toutes
     pharmacies confondues) - conserve pour compatibilite mais plus utilise
@@ -249,7 +255,7 @@ def search_medication(name: str, db: Session = Depends(get_db)):
     return [_to_stock_out(i) for i in items]
 
 
-@router.get("/pharmacies/search", response_model=list[PharmacySearchResult])
+@router.get("/pharmacies/search", response_model=list[PharmacySearchResult], dependencies=[Depends(rate_limit("public-read", 120, 60))])
 def search_pharmacies(name: Optional[str] = None, city: Optional[str] = None, db: Session = Depends(get_db)):
     """
     NOUVEAU (parcours pharmacie-first, demande M. Faustin): le patient
@@ -271,7 +277,7 @@ def search_pharmacies(name: Optional[str] = None, city: Optional[str] = None, db
     # NOUVEAU (demande explicite de M. Faustin: statut ouvert/ferme visible
     # directement pendant la recherche). Une seule requete groupee pour
     # toutes les pharmacies du jour, plutot qu'un appel par pharmacie.
-    now = datetime.utcnow()
+    now = utcnow()
     today_weekday = now.weekday()
     now_time = now.time()
     establishment_ids = [e.id for e in establishments]
@@ -308,7 +314,7 @@ def search_pharmacies(name: Optional[str] = None, city: Optional[str] = None, db
     return results
 
 
-@router.get("/stock/public", response_model=list[StockItemOut])
+@router.get("/stock/public", response_model=list[StockItemOut], dependencies=[Depends(rate_limit("public-read", 120, 60))])
 def browse_pharmacy_stock(establishment_id: str, name: Optional[str] = None, db: Session = Depends(get_db)):
     """
     NOUVEAU (parcours pharmacie-first): une fois la pharmacie choisie, le
@@ -374,7 +380,7 @@ def match_prescription(document_id: str, establishment_id: str, db: Session = De
 def pharmacy_stats(db: Session = Depends(get_db),
                     current_user: User = Depends(require_roles(UserRole.ESTABLISHMENT_ADMIN, UserRole.PHARMACIST))):
     establishment_id = current_user.establishment_id
-    now = datetime.utcnow()
+    now = utcnow()
     this_month_start = now.replace(day=1, hour=0, minute=0, second=0, microsecond=0)
 
     total_orders = db.query(PharmacyReservation).filter(PharmacyReservation.establishment_id == establishment_id).count()
@@ -515,7 +521,8 @@ def reservation_history(reservation_id: str, db: Session = Depends(get_db),
     ]
 
 
-@router.post("/reservations/guest", response_model=ReservationOut, status_code=status.HTTP_201_CREATED)
+@router.post("/reservations/guest", response_model=ReservationOut, status_code=status.HTTP_201_CREATED,
+             dependencies=[Depends(rate_limit("guest-order", 10, 3600))])
 def create_guest_reservation(payload: GuestReservationCreate, db: Session = Depends(get_db)):
     """
     NOUVEAU (demande explicite de M. Faustin: "un patient qui n'a pas
@@ -535,16 +542,34 @@ def create_guest_reservation(payload: GuestReservationCreate, db: Session = Depe
     if not establishment:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Pharmacie introuvable")
 
-    guest_email = f"invite-{secrets.token_hex(8)}@sans-compte.speedsante.local"
-    guest_user = User(
-        id=str(uuid.uuid4()), email=guest_email, hashed_password=hash_password(secrets.token_urlsafe(32)),
-        full_name=payload.full_name, phone=payload.phone, role=UserRole.PATIENT, is_active=True,
-    )
-    db.add(guest_user)
-    db.flush()
-    guest_patient = Patient(id=str(uuid.uuid4()), user_id=guest_user.id, dossier_number=f"INV-{secrets.token_hex(4).upper()}")
-    db.add(guest_patient)
-    db.flush()
+    # UN seul compte invite par numero de telephone (avant: un nouveau compte a CHAQUE
+    # appel, donc une base qui gonfle sans limite sous un script).
+    guest_user = db.query(User).filter(User.phone == payload.phone, User.email.like(GUEST_EMAIL_PATTERN)).first()
+    guest_patient = db.query(Patient).filter(Patient.user_id == guest_user.id).first() if guest_user else None
+    if guest_user and guest_patient:
+        recent_orders = db.query(func.count(PharmacyReservation.id)).filter(
+            PharmacyReservation.patient_id == guest_patient.id, PharmacyReservation.is_guest_order == True,
+            PharmacyReservation.created_at >= utcnow() - timedelta(hours=24),
+        ).scalar()
+        # Plafond enregistre en base: survit aux redemarrages du serveur.
+        if recent_orders >= GUEST_ORDERS_PER_PHONE_PER_DAY:
+            raise HTTPException(
+                status_code=status.HTTP_429_TOO_MANY_REQUESTS,
+                detail="Trop de commandes avec ce numéro aujourd'hui. Contacte directement la pharmacie.",
+                headers={"Retry-After": "3600"},
+            )
+        guest_user.full_name = payload.full_name
+    else:
+        guest_email = f"invite-{secrets.token_hex(8)}@sans-compte.speedsante.local"
+        guest_user = User(
+            id=str(uuid.uuid4()), email=guest_email, hashed_password=hash_password(secrets.token_urlsafe(32)),
+            full_name=payload.full_name, phone=payload.phone, role=UserRole.PATIENT, is_active=True,
+        )
+        db.add(guest_user)
+        db.flush()
+        guest_patient = Patient(id=str(uuid.uuid4()), user_id=guest_user.id, dossier_number=f"INV-{secrets.token_hex(4).upper()}")
+        db.add(guest_patient)
+        db.flush()
 
     reservation = PharmacyReservation(
         id=str(uuid.uuid4()), establishment_id=establishment.id, patient_id=guest_patient.id,
@@ -617,7 +642,7 @@ def create_reservation(payload: ReservationCreate, db: Session = Depends(get_db)
     establishment_ids = {s.establishment_id for s in stock_items.values()}
     if len(establishment_ids) > 1:
         raise HTTPException(
-            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            status_code=status.HTTP_422_UNPROCESSABLE_CONTENT,
             detail="Une commande ne peut contenir que des médicaments d'une seule pharmacie",
         )
     establishment_id = establishment_ids.pop()
@@ -678,7 +703,7 @@ def review_reservation(reservation_id: str, payload: ReservationReview, db: Sess
     reviewed_ids = {line.item_id for line in payload.items}
     if reviewed_ids != set(items_by_id.keys()):
         raise HTTPException(
-            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            status_code=status.HTTP_422_UNPROCESSABLE_CONTENT,
             detail="Toutes les lignes de la commande doivent être vérifiées (aucune omise, aucune inconnue)",
         )
 
@@ -777,14 +802,14 @@ def pay_reservation(reservation_id: str, db: Session = Depends(get_db),
     if not reservation or not patient or reservation.patient_id != patient.id:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Réservation introuvable")
     if reservation.delivery_mode != DeliveryMode.DELIVERY:
-        raise HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_ENTITY, detail="Le paiement en ligne n'est requis que pour une livraison")
+        raise HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_CONTENT, detail="Le paiement en ligne n'est requis que pour une livraison")
     if reservation.status not in (ReservationStatus.CONFIRMED,):
         raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail="Cette commande doit d'abord être confirmée avant paiement")
     if reservation.is_paid:
         raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail="Cette commande est déjà payée")
 
     reservation.is_paid = True
-    reservation.paid_at = datetime.utcnow()
+    reservation.paid_at = utcnow()
     db.add(AuditLog(user_id=current_user.id, establishment_id=reservation.establishment_id,
                      action="pay_pharmacy_order", details=f"Commande {reservation.id} déclarée payée par le patient"))
     db.commit()
@@ -902,7 +927,7 @@ def pharmacy_reports(db: Session = Depends(get_db),
     """
     establishment_id = current_user.establishment_id
 
-    thirty_days_ago = (datetime.utcnow() - timedelta(days=30)).date()
+    thirty_days_ago = (utcnow() - timedelta(days=30)).date()
     delivered_orders = (
         db.query(PharmacyReservation)
         .filter(
@@ -929,7 +954,7 @@ def pharmacy_reports(db: Session = Depends(get_db),
         .join(PharmacyStock, PharmacyStock.id == PharmacyStockBatch.stock_item_id)
         .filter(
             PharmacyStock.establishment_id == establishment_id,
-            PharmacyStockBatch.expiration_date <= (datetime.utcnow().date() + timedelta(days=PHARMACY_EXPIRY_WARNING_DAYS)),
+            PharmacyStockBatch.expiration_date <= (utcnow().date() + timedelta(days=PHARMACY_EXPIRY_WARNING_DAYS)),
         )
         .order_by(PharmacyStockBatch.expiration_date.asc())
         .all()

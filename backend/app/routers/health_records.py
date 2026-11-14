@@ -40,6 +40,7 @@ def _to_document_out(doc: MedicalDocument) -> MedicalDocumentOut:
         appointment_id=doc.appointment_id,
         admission_id=doc.admission_id,
         patient_id=doc.patient_id,
+        dossier_number=doc.patient.dossier_number if doc.patient else None,
         doctor_name=author_name,
         establishment_name=doc.establishment.name if doc.establishment else "Inconnu",
         document_type=doc.document_type,

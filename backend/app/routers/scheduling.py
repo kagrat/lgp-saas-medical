@@ -6,6 +6,7 @@ DoctorAvailability) + demandes de conges validees par le RH/admin.
 """
 import uuid
 from datetime import datetime
+from app.timeutils import utcnow
 
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
@@ -60,7 +61,7 @@ def create_shift(payload: ShiftCreate, db: Session = Depends(get_db),
         if not dept:
             raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Département introuvable")
     if payload.end_time <= payload.start_time:
-        raise HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_ENTITY, detail="L'heure de fin doit être après l'heure de début")
+        raise HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_CONTENT, detail="L'heure de fin doit être après l'heure de début")
 
     shift = Shift(
         id=str(uuid.uuid4()), establishment_id=current_user.establishment_id, user_id=payload.user_id,
@@ -88,9 +89,9 @@ def create_my_shift(payload: ShiftSelfCreate, db: Session = Depends(get_db),
     periode de 1 mois").
     """
     if not current_user.establishment_id:
-        raise HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_ENTITY, detail="Compte non rattaché à un établissement")
+        raise HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_CONTENT, detail="Compte non rattaché à un établissement")
     if payload.end_time <= payload.start_time:
-        raise HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_ENTITY, detail="L'heure de fin doit être après l'heure de début")
+        raise HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_CONTENT, detail="L'heure de fin doit être après l'heure de début")
 
     shift = Shift(
         id=str(uuid.uuid4()), establishment_id=current_user.establishment_id, user_id=current_user.id,
@@ -147,7 +148,7 @@ def delete_shift(shift_id: str, db: Session = Depends(get_db),
 def request_leave(payload: LeaveRequestCreate, db: Session = Depends(get_db),
                    current_user: User = Depends(require_roles(*ALL_STAFF_ROLES))):
     if payload.end_date < payload.start_date:
-        raise HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_ENTITY, detail="La date de fin doit être après la date de début")
+        raise HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_CONTENT, detail="La date de fin doit être après la date de début")
 
     leave = LeaveRequest(
         id=str(uuid.uuid4()), establishment_id=current_user.establishment_id, user_id=current_user.id,
@@ -193,7 +194,7 @@ def review_leave_request(leave_id: str, payload: LeaveRequestReview, db: Session
 
     leave.status = "approved" if payload.approve else "rejected"
     leave.reviewed_by_user_id = current_user.id
-    leave.reviewed_at = datetime.utcnow()
+    leave.reviewed_at = utcnow()
     leave.review_note = payload.review_note
     db.commit()
     db.refresh(leave)

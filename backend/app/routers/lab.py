@@ -10,6 +10,7 @@ un patient au hasard, uniquement ceux avec qui on a une consultation.
 """
 import uuid
 from datetime import datetime
+from app.timeutils import utcnow
 from typing import Optional
 
 from fastapi import APIRouter, Depends, HTTPException, status
@@ -17,6 +18,7 @@ from sqlalchemy import case
 from sqlalchemy.orm import Session
 
 from app.database import get_db
+from app.ratelimit import rate_limit
 from app.models import (
     LabTestRequest, LabTestStatus, Establishment, EstablishmentType, Patient, Doctor, Appointment, User, UserRole,
     MedicalDocument,
@@ -60,7 +62,7 @@ def _to_lab_test_out(request: LabTestRequest, db: Session) -> LabTestRequestOut:
     )
 
 
-@router.get("/search", response_model=list[LabOut])
+@router.get("/search", response_model=list[LabOut], dependencies=[Depends(rate_limit("public-read", 120, 60))])
 def search_labs(city: Optional[str] = None, name: Optional[str] = None, db: Session = Depends(get_db)):
     """NOUVEAU: recherche aussi par nom de laboratoire (demande M. Faustin),
     en plus de la ville deja disponible."""
@@ -141,7 +143,7 @@ def register_test_by_staff(payload: LabTestRegisterByStaff, db: Session = Depend
             id=str(uuid.uuid4()), establishment_id=current_user.establishment_id, patient_id=patient.id,
             test_name=item.test_name, sample_type=item.sample_type, priority=item.priority,
             status=LabTestStatus.SAMPLE_COLLECTED,
-            sample_collected_at=datetime.utcnow(),
+            sample_collected_at=utcnow(),
         )
         db.add(lab_test)
         lab_tests.append(lab_test)
@@ -274,9 +276,9 @@ def update_lab_test_status(test_id: str, payload: LabTestStatusUpdate, db: Sessi
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Analyse introuvable")
 
     if payload.status == LabTestStatus.SAMPLE_COLLECTED and not test.sample_collected_at:
-        test.sample_collected_at = datetime.utcnow()
+        test.sample_collected_at = utcnow()
     if payload.status == LabTestStatus.VALIDATED and not test.results_validated_at:
-        test.results_validated_at = datetime.utcnow()
+        test.results_validated_at = utcnow()
 
     test.status = payload.status
     if payload.results_text is not None:

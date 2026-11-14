@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react'
 import { useLocation } from 'react-router-dom'
 import api, { getRole, getErrorMessage } from '../api/client'
 import StepIndicator from '../components/StepIndicator'
+import { prepareImage } from '../utils/imageUpload'
 
 /**
  * RESTRUCTURE (pharmacie-first + panier multi-articles, demande M.
@@ -34,7 +35,7 @@ export default function Pharmacy() {
   // NOUVEAU (demande explicite de M. Faustin: "un patient qui n'a pas
   // pris la plateforme mais veut payer les medicaments avec ordonnance
   // - juste upload image de l'ordonnance").
-  const [guestMode, setGuestMode] = useState(false)
+  const [guestMode, setGuestMode] = useState(role !== 'patient')
   const [guestForm, setGuestForm] = useState({ full_name: '', phone: '', prescription_image: '' })
   const [guestSubmitting, setGuestSubmitting] = useState(false)
   const [guestConfirmation, setGuestConfirmation] = useState(null)
@@ -77,12 +78,18 @@ export default function Pharmacy() {
     }
   }
 
-  function handleGuestImageChange(e) {
+  async function handleGuestImageChange(e) {
     const file = e.target.files?.[0]
     if (!file) return
-    const reader = new FileReader()
-    reader.onload = () => setGuestForm((f) => ({ ...f, prescription_image: reader.result }))
-    reader.readAsDataURL(file)
+    setError('')
+    try {
+      const image = await prepareImage(file)
+      setGuestForm((f) => ({ ...f, prescription_image: image }))
+    } catch (err) {
+      setGuestForm((f) => ({ ...f, prescription_image: '' }))
+      setError(err.message)
+      e.target.value = ''
+    }
   }
 
   async function submitGuestOrder(e) {
@@ -462,7 +469,7 @@ export default function Pharmacy() {
               </div>
               <div>
                 <label className="block text-sm font-medium text-forest-900 mb-1">Photo de l'ordonnance</label>
-                <input required type="file" accept="image/png,image/jpeg" onChange={handleGuestImageChange}
+                <input required type="file" accept="image/png,image/jpeg,image/webp" onChange={handleGuestImageChange}
                   className="w-full text-sm" />
                 {guestForm.prescription_image && <p className="text-xs text-primary-700 mt-1">✓ Photo ajoutée</p>}
               </div>

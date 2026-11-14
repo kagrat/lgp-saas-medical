@@ -13,6 +13,7 @@ from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
 
 from app.database import get_db
+from app.ratelimit import rate_limit
 from app.models import Appointment, Doctor, Patient, User, UserRole, AppointmentStatus, AuditLog, VitalSigns, Establishment, DoctorAvailability, AppointmentTransferLog
 from app.schemas import (
     AppointmentCreate, AppointmentOut, AppointmentSearchRequest, AppointmentSearchResponse, AppointmentReschedule,
@@ -43,7 +44,7 @@ def _to_appointment_out(appointment: Appointment) -> AppointmentOut:
     )
 
 
-@router.post("/search", response_model=AppointmentSearchResponse)
+@router.post("/search", response_model=AppointmentSearchResponse, dependencies=[Depends(rate_limit("public-read", 120, 60))])
 def search_appointment_slots(payload: AppointmentSearchRequest, db: Session = Depends(get_db)):
     requested_doctor_id = payload.doctor_id
 
@@ -67,7 +68,7 @@ def search_appointment_slots(payload: AppointmentSearchRequest, db: Session = De
     return AppointmentSearchResponse(exact_match_available=exact_match, suggestions=suggestions)
 
 
-@router.get("/available-slots", response_model=AvailableSlotsResponse)
+@router.get("/available-slots", response_model=AvailableSlotsResponse, dependencies=[Depends(rate_limit("public-read", 120, 60))])
 def list_available_slots(doctor_id: str, target_date: str, db: Session = Depends(get_db)):
     """
     NOUVEAU (demande M. Faustin): contrairement a /search (qui suggere au
@@ -96,7 +97,7 @@ def list_available_slots(doctor_id: str, target_date: str, db: Session = Depends
     try:
         parsed_date = dt.strptime(target_date, "%Y-%m-%d").date()
     except ValueError:
-        raise HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_ENTITY, detail="Date invalide (format attendu: AAAA-MM-JJ)")
+        raise HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_CONTENT, detail="Date invalide (format attendu: AAAA-MM-JJ)")
 
     has_availability_configured = db.query(DoctorAvailability).filter(DoctorAvailability.doctor_id == doctor.id).first() is not None
 
@@ -155,7 +156,8 @@ def create_appointment(payload: AppointmentCreate, db: Session = Depends(get_db)
                      action="create_appointment", details=f"RDV créé pour patient {patient.dossier_number}"))
     # NOUVEAU (demande explicite de M. Faustin: "un medecin est alerte
     # pour un nouveau rendez-vous").
-    create_appointment_notification(db, doctor.user_id, doctor.establishment_id, current_user.full_name, appointment.scheduled_at)
+    create_appointment_notification(db, doctor.user_id, doctor.establishment_id, current_user.full_name, appointment.scheduled_at,
+                                    patient_id=patient.id, appointment_id=appointment.id)
     db.commit()
     db.refresh(appointment)
 
@@ -227,7 +229,8 @@ def book_appointment_for_patient(payload: AppointmentBookForPatient, db: Session
     db.add(appointment)
     db.add(AuditLog(user_id=current_user.id, establishment_id=doctor.establishment_id,
                      action="book_appointment_for_patient", details=f"RDV créé par le personnel pour patient {patient.dossier_number}"))
-    create_appointment_notification(db, doctor.user_id, doctor.establishment_id, patient.user.full_name, appointment.scheduled_at)
+    create_appointment_notification(db, doctor.user_id, doctor.establishment_id, patient.user.full_name, appointment.scheduled_at,
+                                    patient_id=patient.id, appointment_id=appointment.id)
     db.commit()
     db.refresh(appointment)
 
@@ -383,7 +386,7 @@ def transfer_appointment(appointment_id: str, payload: AppointmentTransfer, db: 
     if not new_doctor:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Médecin introuvable dans ton établissement")
     if new_doctor.id == appointment.doctor_id:
-        raise HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_ENTITY, detail="Ce rendez-vous est déjà avec ce médecin")
+        raise HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_CONTENT, detail="Ce rendez-vous est déjà avec ce médecin")
 
     conflict = (
         db.query(Appointment)
@@ -410,7 +413,8 @@ def transfer_appointment(appointment_id: str, payload: AppointmentTransfer, db: 
                      action="transfer_appointment",
                      details=f"RDV {appointment.id} transféré du médecin {old_doctor_id} vers {new_doctor.id}"))
     create_appointment_notification(db, new_doctor.user_id, appointment.establishment_id,
-                                     appointment.patient.user.full_name if appointment.patient else "Patient", appointment.scheduled_at)
+                                     appointment.patient.user.full_name if appointment.patient else "Patient", appointment.scheduled_at,
+                                     patient_id=appointment.patient_id, appointment_id=appointment.id)
     db.commit()
     db.refresh(appointment)
     return _to_appointment_out(appointment)

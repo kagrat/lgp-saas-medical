@@ -10,6 +10,7 @@ hospitalisations.
 """
 import uuid
 from datetime import datetime
+from app.timeutils import utcnow
 
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
@@ -140,7 +141,7 @@ def admit_patient(payload: AdmissionCreate, db: Session = Depends(get_db),
         # Infirmier ou admin d'etablissement: doivent obligatoirement
         # preciser QUEL medecin admet cliniquement le patient.
         if not payload.admitting_doctor_id:
-            raise HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_ENTITY, detail="Précise le médecin qui admet ce patient")
+            raise HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_CONTENT, detail="Précise le médecin qui admet ce patient")
         doctor = db.query(Doctor).filter(
             Doctor.id == payload.admitting_doctor_id, Doctor.establishment_id == current_user.establishment_id,
         ).first()
@@ -175,14 +176,14 @@ def admit_patient(payload: AdmissionCreate, db: Session = Depends(get_db),
     elif payload.room_id:
         has_beds = db.query(Bed).filter(Bed.room_id == payload.room_id).first()
         if has_beds:
-            raise HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_ENTITY, detail="Cette chambre a des lits individuels: précise lequel choisir")
+            raise HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_CONTENT, detail="Cette chambre a des lits individuels: précise lequel choisir")
 
     admission = Admission(
         id=str(uuid.uuid4()), establishment_id=current_user.establishment_id,
         patient_id=payload.patient_id, admitting_doctor_id=doctor.id,
         department_id=payload.department_id, room_id=payload.room_id, bed_id=payload.bed_id,
         status="active", diagnosis=payload.diagnosis,
-        admission_date=datetime.utcnow(), expected_discharge_date=payload.expected_discharge_date,
+        admission_date=utcnow(), expected_discharge_date=payload.expected_discharge_date,
     )
     db.add(admission)
     db.add(AuditLog(user_id=current_user.id, establishment_id=current_user.establishment_id,
@@ -354,7 +355,7 @@ def discharge_admission(admission_id: str, payload: AdmissionDischarge, db: Sess
         raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail="Cette hospitalisation est déjà terminée")
 
     admission.status = "discharged"
-    admission.actual_discharge_date = datetime.utcnow()
+    admission.actual_discharge_date = utcnow()
     admission.discharge_summary = payload.discharge_summary
 
     # CORRIGE (lacune identifiee lors d'un audit complet): le compte-rendu

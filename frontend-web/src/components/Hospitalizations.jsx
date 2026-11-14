@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react'
 import api, { getErrorMessage, getRole } from '../api/client'
+import { DocumentIdentity } from './ConsultationHistory'
 
 /**
  * NOUVEAU (hospitalisation, demande confirmee par M. Faustin): le medecin
@@ -362,7 +363,7 @@ export default function Hospitalizations() {
                 {detail.documents.map((d) => (
                   <div key={d.id} className="bg-white rounded-lg p-3 text-sm">
                     <p className="text-forest-900 font-medium">{d.title}</p>
-                    <p className="text-forest-700 text-xs mb-1">{d.doctor_name} - {new Date(d.created_at).toLocaleDateString('fr-FR')}</p>
+                    <DocumentIdentity doc={d} />
                     <p className="text-forest-700 whitespace-pre-wrap">{d.content}</p>
                   </div>
                 ))}

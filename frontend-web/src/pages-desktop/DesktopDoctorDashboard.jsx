@@ -18,6 +18,7 @@ import LabReferralForm from '../components/LabReferralForm'
 import DoctorReviewsList from '../components/DoctorReviewsList'
 import NotificationBell from '../components/NotificationBell'
 import SidebarLayout from '../components/SidebarLayout'
+import ConsultationHistory, { DocumentIdentity } from '../components/ConsultationHistory'
 
 export default function DesktopDoctorDashboard() {
   const [establishment, setEstablishment] = useState(null)
@@ -68,7 +69,12 @@ export default function DesktopDoctorDashboard() {
   // trouvee en retracant la logique completement: les rendez-vous
   // TERMINES etaient masques par defaut dans cette liste, la ou vivait
   // justement la fonctionnalite demandee. Personne ne pouvait la voir.
-  const [showCompleted, setShowCompleted] = useState(true)
+  // Un RDV termine QUITTE la liste des rendez-vous: son dossier vit dans
+  // "Patients" (demande de M. Faustin). Le bouton ci-dessous permet de
+  // consulter l'archive des RDV termines si besoin.
+  const [showCompleted, setShowCompleted] = useState(false)
+  const [focusPatientId, setFocusPatientId] = useState(null)
+  const [notice, setNotice] = useState('')
 
   useEffect(() => {
     loadEstablishment()
@@ -137,8 +143,18 @@ export default function DesktopDoctorDashboard() {
     setCompletingId(appointmentId)
     setError('')
     try {
+      const finished = appointments.find((a) => a.id === appointmentId)
       await api.post(`/appointments/${appointmentId}/complete`)
       await loadAppointments()
+      // Le dossier quitte la liste des RDV et s'ouvre dans "Patients".
+      setExpandedAppointmentId(null)
+      setDossierPatientId(null)
+      setDossierDetail(null)
+      if (finished) {
+        setFocusPatientId(finished.patient_id)
+        setNotice(`Consultation terminée : le dossier de ${finished.patient_name} est maintenant dans « Patients ».`)
+        setTab('patients')
+      }
     } catch (err) {
       setError(getErrorMessage(err, "Impossible de marquer ce rendez-vous comme terminé."))
     } finally {
@@ -269,6 +285,36 @@ export default function DesktopDoctorDashboard() {
     }
   }
 
+  // Clic sur une notification de la cloche: ouvre directement le dossier concerne.
+  async function handleNotificationOpen(n) {
+    setError('')
+    setNotice('')
+    if (n.appointment_id) {
+      try {
+        const { data } = await api.get('/appointments/establishment', { params: { include_completed: true } })
+        const target = data.find((a) => a.id === n.appointment_id)
+        if (target && target.status !== 'completed') {
+          if (!appointments.some((a) => a.id === target.id)) await loadAppointments()
+          setTab('appointments')
+          setExpandedAppointmentId(target.id)
+          openFullDossier(target.patient_id, true)
+          setTimeout(() => document.getElementById(`rdv-${target.id}`)?.scrollIntoView({ behavior: 'smooth', block: 'center' }), 150)
+          return
+        }
+      } catch (err) {
+        setError(getErrorMessage(err, "Impossible d'ouvrir ce rendez-vous."))
+        return
+      }
+    }
+    // RDV deja termine ou transfere, ou dossier partage: le dossier est dans "Patients".
+    if (n.patient_id) {
+      setFocusPatientId(null)
+      setTimeout(() => { setFocusPatientId(n.patient_id); setTab('patients') }, 0)
+    } else {
+      setTab('appointments')
+    }
+  }
+
   async function openFullDossier(patientId, forceOpen) {
     if (!forceOpen && dossierPatientId === patientId) {
       setDossierPatientId(null)
@@ -344,9 +390,9 @@ export default function DesktopDoctorDashboard() {
       subtitle="Ton espace médecin - tes rendez-vous et tes patients uniquement."
       tabs={tabs}
       activeTab={tab}
-      onTabChange={(id) => { setTab(id); setError('') }}
+      onTabChange={(id) => { setTab(id); setError(''); setNotice(''); if (id !== 'patients') setFocusPatientId(null) }}
       accentColor="bg-secondary-500"
-      headerRight={<div className="flex items-center gap-4"><NotificationBell /><UserProfileBadge /></div>}
+      headerRight={<div className="flex items-center gap-4"><NotificationBell onOpen={handleNotificationOpen} /><UserProfileBadge /></div>}
     >
       {error && <p className="text-clay-600 mb-6">{error}</p>}
 
@@ -354,16 +400,18 @@ export default function DesktopDoctorDashboard() {
         <div className="space-y-2">
           <div className="flex justify-between items-center mb-2">
             <p className="text-xs text-forest-700">
-              Ouvre un rendez-vous terminé pour retrouver toutes les options du dossier du patient.
+              {showCompleted
+                ? 'Archive: rendez-vous terminés inclus. Le dossier de chaque patient reste dans « Patients ».'
+                : 'Une fois terminé, un rendez-vous quitte cette liste: son dossier est dans « Patients ».'}
             </p>
             <button
               onClick={() => setShowCompleted((v) => !v)}
               className="text-xs text-amber-600 font-medium hover:underline shrink-0 ml-3"
             >
-              {showCompleted ? 'Masquer les terminés' : 'Afficher aussi les terminés'}
+              {showCompleted ? 'Masquer les terminés' : 'Voir l’archive des terminés'}
             </button>
           </div>
-          {appointments.length === 0 && <p className="text-forest-700">Aucun rendez-vous.</p>}
+          {appointments.length === 0 && <p className="text-forest-700">Aucun rendez-vous à traiter.</p>}
 
           {/* CORRIGE (demande explicite de M. Faustin: "Faut classer les
               informations: Nom du patient, Numero de dossier, Date du
@@ -384,7 +432,7 @@ export default function DesktopDoctorDashboard() {
           )}
 
           {appointments.map((a) => (
-            <div key={a.id} className="rounded-xl border border-forest-100 bg-white p-4">
+            <div key={a.id} id={`rdv-${a.id}`} className="rounded-xl border border-forest-100 bg-white p-4">
               <div className="grid sm:grid-cols-[1.5fr_1fr_1fr_0.8fr_auto_auto] gap-3 items-center">
                 <span className="text-forest-900 font-medium">{a.patient_name}</span>
                 <span className="text-sm text-forest-700">{a.dossier_number || '—'}</span>
@@ -658,14 +706,7 @@ export default function DesktopDoctorDashboard() {
 {dossierDetail && dossierTab === 'historique' && (
                               <div>
                                 <p className="text-sm font-medium text-forest-900 mb-2">Consultations passées</p>
-                                {dossierDetail.appointments.length === 0 && <p className="text-sm text-forest-700">Aucune consultation enregistrée.</p>}
-                                <div className="space-y-2">
-                                  {dossierDetail.appointments.map((ap) => (
-                                    <div key={ap.id} className="bg-forest-50 rounded-lg p-3 text-sm text-forest-900">
-                                      {new Date(ap.scheduled_at).toLocaleString('fr-FR')}
-                                    </div>
-                                  ))}
-                                </div>
+                                <ConsultationHistory appointments={dossierDetail.appointments} />
                               </div>
                             )}
                             {dossierDetail && dossierTab === 'documents' && (
@@ -676,7 +717,7 @@ export default function DesktopDoctorDashboard() {
                                   {dossierDetail.documents.map((d) => (
                                     <div key={d.id} className="bg-forest-50 rounded-lg p-3">
                                       <p className="text-sm font-medium text-forest-900">{d.title}</p>
-                                      <p className="text-xs text-forest-700 mb-1">{new Date(d.created_at).toLocaleDateString('fr-FR')}</p>
+                                      <DocumentIdentity doc={d} />
                                       <p className="text-sm text-forest-700 whitespace-pre-wrap">{d.content}</p>
                                     </div>
                                   ))}
@@ -729,7 +770,12 @@ export default function DesktopDoctorDashboard() {
         </div>
       )}
 
-      {tab === 'patients' && <MyPatients />}
+      {tab === 'patients' && (
+        <>
+          {notice && <p className="mb-4 rounded-lg bg-forest-50 border border-forest-100 text-forest-900 text-sm px-4 py-3" role="status">{notice}</p>}
+          <MyPatients initialPatientId={focusPatientId} />
+        </>
+      )}
 
       {tab === 'hospitalizations' && <Hospitalizations />}
 

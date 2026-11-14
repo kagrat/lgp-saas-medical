@@ -12,6 +12,7 @@ from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
 
 from app.database import get_db
+from app.ratelimit import rate_limit
 from app.models import Service, Room, User, UserRole, Admission, Department, Bed
 from app.schemas import ServiceCreate, ServiceOut, RoomCreate, RoomOut, BedOut
 from app.deps import require_roles
@@ -39,7 +40,7 @@ def list_my_services(db: Session = Depends(get_db),
     return db.query(Service).filter(Service.establishment_id == current_user.establishment_id).order_by(Service.name).all()
 
 
-@router.get("/establishment/{establishment_id}", response_model=list[ServiceOut])
+@router.get("/establishment/{establishment_id}", response_model=list[ServiceOut], dependencies=[Depends(rate_limit("public-read", 120, 60))])
 def public_services(establishment_id: str, db: Session = Depends(get_db)):
     """Public - permet a un patient de voir les tarifs avant de reserver."""
     return db.query(Service).filter(Service.establishment_id == establishment_id).order_by(Service.name).all()

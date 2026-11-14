@@ -3,9 +3,12 @@ Schemas Pydantic - validation stricte de toutes les entrees utilisateur.
 Aucune donnee n'atteint la base de donnees sans passer par un de ces schemas.
 """
 from datetime import datetime, date, time
+from app.timeutils import utcnow
 from typing import Optional
 from app.models import DocumentType
+import re
 from pydantic import BaseModel, EmailStr, Field, field_validator
+from app.validators import validate_image_data_url
 
 from app.models import UserRole, EstablishmentType, SubscriptionStatus, AppointmentStatus, ReservationStatus, DeliveryMode,DocumentType,LabTestStatus,MessageSenderRole
 
@@ -14,7 +17,7 @@ from app.models import UserRole, EstablishmentType, SubscriptionStatus, Appointm
 
 class LoginRequest(BaseModel):
     email: EmailStr
-    password: str = Field(min_length=8)
+    password: str = Field(min_length=8, max_length=128)
 
 
 class TokenResponse(BaseModel):
@@ -81,7 +84,7 @@ class PatientRegisterRequest(BaseModel):
     sont crees par un admin (establishment_admin ou super_admin), jamais
     par inscription publique, pour eviter toute elevation de privilege."""
     email: EmailStr
-    password: str = Field(min_length=8)
+    password: str = Field(min_length=8, max_length=128)
     full_name: str = Field(min_length=2, max_length=200)
     phone: Optional[str] = None
     date_of_birth: Optional[date] = None
@@ -108,7 +111,7 @@ class EstablishmentCreate(BaseModel):
     latitude: Optional[float] = Field(default=None, ge=-90, le=90)
     longitude: Optional[float] = Field(default=None, ge=-180, le=180)
     admin_email: EmailStr
-    admin_password: str = Field(min_length=8)
+    admin_password: str = Field(min_length=8, max_length=128)
     admin_full_name: str
 
 
@@ -139,9 +142,7 @@ class EstablishmentLogoUpdate(BaseModel):
     @field_validator("logo_url")
     @classmethod
     def valid_data_url(cls, v: str) -> str:
-        if not v.startswith("data:image/"):
-            raise ValueError("Le logo doit être une image valide (PNG ou JPEG)")
-        return v
+        return validate_image_data_url(v, max_decoded_bytes=600_000)
 
 
 class EstablishmentSearchResult(BaseModel):
@@ -221,7 +222,7 @@ class DoctorAvailabilityCreate(BaseModel):
 
 class DoctorCreate(BaseModel):
     email: EmailStr
-    password: str = Field(min_length=8)
+    password: str = Field(min_length=8, max_length=128)
     full_name: str
     phone: Optional[str] = None
     specialty: str
@@ -296,7 +297,7 @@ class AppointmentCreate(BaseModel):
     @field_validator("scheduled_at")
     @classmethod
     def must_be_future(cls, v: datetime) -> datetime:
-        if v < datetime.utcnow():
+        if v < utcnow():
             raise ValueError("Impossible de prendre un rendez-vous dans le passé")
         return v
 
@@ -316,7 +317,7 @@ class AppointmentBookForPatient(BaseModel):
     @field_validator("scheduled_at")
     @classmethod
     def must_be_future(cls, v: datetime) -> datetime:
-        if v < datetime.utcnow():
+        if v < utcnow():
             raise ValueError("Impossible de prendre un rendez-vous dans le passé")
         return v
 
@@ -491,14 +492,22 @@ class GuestReservationCreate(BaseModel):
     full_name: str = Field(min_length=2, max_length=200)
     phone: str = Field(min_length=6, max_length=30)
     delivery_mode: DeliveryMode = DeliveryMode.PICKUP
-    prescription_image: str = Field(max_length=8_000_000)
+    # ~3 Mo d'image au maximum (le navigateur la reduit avant envoi, voir Pharmacy.jsx).
+    prescription_image: str = Field(max_length=4_200_000)
+
+    @field_validator("phone")
+    @classmethod
+    def normalize_phone(cls, v: str) -> str:
+        """Un meme numero ecrit de plusieurs facons ("+229 94 85-68.98") donne UN seul compte invite."""
+        cleaned = re.sub(r"[\s\-().]", "", v)
+        if not re.fullmatch(r"\+?\d{6,20}", cleaned):
+            raise ValueError("Numéro de téléphone invalide (chiffres uniquement, avec l'indicatif si possible).")
+        return cleaned
 
     @field_validator("prescription_image")
     @classmethod
     def valid_image(cls, v: str) -> str:
-        if not v.startswith("data:image/"):
-            raise ValueError("L'ordonnance doit être une image valide (PNG ou JPEG)")
-        return v
+        return validate_image_data_url(v, max_decoded_bytes=3 * 1024 * 1024)
 
 
 class ReservationAddItem(BaseModel):
@@ -676,6 +685,9 @@ class MedicalDocumentOut(BaseModel):
     appointment_id: Optional[str] = None
     admission_id: Optional[str] = None
     patient_id: str
+    # Numero de dossier du patient, imprime sur chaque document/ordonnance
+    # pour l'identifier sans ambiguite (demande de M. Faustin).
+    dossier_number: Optional[str] = None
     doctor_name: str
     establishment_name: str
     document_type: DocumentType
@@ -906,6 +918,8 @@ class NotificationOut(BaseModel):
     message: str
     is_read: bool
     created_at: datetime
+    patient_id: Optional[str] = None
+    appointment_id: Optional[str] = None
 
     model_config = {"from_attributes": True}
 
@@ -1014,8 +1028,13 @@ class DoctorPatientOut(BaseModel):
 
 
 class DoctorPatientAppointmentOut(BaseModel):
+    """Une consultation de l'historique: date, numero de dossier du patient,
+    medecin et etablissement (demande de M. Faustin)."""
     id: str
     scheduled_at: datetime
+    dossier_number: Optional[str] = None
+    doctor_name: Optional[str] = None
+    establishment_name: Optional[str] = None
 
 
 class ClinicalFlagCreate(BaseModel):
@@ -1233,14 +1252,12 @@ class UserPhotoUpdate(BaseModel):
     @field_validator("photo_url")
     @classmethod
     def valid_data_url(cls, v: str) -> str:
-        if not v.startswith("data:image/"):
-            raise ValueError("La photo doit être une image valide (PNG ou JPEG)")
-        return v
+        return validate_image_data_url(v, max_decoded_bytes=600_000)
 
 
 class PasswordChangeRequest(BaseModel):
     current_password: str
-    new_password: str = Field(min_length=8)
+    new_password: str = Field(min_length=8, max_length=128)
 
     @field_validator("new_password")
     @classmethod
@@ -1258,7 +1275,7 @@ class ForgotPasswordRequest(BaseModel):
 
 class ResetPasswordRequest(BaseModel):
     token: str
-    new_password: str = Field(min_length=8)
+    new_password: str = Field(min_length=8, max_length=128)
 
     @field_validator("new_password")
     @classmethod
@@ -1271,7 +1288,7 @@ class ResetPasswordRequest(BaseModel):
 
 class StaffCreate(BaseModel):
     email: EmailStr
-    password: str = Field(min_length=8)
+    password: str = Field(min_length=8, max_length=128)
     full_name: str = Field(min_length=2, max_length=200)
     phone: Optional[str] = None
     role: UserRole
@@ -1404,7 +1421,7 @@ class AppointmentReschedule(BaseModel):
     @field_validator("new_scheduled_at")
     @classmethod
     def must_be_future(cls, v: datetime) -> datetime:
-        if v < datetime.utcnow():
+        if v < utcnow():
             raise ValueError("Impossible de reporter à une date passée")
         return v
 

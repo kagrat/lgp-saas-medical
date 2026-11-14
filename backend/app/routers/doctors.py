@@ -11,6 +11,7 @@ from app.specialties import canonical_specialty, specialty_variants
 from sqlalchemy.orm import Session
 
 from app.database import get_db
+from app.ratelimit import rate_limit
 from app.models import (
     Doctor, User, UserRole, DoctorAvailability, DoctorAbsence, Establishment,
     DoctorReview, Patient, Appointment, AppointmentStatus, MedicalDocument, PatientRecordShare, ClinicalFlag,
@@ -106,7 +107,7 @@ def create_doctor(payload: DoctorCreate, db: Session = Depends(get_db),
     return _to_doctor_out(db, doctor)
 
 
-@router.get("/search", response_model=list[DoctorOut])
+@router.get("/search", response_model=list[DoctorOut], dependencies=[Depends(rate_limit("public-read", 120, 60))])
 def search_doctors(
     specialty: Optional[str] = None,
     city: Optional[str] = None,
@@ -127,7 +128,7 @@ def search_doctors(
     return [_to_doctor_out(db, doctor) for doctor in query.limit(50).all()]
 
 
-@router.get("/{doctor_id}/profile", response_model=DoctorDetailOut)
+@router.get("/{doctor_id}/profile", response_model=DoctorDetailOut, dependencies=[Depends(rate_limit("public-read", 120, 60))])
 def doctor_public_profile(doctor_id: str, db: Session = Depends(get_db)):
     """NOUVEAU: fiche publique complete d'un medecin (page profil patient)."""
     doctor = db.query(Doctor).filter(Doctor.id == doctor_id, Doctor.is_active == True).first()
@@ -289,7 +290,8 @@ def create_or_update_review(doctor_id: str, payload: DoctorReviewCreate, db: Ses
     )
 
 
-@router.get("/{doctor_id}/reviews", response_model=list[DoctorReviewOut])
+@router.get("/{doctor_id}/reviews", response_model=list[DoctorReviewOut],
+            dependencies=[Depends(rate_limit("public-read", 120, 60))])
 def list_reviews(doctor_id: str, db: Session = Depends(get_db),
                   current_user: Optional[User] = Depends(get_current_user_optional)):
     """
@@ -593,7 +595,14 @@ def my_patient_detail(patient_id: str, db: Session = Depends(get_db),
         emergency_contact_name=patient.emergency_contact_name,
         emergency_contact_relation=patient.emergency_contact_relation,
         emergency_contact_phone=patient.emergency_contact_phone,
-        appointments=[DoctorPatientAppointmentOut(id=a.id, scheduled_at=a.scheduled_at) for a in source_appointments],
+        appointments=[
+            DoctorPatientAppointmentOut(
+                id=a.id, scheduled_at=a.scheduled_at, dossier_number=patient.dossier_number,
+                doctor_name=a.doctor.user.full_name if a.doctor and a.doctor.user else None,
+                establishment_name=a.establishment.name if a.establishment else None,
+            )
+            for a in source_appointments
+        ],
         documents=[_to_document_out(d) for d in documents],
         clinical_flags=[ClinicalFlagOut(id=f.id, flag_type=f.flag_type, label=f.label, created_at=f.created_at) for f in clinical_flags],
         can_add_document=can_add_document,
@@ -678,7 +687,7 @@ def share_patient_record(patient_id: str, payload: PatientRecordShareCreate, db:
     if not to_doctor:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Médecin destinataire introuvable")
     if to_doctor.id == doctor.id:
-        raise HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_ENTITY, detail="Tu ne peux pas t'envoyer un dossier à toi-même")
+        raise HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_CONTENT, detail="Tu ne peux pas t'envoyer un dossier à toi-même")
 
     share = PatientRecordShare(
         id=str(uuid.uuid4()), patient_id=patient_id, from_doctor_id=doctor.id,
@@ -689,7 +698,7 @@ def share_patient_record(patient_id: str, payload: PatientRecordShareCreate, db:
     patient = db.query(Patient).filter(Patient.id == patient_id).first()
     # NOUVEAU (demande explicite de M. Faustin: "si un confrere lui envoi
     # un patient ou un dossier").
-    create_dossier_share_notification(db, to_doctor.user_id, to_doctor.establishment_id, current_user.full_name, patient.user.full_name)
+    create_dossier_share_notification(db, to_doctor.user_id, to_doctor.establishment_id, current_user.full_name, patient.user.full_name, patient_id=patient.id)
     db.commit()
     db.refresh(share)
 

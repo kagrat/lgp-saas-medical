@@ -5,14 +5,14 @@ import jsPDF from 'jspdf'
  * ordonnance, un resultat de labo, ou tout document texte du dossier
  * de sante. Mise en page volontairement sobre - lisible et imprimable.
  */
-export function downloadDocumentAsPdf({ title, subtitle, meta, content, filename }) {
+export function downloadDocumentAsPdf({ title, subtitle, meta, content, filename, dossierNumber }) {
   const doc = new jsPDF({ unit: 'mm', format: 'a4' })
   const marginX = 20
   let y = 25
 
   doc.setFontSize(10)
   doc.setTextColor(120, 120, 120)
-  doc.text('LGP Santé', marginX, y)
+  doc.text('SpeedSanté+', marginX, y)
   y += 12
 
   doc.setFontSize(16)
@@ -25,6 +25,14 @@ export function downloadDocumentAsPdf({ title, subtitle, meta, content, filename
     doc.setTextColor(90, 90, 90)
     doc.text(subtitle, marginX, y)
     y += 8
+  }
+
+  // Numero de dossier patient: identifie sans ambiguite le document (ordonnances comprises).
+  if (dossierNumber) {
+    doc.setFontSize(11)
+    doc.setTextColor(20, 40, 30)
+    doc.text(`N° de dossier patient : ${dossierNumber}`, marginX, y)
+    y += 7
   }
 
   if (meta && meta.length > 0) {

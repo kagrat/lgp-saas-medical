@@ -1,6 +1,7 @@
 import { Routes, Route, Outlet } from 'react-router-dom'
 import Navbar from './components/Navbar'
 import ProtectedRoute from './components/ProtectedRoute'
+import { getRole } from './api/client'
 import PatientLayout from './components/PatientLayout'
 import Home from './pages/Home'
 import Login from './pages/Login'
@@ -40,6 +41,17 @@ function PublicShell() {
   )
 }
 
+/**
+ * La pharmacie est ouverte a TOUS (commande avec ordonnance sans compte, demande
+ * explicite de M. Faustin): un patient connecte la voit dans son portail (menu
+ * lateral), un visiteur sans compte dans l'habillage public. Avant, la page
+ * etait reservee aux patients connectes: le bouton "commander sans compte"
+ * etait donc inatteignable pour les personnes auxquelles il etait destine.
+ */
+function PharmacyLayout() {
+  return getRole() === 'patient' ? <PatientLayout /> : <PublicShell />
+}
+
 export default function App() {
   return (
     <Routes>
@@ -63,6 +75,10 @@ export default function App() {
           lateral pour un patient, barre classique pour les autres),
           corrigeant l'incoherence ou un patient perdait temporairement
           son menu lateral en visitant cette page partagee. */}
+      <Route element={<PharmacyLayout />}>
+        <Route path="/pharmacie" element={<Pharmacy />} />
+      </Route>
+
       <Route path="/profil" element={<ProtectedRoute><Profile /></ProtectedRoute>} />
 
       {/* EstablishmentAdmin a deja son propre menu lateral integre (voir
@@ -83,7 +99,6 @@ export default function App() {
         <Route path="/mes-analyses" element={<PatientLabResults />} />
         <Route path="/mes-factures" element={<MyInvoices />} />
         <Route path="/consultation" element={<Consultation />} />
-        <Route path="/pharmacie" element={<Pharmacy />} />
         <Route path="/laboratoire" element={<Laboratory />} />
         <Route path="/messages" element={<PatientMessages />} />
       </Route>

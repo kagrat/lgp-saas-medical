@@ -40,6 +40,7 @@ export default function PatientRecords() {
     downloadDocumentAsPdf({
       title: doc.title,
       subtitle: doc.document_type,
+      dossierNumber: doc.dossier_number,
       meta: [
         `Médecin: ${doc.doctor_name}`,
         `Établissement: ${doc.establishment_name}`,
@@ -75,7 +76,7 @@ export default function PatientRecords() {
                   </div>
                 </div>
                 <p className="text-xs text-forest-700">
-                  {doc.doctor_name} - {doc.establishment_name} - {new Date(doc.created_at).toLocaleDateString('fr-FR')}
+                  <span className="font-medium text-forest-900">N° dossier : {doc.dossier_number || '—'}</span> - {doc.doctor_name} - {doc.establishment_name} - {new Date(doc.created_at).toLocaleDateString('fr-FR')}
                 </p>
                 {expandedDocId === doc.id && (
                   <p className="text-sm text-forest-700 mt-2 pt-2 border-t border-forest-100 whitespace-pre-wrap">{doc.content}</p>

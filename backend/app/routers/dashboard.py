@@ -4,6 +4,7 @@ Module 6 - Tableau de bord (stats etablissement + stats globales super admin
 """
 from collections import defaultdict
 from datetime import datetime, timedelta
+from app.timeutils import utcnow
 
 from fastapi import APIRouter, Depends
 from sqlalchemy.orm import Session
@@ -35,7 +36,7 @@ def _percent_change(current: float, previous: float) -> float | None:
 def establishment_stats(db: Session = Depends(get_db),
                          current_user: User = Depends(require_roles(UserRole.ESTABLISHMENT_ADMIN))):
     establishment_id = current_user.establishment_id
-    now = datetime.utcnow()
+    now = utcnow()
     this_month_start = now.replace(day=1, hour=0, minute=0, second=0, microsecond=0)
     last_month_end = this_month_start - timedelta(seconds=1)
     last_month_start = last_month_end.replace(day=1, hour=0, minute=0, second=0, microsecond=0)
@@ -111,7 +112,7 @@ def global_stats(db: Session = Depends(get_db),
 def global_trends(months: int = 6, db: Session = Depends(get_db),
                    current_user: User = Depends(require_roles(UserRole.SUPER_ADMIN))):
     months = max(1, min(months, 24))
-    cutoff = datetime.utcnow() - timedelta(days=31 * months)
+    cutoff = utcnow() - timedelta(days=31 * months)
 
     rows = (
         db.query(Appointment.scheduled_at, Doctor.consultation_price, Appointment.establishment_id, Establishment.name)
@@ -134,7 +135,7 @@ def global_trends(months: int = 6, db: Session = Depends(get_db),
         by_establishment[est_id]["revenue"] += price or 0
 
     keys_in_order = []
-    cursor = datetime.utcnow().replace(day=1)
+    cursor = utcnow().replace(day=1)
     for _ in range(months):
         keys_in_order.append((cursor.year, cursor.month))
         if cursor.month == 1:

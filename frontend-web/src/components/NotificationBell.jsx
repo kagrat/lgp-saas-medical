@@ -7,7 +7,7 @@ import api, { getErrorMessage } from '../api/client'
  * d'alerte de stock existaient deja comme donnee mais rien ne se
  * declenchait dessus.
  */
-export default function NotificationBell() {
+export default function NotificationBell({ onOpen }) {
   const [notifications, setNotifications] = useState([])
   const [open, setOpen] = useState(false)
   const [error, setError] = useState('')
@@ -35,6 +35,16 @@ export default function NotificationBell() {
       await load()
     } catch {
       // silencieux, pas bloquant
+    }
+  }
+
+  // Clic sur une notification: marque comme lue, ferme la liste et, si le
+  // portail sait ouvrir la cible (dossier / rendez-vous), l'ouvre directement.
+  function handleClick(n) {
+    if (!n.is_read) markRead(n.id)
+    if (onOpen && (n.appointment_id || n.patient_id)) {
+      setOpen(false)
+      onOpen(n)
     }
   }
 
@@ -70,12 +80,15 @@ export default function NotificationBell() {
           {notifications.map((n) => (
             <button
               key={n.id}
-              onClick={() => !n.is_read && markRead(n.id)}
+              onClick={() => handleClick(n)}
               className={`block w-full text-left p-3 border-b border-forest-50 hover:bg-forest-50 transition ${!n.is_read ? 'bg-amber-500/5' : ''}`}
             >
               <p className="text-sm text-forest-900 font-medium">{n.title}</p>
               <p className="text-xs text-forest-700">{n.message}</p>
               <p className="text-xs text-forest-500 mt-1">{new Date(n.created_at).toLocaleString('fr-FR')}</p>
+              {onOpen && (n.appointment_id || n.patient_id) && (
+                <p className="text-xs text-amber-600 font-medium mt-1">Ouvrir le dossier →</p>
+              )}
             </button>
           ))}
         </div>

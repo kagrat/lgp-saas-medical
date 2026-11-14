@@ -9,6 +9,7 @@ establishment_id issu du token JWT de l'utilisateur connecte
 import enum
 import uuid
 from datetime import datetime
+from app.timeutils import utcnow
 
 from sqlalchemy import (
     Column, String, Boolean, Integer, Float, DateTime, ForeignKey, Enum, Text, Date, Time
@@ -87,7 +88,7 @@ class Establishment(Base):
     longitude = Column(Float, nullable=True)
     subscription_status = Column(Enum(SubscriptionStatus), default=SubscriptionStatus.TRIAL)
     is_active = Column(Boolean, default=True)
-    created_at = Column(DateTime, default=datetime.utcnow)
+    created_at = Column(DateTime, default=utcnow)
     # NOUVEAU (demande explicite de M. Faustin: profil d'etablissement
     # avec logo). Stocke l'image directement en base (format "data URL"
     # base64) plutot que via un service de stockage de fichiers externe -
@@ -119,7 +120,7 @@ class Department(Base):
     establishment_id = Column(UUID(as_uuid=False), ForeignKey("establishments.id"), nullable=False)
     name = Column(String(150), nullable=False)
     head_user_id = Column(UUID(as_uuid=False), ForeignKey("users.id"), nullable=True)
-    created_at = Column(DateTime, default=datetime.utcnow)
+    created_at = Column(DateTime, default=utcnow)
 
     establishment = relationship("Establishment")
     head_user = relationship("User", foreign_keys=[head_user_id])
@@ -149,11 +150,11 @@ class Admission(Base):
     bed_id = Column(UUID(as_uuid=False), ForeignKey("beds.id"), nullable=True)
     status = Column(String(20), nullable=False, default="active")
     diagnosis = Column(Text, nullable=True)
-    admission_date = Column(DateTime, nullable=False, default=datetime.utcnow)
+    admission_date = Column(DateTime, nullable=False, default=utcnow)
     expected_discharge_date = Column(DateTime, nullable=True)
     actual_discharge_date = Column(DateTime, nullable=True)
     discharge_summary = Column(Text, nullable=True)
-    created_at = Column(DateTime, default=datetime.utcnow)
+    created_at = Column(DateTime, default=utcnow)
 
     establishment = relationship("Establishment")
     patient = relationship("Patient")
@@ -183,7 +184,7 @@ class VitalSigns(Base):
     admission_id = Column(UUID(as_uuid=False), ForeignKey("admissions.id"), nullable=True)
     appointment_id = Column(UUID(as_uuid=False), ForeignKey("appointments.id"), nullable=True)
     recorded_by_user_id = Column(UUID(as_uuid=False), ForeignKey("users.id"), nullable=False)
-    recorded_at = Column(DateTime, default=datetime.utcnow)
+    recorded_at = Column(DateTime, default=utcnow)
     weight_kg = Column(Float, nullable=True)
     temperature_celsius = Column(Float, nullable=True)
     blood_pressure = Column(String(20), nullable=True)  # format libre "120/80"
@@ -215,7 +216,7 @@ class MedicationAdministration(Base):
     medication_name = Column(String(200), nullable=False)
     dosage = Column(String(100), nullable=True)
     administered_by_user_id = Column(UUID(as_uuid=False), ForeignKey("users.id"), nullable=False)
-    administered_at = Column(DateTime, default=datetime.utcnow)
+    administered_at = Column(DateTime, default=utcnow)
     status = Column(String(20), nullable=False, default="given")  # "given", "held", "refused"
     notes = Column(Text, nullable=True)
 
@@ -236,7 +237,7 @@ class AdmissionTransfer(Base):
     to_room_id = Column(UUID(as_uuid=False), ForeignKey("rooms.id"), nullable=True)
     transferred_by_user_id = Column(UUID(as_uuid=False), ForeignKey("users.id"), nullable=False)
     note = Column(Text, nullable=True)
-    created_at = Column(DateTime, default=datetime.utcnow)
+    created_at = Column(DateTime, default=utcnow)
 
     admission = relationship("Admission", back_populates="transfers")
     from_department = relationship("Department", foreign_keys=[from_department_id])
@@ -265,7 +266,7 @@ class User(Base):
     residence = Column(String(200), nullable=True)
     role = Column(Enum(UserRole), nullable=False)
     is_active = Column(Boolean, default=True)
-    created_at = Column(DateTime, default=datetime.utcnow)
+    created_at = Column(DateTime, default=utcnow)
     # NOUVEAU (audit de securite complet, demande explicite de M. Faustin:
     # traiter les 5 points trouves): protection anti force-brute sur la
     # connexion - stockee en base (pas seulement en memoire, qui se
@@ -307,7 +308,7 @@ class PasswordResetToken(Base):
     token_hash = Column(String(64), nullable=False, index=True)  # sha256 hexdigest
     expires_at = Column(DateTime, nullable=False)
     used = Column(Boolean, default=False)
-    created_at = Column(DateTime, default=datetime.utcnow)
+    created_at = Column(DateTime, default=utcnow)
 
     user = relationship("User")
 
@@ -326,7 +327,7 @@ class TwoFactorCode(Base):
     code_hash = Column(String(64), nullable=False, index=True)  # sha256 hexdigest
     expires_at = Column(DateTime, nullable=False)
     used = Column(Boolean, default=False)
-    created_at = Column(DateTime, default=datetime.utcnow)
+    created_at = Column(DateTime, default=utcnow)
 
     user = relationship("User")
 
@@ -347,7 +348,7 @@ class StaffProfile(Base):
     hire_date = Column(Date, nullable=True)
     contract_type = Column(String(50), nullable=True)       # CDI, CDD, stage...
     license_number = Column(String(100), nullable=True)     # numero d'ordre/diplome si applicable
-    created_at = Column(DateTime, default=datetime.utcnow)
+    created_at = Column(DateTime, default=utcnow)
 
     user = relationship("User", back_populates="staff_profile")
     department = relationship("Department")
@@ -437,7 +438,7 @@ class Appointment(Base):
     duration_minutes = Column(Integer, default=30)
     status = Column(Enum(AppointmentStatus), default=AppointmentStatus.CONFIRMED)
     notes = Column(Text)
-    created_at = Column(DateTime, default=datetime.utcnow)
+    created_at = Column(DateTime, default=utcnow)
 
     establishment = relationship("Establishment", back_populates="appointments")
     doctor = relationship("Doctor", back_populates="appointments")
@@ -496,7 +497,7 @@ class PharmacyStockBatch(Base):
     quantity_received = Column(Integer, nullable=False)
     expiration_date = Column(Date, nullable=False)
     created_by_user_id = Column(UUID(as_uuid=False), ForeignKey("users.id"), nullable=True)
-    created_at = Column(DateTime, default=datetime.utcnow)
+    created_at = Column(DateTime, default=utcnow)
 
     stock_item = relationship("PharmacyStock")
 
@@ -520,7 +521,7 @@ class PharmacyReservation(Base):
     status = Column(Enum(ReservationStatus), default=ReservationStatus.PENDING)
     estimated_ready_at = Column(DateTime, nullable=True)
     pharmacist_note = Column(Text, nullable=True)
-    created_at = Column(DateTime, default=datetime.utcnow)
+    created_at = Column(DateTime, default=utcnow)
     # NOUVEAU (lien ordonnance -> pharmacie): reference optionnelle vers
     # l'ordonnance d'origine, pour que le pharmacien puisse la consulter
     # lors de sa verification.
@@ -588,7 +589,7 @@ class AuditLog(Base):
     establishment_id = Column(UUID(as_uuid=False), ForeignKey("establishments.id"), nullable=True)
     action = Column(String(200), nullable=False)
     details = Column(Text)
-    created_at = Column(DateTime, default=datetime.utcnow)
+    created_at = Column(DateTime, default=utcnow)
     
 class DoctorReview(Base):
     """Avis patient sur un medecin - uniquement apres un RDV termine, pour eviter les faux avis."""
@@ -599,7 +600,7 @@ class DoctorReview(Base):
     patient_id = Column(UUID(as_uuid=False), ForeignKey("patients.id"), nullable=False)
     rating = Column(Integer, nullable=False)  # 1 a 5
     comment = Column(Text)
-    created_at = Column(DateTime, default=datetime.utcnow)
+    created_at = Column(DateTime, default=utcnow)
 
     doctor = relationship("Doctor")
     patient = relationship("Patient")
@@ -613,7 +614,7 @@ class PharmacyReservationStatusHistory(Base):
     status = Column(Enum(ReservationStatus), nullable=False)
     note = Column(Text, nullable=True)
     changed_by_user_id = Column(UUID(as_uuid=False), ForeignKey("users.id"), nullable=True)
-    created_at = Column(DateTime, default=datetime.utcnow)
+    created_at = Column(DateTime, default=utcnow)
 
 class DocumentType(str, enum.Enum):
     PRESCRIPTION = "prescription"
@@ -659,7 +660,7 @@ class MedicalDocument(Base):
     document_type = Column(Enum(DocumentType), nullable=False)
     title = Column(String(200), nullable=False)
     content = Column(Text, nullable=False)
-    created_at = Column(DateTime, default=datetime.utcnow)
+    created_at = Column(DateTime, default=utcnow)
 
     appointment = relationship("Appointment")
     admission = relationship("Admission")
@@ -736,7 +737,7 @@ class ClinicalFlag(Base):
     flag_type = Column(Enum(ClinicalFlagType), nullable=False, default=ClinicalFlagType.OTHER)
     label = Column(String(200), nullable=False)
     created_by_user_id = Column(UUID(as_uuid=False), ForeignKey("users.id"), nullable=False)
-    created_at = Column(DateTime, default=datetime.utcnow)
+    created_at = Column(DateTime, default=utcnow)
 
     patient = relationship("Patient")
     created_by = relationship("User")
@@ -759,7 +760,7 @@ class PatientRecordShare(Base):
     from_doctor_id = Column(UUID(as_uuid=False), ForeignKey("doctors.id"), nullable=False)
     to_doctor_id = Column(UUID(as_uuid=False), ForeignKey("doctors.id"), nullable=False)
     note = Column(Text, nullable=True)
-    created_at = Column(DateTime, default=datetime.utcnow)
+    created_at = Column(DateTime, default=utcnow)
 
     patient = relationship("Patient")
     from_doctor = relationship("Doctor", foreign_keys=[from_doctor_id])
@@ -788,7 +789,7 @@ class AppointmentTransferLog(Base):
     from_doctor_id = Column(UUID(as_uuid=False), ForeignKey("doctors.id"), nullable=False, index=True)
     to_doctor_id = Column(UUID(as_uuid=False), ForeignKey("doctors.id"), nullable=False, index=True)
     transferred_by_user_id = Column(UUID(as_uuid=False), ForeignKey("users.id"), nullable=False)
-    created_at = Column(DateTime, default=datetime.utcnow)
+    created_at = Column(DateTime, default=utcnow)
 
     patient = relationship("Patient")
     from_doctor = relationship("Doctor", foreign_keys=[from_doctor_id])
@@ -820,7 +821,7 @@ class LabTestRequest(Base):
     scheduled_sample_at = Column(DateTime, nullable=True)
     results_text = Column(Text, nullable=True)
     lab_technician_note = Column(Text, nullable=True)
-    created_at = Column(DateTime, default=datetime.utcnow)
+    created_at = Column(DateTime, default=utcnow)
     referred_by_establishment_id = Column(UUID(as_uuid=False), ForeignKey("establishments.id"), nullable=True)
     referred_by_doctor_id = Column(UUID(as_uuid=False), ForeignKey("doctors.id"), nullable=True)
     # NOUVEAU (lacune identifiee lors d'un audit complet: aucune distinction
@@ -871,7 +872,7 @@ class Message(Base):
     sender_role = Column(Enum(MessageSenderRole), nullable=False)
     sender_name = Column(String(200), nullable=False)
     content = Column(Text, nullable=False)
-    created_at = Column(DateTime, default=datetime.utcnow)
+    created_at = Column(DateTime, default=utcnow)
 
 class InternalMessage(Base):
     """
@@ -891,7 +892,7 @@ class InternalMessage(Base):
     sender_name = Column(String(200), nullable=False)
     content = Column(Text, nullable=False)
     is_read = Column(Boolean, default=False)
-    created_at = Column(DateTime, default=datetime.utcnow)
+    created_at = Column(DateTime, default=utcnow)
 
 
 class Dependent(Base):
@@ -937,7 +938,7 @@ class Invoice(Base):
     status = Column(String(20), nullable=False, default="issued")
     total_amount = Column(Float, nullable=False, default=0)
     notes = Column(Text, nullable=True)
-    issued_at = Column(DateTime, default=datetime.utcnow)
+    issued_at = Column(DateTime, default=utcnow)
     due_date = Column(DateTime, nullable=True)
     # Reference libre vers l'origine (rendez-vous, hospitalisation...) -
     # jamais une contrainte stricte, car une facture peut regrouper
@@ -980,7 +981,7 @@ class Payment(Base):
     payment_method = Column(String(30), nullable=False)
     reference = Column(String(100), nullable=True)  # ex: reference de transaction Mobile Money
     recorded_by_user_id = Column(UUID(as_uuid=False), ForeignKey("users.id"), nullable=False)
-    paid_at = Column(DateTime, default=datetime.utcnow)
+    paid_at = Column(DateTime, default=utcnow)
 
     invoice = relationship("Invoice", back_populates="payments")
     recorded_by = relationship("User")
@@ -1005,7 +1006,12 @@ class Notification(Base):
     title = Column(String(200), nullable=False)
     message = Column(Text, nullable=False)
     is_read = Column(Boolean, default=False)
-    created_at = Column(DateTime, default=datetime.utcnow)
+    created_at = Column(DateTime, default=utcnow)
+    # Lien vers l'objet concerne: un clic sur la cloche ouvre directement le
+    # dossier / le rendez-vous (demande de M. Faustin). NULL = notification
+    # sans cible precise (alerte de stock, etc.).
+    patient_id = Column(UUID(as_uuid=False), ForeignKey("patients.id"), nullable=True)
+    appointment_id = Column(UUID(as_uuid=False), ForeignKey("appointments.id"), nullable=True)
 
     establishment = relationship("Establishment")
     user = relationship("User")
@@ -1026,7 +1032,7 @@ class InventoryItem(Base):
     quantity = Column(Integer, nullable=False, default=0)
     unit = Column(String(30), nullable=True)  # ex: "unites", "boites", "litres"
     alert_threshold = Column(Integer, nullable=False, default=5)
-    created_at = Column(DateTime, default=datetime.utcnow)
+    created_at = Column(DateTime, default=utcnow)
 
     establishment = relationship("Establishment")
 
@@ -1072,7 +1078,7 @@ class LeaveRequest(Base):
     reviewed_by_user_id = Column(UUID(as_uuid=False), ForeignKey("users.id"), nullable=True)
     reviewed_at = Column(DateTime, nullable=True)
     review_note = Column(String(300), nullable=True)
-    created_at = Column(DateTime, default=datetime.utcnow)
+    created_at = Column(DateTime, default=utcnow)
 
     establishment = relationship("Establishment")
     user = relationship("User", foreign_keys=[user_id])
@@ -1203,7 +1209,7 @@ class PurchaseOrder(Base):
     quantity = Column(Integer, nullable=False, default=1)
     status = Column(String(20), nullable=False, default="pending")  # pending, received, cancelled
     ordered_by_user_id = Column(UUID(as_uuid=False), ForeignKey("users.id"), nullable=False)
-    ordered_at = Column(DateTime, default=datetime.utcnow)
+    ordered_at = Column(DateTime, default=utcnow)
     received_at = Column(DateTime, nullable=True)
 
     establishment = relationship("Establishment")
@@ -1220,4 +1226,12 @@ class SupportMessage(Base):
     sender_role = Column(String(20), nullable=False)  # "user" ou "support"
     sender_name = Column(String(200), nullable=False)
     content = Column(Text, nullable=False)
-    created_at = Column(DateTime, default=datetime.utcnow)
+    created_at = Column(DateTime, default=utcnow)
+
+# --- Index de performance (liste unique dans app/indexes.py, migration 0002) ---
+from sqlalchemy import Index as _Index  # noqa: E402
+from app.indexes import HOT_INDEXES as _HOT_INDEXES, index_name as _index_name  # noqa: E402
+
+for _table, _cols in _HOT_INDEXES:
+    _t = Base.metadata.tables[_table]
+    _Index(_index_name(_table, _cols), *[_t.c[c] for c in _cols])

@@ -1,0 +1,7 @@
+# Dependances de DEVELOPPEMENT et de CI uniquement (jamais installees en production).
+# Contraintes alignees sur le verrouillage de production (-c requirements.txt).
+-c requirements.txt
+pytest~=9.2
+pytest-cov~=7.0
+httpx~=0.28
+pip-audit~=2.9

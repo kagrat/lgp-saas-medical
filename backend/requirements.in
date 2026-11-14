@@ -1,0 +1,33 @@
+# ============================================================================
+# DEPENDANCES DIRECTES DE PRODUCTION (ce que le projet utilise vraiment)
+# ============================================================================
+# Ce fichier exprime l'INTENTION (versions compatibles). Le fichier
+# requirements.txt en est la version VERROUILLEE: toutes les versions exactes,
+# dependances indirectes comprises, avec empreintes cryptographiques (hash).
+# C'est requirements.txt qui est installe en production (Dockerfile).
+#
+# Pour ajouter ou mettre a jour une dependance (voir docs/EXPLOITATION.md):
+#   1) modifier CE fichier
+#   2) regenerer le verrouillage:   sh scripts/lock_dependencies.sh
+#   3) lancer les tests, puis commiter requirements.in ET requirements.txt
+#
+# Pourquoi verrouiller aussi les dependances indirectes: en octobre 2026,
+# "scramp" 1.5.0 a supprime une fonction appelee par pg8000 et le serveur ne
+# demarrait plus alors que RIEN n'avait change dans ce projet.
+fastapi~=0.162
+uvicorn[standard]~=0.54
+sqlalchemy>=2.0.35,<2.1
+pg8000>=1.31.5,<1.32
+pydantic~=2.14
+pydantic-settings~=2.16
+email-validator~=2.3
+# Jetons de connexion (remplace python-jose: 4 failles connues, dependance
+# ecdsa sans correctif prevu).
+PyJWT[crypto]~=2.15
+# Hachage des mots de passe (remplace passlib: abandonne depuis 2020).
+bcrypt~=5.0
+alembic>=1.13,<2
+python-dotenv>=1.2.2
+# Envoi des SMS (app/services/notifications.py). Etait oublie: ne figurait que dans
+# les dependances de test, le serveur de production n'aurait pas demarre.
+httpx~=0.28

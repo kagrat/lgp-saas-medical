@@ -30,7 +30,7 @@ export default function PatientPrescriptions() {
 
   function downloadPdf(doc) {
     downloadDocumentAsPdf({
-      title: doc.title, subtitle: 'Ordonnance',
+      title: doc.title, subtitle: 'Ordonnance', dossierNumber: doc.dossier_number,
       meta: [
         `Médecin: ${doc.doctor_name}`, `Établissement: ${doc.establishment_name}`,
         `Date: ${new Date(doc.created_at).toLocaleDateString('fr-FR')}`,
@@ -61,7 +61,7 @@ export default function PatientPrescriptions() {
               </div>
             </div>
             <p className="text-xs text-forest-700">
-              {doc.doctor_name} - {doc.establishment_name} - {new Date(doc.created_at).toLocaleDateString('fr-FR')}
+              <span className="font-medium text-forest-900">N° dossier : {doc.dossier_number || '—'}</span> - {doc.doctor_name} - {doc.establishment_name} - {new Date(doc.created_at).toLocaleDateString('fr-FR')}
             </p>
             {expandedId === doc.id && (
               <p className="text-sm text-forest-700 mt-2 pt-2 border-t border-forest-100 whitespace-pre-wrap">{doc.content}</p>

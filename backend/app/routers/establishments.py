@@ -15,6 +15,7 @@ from app.specialties import specialty_variants
 from sqlalchemy.orm import Session
 
 from app.database import get_db
+from app.ratelimit import rate_limit
 from app.models import Establishment, Doctor, User, UserRole, AuditLog, Department, StaffProfile
 from app.schemas import (
     EstablishmentCreate, EstablishmentOut, EstablishmentSearchResult,
@@ -135,7 +136,7 @@ def update_my_establishment(payload: EstablishmentSelfUpdate, db: Session = Depe
     return establishment
 
 
-@router.get("/search", response_model=list[EstablishmentSearchResult])
+@router.get("/search", response_model=list[EstablishmentSearchResult], dependencies=[Depends(rate_limit("public-read", 120, 60))])
 def search_establishments(specialty: str, city: Optional[str] = None, db: Session = Depends(get_db)):
     """
     NOUVEAU - parcours "Consultation" etablissement-first (remplace l'ancien
@@ -250,7 +251,7 @@ def create_staff_member(payload: StaffCreate, db: Session = Depends(get_db),
                          current_user: User = Depends(require_roles(UserRole.ESTABLISHMENT_ADMIN, UserRole.HR_MANAGER))):
     if payload.role not in ALLOWED_STAFF_ROLES:
         raise HTTPException(
-            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            status_code=status.HTTP_422_UNPROCESSABLE_CONTENT,
             detail="Rôle invalide - utilise secretary, pharmacist, lab_technician, nurse, receptionist, accountant ou hr_manager",
         )
 

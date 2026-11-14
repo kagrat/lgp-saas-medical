@@ -431,7 +431,7 @@ def send_internal_message(other_user_id: str, payload: InternalMessageCreate, db
     if not other_user:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Collègue introuvable dans ton établissement")
     if other_user.id == current_user.id:
-        raise HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_ENTITY, detail="Impossible de s'envoyer un message à soi-même")
+        raise HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_CONTENT, detail="Impossible de s'envoyer un message à soi-même")
 
     message = InternalMessage(
         id=str(uuid.uuid4()), establishment_id=current_user.establishment_id,

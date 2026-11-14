@@ -3,6 +3,7 @@ import api, { getErrorMessage } from '../api/client'
 import { DocumentTypeBadge, SELECTABLE_DOCUMENT_TYPES, DOCUMENT_TYPE_LABELS } from './DocumentType'
 import PrescriptionItemsEditor from './PrescriptionItemsEditor'
 import { downloadDocumentAsPdf } from '../utils/pdf'
+import ConsultationHistory, { DocumentIdentity } from './ConsultationHistory'
 
 function calculateAge(dateOfBirth) {
   if (!dateOfBirth) return null
@@ -19,7 +20,7 @@ function calculateAge(dateOfBirth) {
  * termine), avec la possibilite de completer leur dossier en cliquant sur
  * leur nom, et d'envoyer ce dossier a un confrere.
  */
-export default function MyPatients() {
+export default function MyPatients({ initialPatientId }) {
   const [patients, setPatients] = useState([])
   const [search, setSearch] = useState('')
   const [error, setError] = useState('')
@@ -68,6 +69,12 @@ export default function MyPatients() {
     load()
     loadSharedWithMe()
   }, [])
+
+  // Ouverture directe du dossier (fin de consultation, clic sur une notification).
+  useEffect(() => {
+    if (initialPatientId) openPatient(initialPatientId)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [initialPatientId])
 
   async function load(query) {
     setError('')
@@ -272,6 +279,7 @@ export default function MyPatients() {
   function downloadDocument(doc) {
     downloadDocumentAsPdf({
       title: doc.title, subtitle: DOCUMENT_TYPE_LABELS[doc.document_type] || doc.document_type,
+      dossierNumber: doc.dossier_number || detail?.dossier_number,
       meta: [
         `Patient: ${detail?.full_name || ''}`, `Médecin: ${doc.doctor_name}`,
         `Date: ${new Date(doc.created_at).toLocaleDateString('fr-FR')}`,
@@ -521,12 +529,7 @@ export default function MyPatients() {
                 {panelTab === 'historique' && (
                   <div>
                     <p className="text-sm font-medium text-forest-900 mb-2">Consultations passées</p>
-                    {detail.appointments.length === 0 && <p className="text-sm text-forest-700">Aucun rendez-vous.</p>}
-                    <div className="space-y-1">
-                      {detail.appointments.map((a) => (
-                        <p key={a.id} className="text-sm text-forest-700">{new Date(a.scheduled_at).toLocaleString('fr-FR')}</p>
-                      ))}
-                    </div>
+                    <ConsultationHistory appointments={detail.appointments} />
                   </div>
                 )}
 
@@ -549,7 +552,7 @@ export default function MyPatients() {
                               </button>
                             </div>
                           </div>
-                          <p className="text-xs text-forest-700 mb-1">{d.doctor_name} - {new Date(d.created_at).toLocaleDateString('fr-FR')}</p>
+                          <DocumentIdentity doc={d} />
                           <p className="text-sm text-forest-700 whitespace-pre-wrap">{d.content}</p>
                         </div>
                       ))}

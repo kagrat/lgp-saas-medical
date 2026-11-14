@@ -12,6 +12,7 @@ evite tout risque de ALTER TYPE plus tard.
 """
 import uuid
 from datetime import datetime
+from app.timeutils import utcnow
 
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
@@ -76,7 +77,7 @@ def _generate_invoice_number(db: Session, establishment_id: str) -> str:
     pour le volume attendu, a revisiter avec un compteur dedie si le
     besoin grandit.
     """
-    year = datetime.utcnow().year
+    year = utcnow().year
     count = (
         db.query(Invoice)
         .filter(Invoice.establishment_id == establishment_id, Invoice.invoice_number.like(f"FAC-{year}-%"))
@@ -207,7 +208,7 @@ def record_payment(invoice_id: str, payload: PaymentCreate, db: Session = Depend
     remaining = invoice.total_amount - already_paid
     if payload.amount > remaining + 0.01:  # tolerance flottante
         raise HTTPException(
-            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            status_code=status.HTTP_422_UNPROCESSABLE_CONTENT,
             detail=f"Le montant dépasse le solde restant dû ({round(remaining, 2)} FCFA)",
         )
 

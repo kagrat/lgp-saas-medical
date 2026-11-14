@@ -4,6 +4,7 @@ complete, demande M. Faustin) - reapprovisionnement du stock general.
 """
 import uuid
 from datetime import datetime
+from app.timeutils import utcnow
 
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
@@ -122,7 +123,7 @@ def receive_purchase_order(po_id: str, db: Session = Depends(get_db),
             item.quantity += po.quantity
 
     po.status = "received"
-    po.received_at = datetime.utcnow()
+    po.received_at = utcnow()
     db.commit()
     db.refresh(po)
     return _to_po_out(po)

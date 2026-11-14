@@ -15,6 +15,7 @@ Chaque suggestion inclut maintenant la note moyenne du medecin (module
 Notes/avis) pour aider le patient a choisir entre plusieurs options proches.
 """
 from datetime import datetime, timedelta, date, time
+from app.timeutils import utcnow
 from typing import Optional
 
 from sqlalchemy import func, or_
@@ -106,7 +107,7 @@ def _free_slots_for_doctor(db: Session, doctor: Doctor, target_date: date, max_s
         while cursor + step <= end_of_window and len(free_slots) < max_slots:
             slot_end = cursor + step
             overlaps = any(cursor < busy_end and slot_end > busy_start for busy_start, busy_end in busy_ranges)
-            if not overlaps and cursor > datetime.utcnow():
+            if not overlaps and cursor > utcnow():
                 free_slots.append((cursor, slot_end))
             cursor += step
 

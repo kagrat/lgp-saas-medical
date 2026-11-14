@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import api, { getErrorMessage } from '../api/client'
 import { DocumentTypeBadge } from './DocumentType'
+import ConsultationHistory, { DocumentIdentity } from './ConsultationHistory'
 
 /**
  * CORRIGE (demande explicite de M. Faustin, relecture rigoureuse: "les
@@ -15,7 +16,7 @@ import { DocumentTypeBadge } from './DocumentType'
  * reservee au medecin traitant). La messagerie, elle, reste pleinement
  * active - deja elargie a l'admin par ailleurs.
  */
-export default function PatientDirectory() {
+export default function PatientDirectory({ initialPatientId }) {
   const [patients, setPatients] = useState([])
   const [search, setSearch] = useState('')
   const [error, setError] = useState('')
@@ -31,6 +32,12 @@ export default function PatientDirectory() {
   useEffect(() => {
     load()
   }, [])
+
+  // Ouverture directe du dossier (fin de consultation, clic sur une notification).
+  useEffect(() => {
+    if (initialPatientId) openPatient({ id: initialPatientId })
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [initialPatientId])
 
   async function load(query) {
     try {
@@ -174,14 +181,7 @@ export default function PatientDirectory() {
                 {panelTab === 'historique' && (
                   <div>
                     <p className="text-sm font-medium text-forest-900 mb-2">Consultations passées</p>
-                    {detail.appointments.length === 0 && <p className="text-sm text-forest-700">Aucune consultation enregistrée.</p>}
-                    <div className="space-y-2">
-                      {detail.appointments.map((a) => (
-                        <div key={a.id} className="bg-forest-50 rounded-lg p-3 text-sm text-forest-900">
-                          {new Date(a.scheduled_at).toLocaleString('fr-FR')}
-                        </div>
-                      ))}
-                    </div>
+                    <ConsultationHistory appointments={detail.appointments} />
                   </div>
                 )}
 
@@ -196,7 +196,7 @@ export default function PatientDirectory() {
                             <DocumentTypeBadge type={d.document_type} />
                             <p className="text-sm font-medium text-forest-900">{d.title}</p>
                           </div>
-                          <p className="text-xs text-forest-700 mb-1">{d.doctor_name} - {new Date(d.created_at).toLocaleDateString('fr-FR')}</p>
+                          <DocumentIdentity doc={d} />
                           <p className="text-sm text-forest-700 whitespace-pre-wrap">{d.content}</p>
                         </div>
                       ))}

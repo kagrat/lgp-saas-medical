@@ -10,6 +10,7 @@ from fastapi import APIRouter, Depends
 from sqlalchemy.orm import Session
 
 from app.database import get_db
+from app.ratelimit import rate_limit
 from app.models import PlatformSetting, User, UserRole
 from app.schemas import PlatformSettingsOut, PlatformSettingsUpdate
 from app.deps import require_roles
@@ -44,7 +45,7 @@ def _build_settings_out(db: Session) -> PlatformSettingsOut:
     )
 
 
-@router.get("", response_model=PlatformSettingsOut)
+@router.get("", response_model=PlatformSettingsOut, dependencies=[Depends(rate_limit("public-read", 120, 60))])
 def get_settings(db: Session = Depends(get_db)):
     """Public en lecture - utile pour afficher le nom de la plateforme / contact support quelque part."""
     return _build_settings_out(db)

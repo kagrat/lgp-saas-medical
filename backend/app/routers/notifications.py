@@ -9,7 +9,9 @@ documente comme "a completer") - sans avoir a tout reconstruire.
 """
 import uuid
 
-from fastapi import APIRouter, Depends
+from fastapi import HTTPException, APIRouter, Depends
+from typing import Optional
+
 from sqlalchemy.orm import Session
 
 from app.database import get_db
@@ -47,7 +49,8 @@ def create_maintenance_alert(db: Session, establishment_id: str, equipment_name:
     db.add(notification)
 
 
-def create_appointment_notification(db: Session, doctor_user_id: str, establishment_id: str, patient_name: str, scheduled_at) -> None:
+def create_appointment_notification(db: Session, doctor_user_id: str, establishment_id: str, patient_name: str, scheduled_at,
+                                    patient_id: Optional[str] = None, appointment_id: Optional[str] = None) -> None:
     """
     NOUVEAU (demande explicite de M. Faustin: "un medecin est alerte pour
     un nouveau rendez-vous"). CIBLEE (user_id renseigne) - seul CE medecin
@@ -57,11 +60,13 @@ def create_appointment_notification(db: Session, doctor_user_id: str, establishm
         id=str(uuid.uuid4()), establishment_id=establishment_id, user_id=doctor_user_id,
         notification_type="new_appointment", title="Nouveau rendez-vous",
         message=f"{patient_name} - {scheduled_at.strftime('%d/%m/%Y a %H:%M')}",
+        patient_id=patient_id, appointment_id=appointment_id,
     )
     db.add(notification)
 
 
-def create_dossier_share_notification(db: Session, recipient_doctor_user_id: str, establishment_id: str, sender_doctor_name: str, patient_name: str) -> None:
+def create_dossier_share_notification(db: Session, recipient_doctor_user_id: str, establishment_id: str, sender_doctor_name: str, patient_name: str,
+                                      patient_id: Optional[str] = None) -> None:
     """
     NOUVEAU (demande explicite de M. Faustin: "si un confrere lui envoi un
     patient ou un dossier"). CIBLEE - seul le medecin destinataire du
@@ -71,6 +76,7 @@ def create_dossier_share_notification(db: Session, recipient_doctor_user_id: str
         id=str(uuid.uuid4()), establishment_id=establishment_id, user_id=recipient_doctor_user_id,
         notification_type="dossier_share", title="Dossier partagé par un confrère",
         message=f"Dr {sender_doctor_name} t'a transmis le dossier de {patient_name}.",
+        patient_id=patient_id,
     )
     db.add(notification)
 
@@ -132,7 +138,8 @@ def mark_read(notification_id: str, db: Session = Depends(get_db),
         (Notification.user_id == None) | (Notification.user_id == current_user.id),
     ).first()
     if not notification:
-        return None
+        # Avant: "return None" avec un response_model => erreur 500 au lieu d'un refus propre.
+        raise HTTPException(status_code=404, detail="Notification introuvable")
     notification.is_read = True
     db.commit()
     db.refresh(notification)

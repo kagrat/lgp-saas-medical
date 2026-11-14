@@ -4,12 +4,14 @@ Module 1 - Authentification et roles + gestion du profil personnel.
 Separation stricte web/desktop appliquee cote serveur (X-Client-Type).
 Ajout: sexe et lieu de residence au profil (demande M. Faustin).
 """
+import logging
 import hashlib
 import secrets
 import uuid
 from datetime import datetime, timedelta
+from app.timeutils import utcnow
 
-from fastapi import APIRouter, Depends, HTTPException, status, Header
+from fastapi import APIRouter, Depends, HTTPException, status, Header, BackgroundTasks
 from sqlalchemy.orm import Session
 
 from app.database import get_db
@@ -18,7 +20,8 @@ from app.schemas import (
     LoginRequest, TokenResponse, PatientRegisterRequest, UserProfileUpdate, PasswordChangeRequest, UserProfileOut, UserPhotoUpdate,
     ForgotPasswordRequest, ResetPasswordRequest, LoginResponse, Verify2FARequest, TwoFactorToggle,
 )
-from app.security import verify_password, hash_password, create_access_token
+from app.security import verify_password, hash_password, create_access_token, burn_password_check
+from app.ratelimit import rate_limit, allow_key, hash_key, too_many
 from app.deps import get_current_user
 from app.services.notifications import send_confirmation_email
 from app.config import get_settings
@@ -53,7 +56,7 @@ def _to_profile_out(user: User) -> UserProfileOut:
     )
 
 
-@router.post("/login", response_model=LoginResponse)
+@router.post("/login", response_model=LoginResponse, dependencies=[Depends(rate_limit("login", 60, 300))])
 def login(payload: LoginRequest, db: Session = Depends(get_db),
           x_client_type: str = Header(default="web")):
     user = db.query(User).filter(User.email == payload.email.lower()).first()
@@ -69,17 +72,31 @@ def login(payload: LoginRequest, db: Session = Depends(get_db),
     # bcrypt pour un compte deja bloque, et ca evite de donner un signal
     # (temps de reponse different) qui pourrait aider un attaquant a
     # distinguer "mauvais mot de passe" de "compte verrouille".
-    if user and user.locked_until and user.locked_until > datetime.utcnow():
-        raise HTTPException(
-            status_code=status.HTTP_429_TOO_MANY_REQUESTS,
-            detail="Trop de tentatives échouées. Compte temporairement verrouillé, réessaie dans quelques minutes.",
-        )
+    locked_out = HTTPException(
+        status_code=status.HTTP_429_TOO_MANY_REQUESTS,
+        detail="Trop de tentatives échouées. Compte temporairement verrouillé, réessaie dans quelques minutes.",
+    )
+    if user and user.locked_until and user.locked_until > utcnow():
+        raise locked_out
 
-    if not user or not verify_password(payload.password, user.hashed_password):
+    if not user:
+        # E-mail inconnu. Ne doit RIEN reveler: ni par la duree de la reponse
+        # (avant, un e-mail inconnu etait refuse instantanement alors qu'un vrai
+        # compte coutait un calcul bcrypt: on pouvait deviner quels comptes
+        # existent), ni par le verrouillage (avant, seul un vrai compte se
+        # verrouillait apres 5 essais). Meme sequence que pour un vrai compte:
+        # 5 refus normaux, puis le MEME message de verrouillage.
+        allowed, _ = allow_key(f"login-unknown:{hash_key(payload.email)}", MAX_FAILED_LOGIN_ATTEMPTS, LOCKOUT_DURATION_MINUTES * 60)
+        if not allowed:
+            raise locked_out
+        burn_password_check(payload.password)
+        raise invalid_credentials
+
+    if not verify_password(payload.password, user.hashed_password):
         if user:
             user.failed_login_attempts = (user.failed_login_attempts or 0) + 1
             if user.failed_login_attempts >= MAX_FAILED_LOGIN_ATTEMPTS:
-                user.locked_until = datetime.utcnow() + timedelta(minutes=LOCKOUT_DURATION_MINUTES)
+                user.locked_until = utcnow() + timedelta(minutes=LOCKOUT_DURATION_MINUTES)
             db.commit()
         raise invalid_credentials
 
@@ -119,7 +136,7 @@ def login(payload: LoginRequest, db: Session = Depends(get_db),
         raw_code = f"{secrets.randbelow(1_000_000):06d}"
         db.add(TwoFactorCode(
             id=str(uuid.uuid4()), user_id=user.id, code_hash=_hash_token(raw_code),
-            expires_at=datetime.utcnow() + timedelta(minutes=10),
+            expires_at=utcnow() + timedelta(minutes=10),
         ))
         db.commit()
         body = (
@@ -145,7 +162,7 @@ def login(payload: LoginRequest, db: Session = Depends(get_db),
     return LoginResponse(requires_2fa=False, token=TokenResponse(access_token=token, role=user.role, establishment_id=user.establishment_id))
 
 
-@router.post("/verify-2fa", response_model=TokenResponse)
+@router.post("/verify-2fa", response_model=TokenResponse, dependencies=[Depends(rate_limit("verify-2fa", 30, 600))])
 def verify_2fa(payload: Verify2FARequest, db: Session = Depends(get_db),
                x_client_type: str = Header(default="web")):
     """NOUVEAU (audit de securite complet): deuxieme etape de la
@@ -153,22 +170,40 @@ def verify_2fa(payload: Verify2FARequest, db: Session = Depends(get_db),
     code recu par email et delivre alors le vrai jeton."""
     user = db.query(User).filter(User.email == payload.email.lower()).first()
     invalid = HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Code invalide ou expiré")
+    locked_out = HTTPException(
+        status_code=status.HTTP_429_TOO_MANY_REQUESTS,
+        detail="Trop de tentatives échouées. Compte temporairement verrouillé, réessaie dans quelques minutes.",
+    )
     if not user:
-        raise invalid
+        allowed, _ = allow_key(f"2fa-unknown:{hash_key(payload.email)}", MAX_FAILED_LOGIN_ATTEMPTS, LOCKOUT_DURATION_MINUTES * 60)
+        raise invalid if allowed else locked_out
+    if user.locked_until and user.locked_until > utcnow():
+        raise locked_out
 
     code_hash = _hash_token(payload.code)
     code_entry = (
         db.query(TwoFactorCode)
         .filter(
             TwoFactorCode.user_id == user.id, TwoFactorCode.code_hash == code_hash,
-            TwoFactorCode.used == False, TwoFactorCode.expires_at > datetime.utcnow(),
+            TwoFactorCode.used == False, TwoFactorCode.expires_at > utcnow(),
         )
         .order_by(TwoFactorCode.created_at.desc())
         .first()
     )
     if not code_entry:
+        # Le code a 6 chiffres n'a que 1 000 000 de combinaisons et reste valable 10
+        # minutes: SANS limite d'essais, un script pouvait le deviner. 5 mauvais codes
+        # verrouillent le compte (meme mecanisme que le mot de passe) ET annulent les
+        # codes en attente: il faut refaire la connexion complete (donc le mot de passe).
+        user.failed_login_attempts = (user.failed_login_attempts or 0) + 1
+        if user.failed_login_attempts >= MAX_FAILED_LOGIN_ATTEMPTS:
+            user.locked_until = utcnow() + timedelta(minutes=LOCKOUT_DURATION_MINUTES)
+            db.query(TwoFactorCode).filter(TwoFactorCode.user_id == user.id, TwoFactorCode.used == False).update({"used": True})
+        db.commit()
         raise invalid
 
+    user.failed_login_attempts = 0
+    user.locked_until = None
     code_entry.used = True
     token = create_access_token({
         "sub": user.id,
@@ -191,7 +226,8 @@ def toggle_two_factor(payload: TwoFactorToggle, db: Session = Depends(get_db),
     return {"two_factor_enabled": current_user.two_factor_enabled}
 
 
-@router.post("/register-patient", response_model=TokenResponse, status_code=status.HTTP_201_CREATED)
+@router.post("/register-patient", response_model=TokenResponse, status_code=status.HTTP_201_CREATED,
+             dependencies=[Depends(rate_limit("register", 10, 3600))])
 def register_patient(payload: PatientRegisterRequest, db: Session = Depends(get_db)):
     existing = db.query(User).filter(User.email == payload.email.lower()).first()
     if existing:
@@ -283,8 +319,16 @@ def _hash_token(raw_token: str) -> str:
     return hashlib.sha256(raw_token.encode()).hexdigest()
 
 
-@router.post("/forgot-password")
-def forgot_password(payload: ForgotPasswordRequest, db: Session = Depends(get_db)):
+def _send_reset_email(recipient: str, body: str) -> None:
+    """Best-effort: un echec d'envoi est journalise (sans l'adresse) mais jamais montre a l'appelant."""
+    try:
+        send_confirmation_email(recipient, "Réinitialisation de ton mot de passe", body)
+    except Exception as exc:  # noqa: BLE001
+        logging.getLogger("lgp.auth").warning("Envoi de l'e-mail de reinitialisation echoue (%s)", type(exc).__name__)
+
+
+@router.post("/forgot-password", dependencies=[Depends(rate_limit("forgot", 10, 900))])
+def forgot_password(payload: ForgotPasswordRequest, background_tasks: BackgroundTasks, db: Session = Depends(get_db)):
     """
     NOUVEAU (lacune de securite identifiee lors d'un audit complet):
     jusqu'ici, un mot de passe oublie n'avait AUCUN moyen d'etre recupere
@@ -295,6 +339,12 @@ def forgot_password(payload: ForgotPasswordRequest, db: Session = Depends(get_db
     """
     generic_response = {"message": "Si un compte existe avec cet e-mail, un lien de réinitialisation vient d'être envoyé."}
 
+    # Au plus 3 e-mails de reinitialisation par heure et par adresse: sans cela, n'importe
+    # qui pouvait inonder la boite d'une victime. Reponse IDENTIQUE (rien n'est revele).
+    allowed, _ = allow_key(f"forgot-email:{hash_key(payload.email)}", 3, 3600)
+    if not allowed:
+        return generic_response
+
     user = db.query(User).filter(User.email == payload.email.lower()).first()
     if not user or not user.is_active:
         return generic_response
@@ -302,7 +352,7 @@ def forgot_password(payload: ForgotPasswordRequest, db: Session = Depends(get_db
     raw_token = secrets.token_urlsafe(32)
     reset_token = PasswordResetToken(
         id=str(uuid.uuid4()), user_id=user.id, token_hash=_hash_token(raw_token),
-        expires_at=datetime.utcnow() + timedelta(hours=1),
+        expires_at=utcnow() + timedelta(hours=1),
     )
     db.add(reset_token)
     db.commit()
@@ -315,18 +365,15 @@ def forgot_password(payload: ForgotPasswordRequest, db: Session = Depends(get_db
         f"Si tu n'es pas à l'origine de cette demande, ignore simplement cet e-mail - "
         f"ton mot de passe actuel reste inchangé."
     )
-    try:
-        send_confirmation_email(user.email, "Réinitialisation de ton mot de passe", body)
-    except Exception:
-        # Best-effort, comme pour les autres notifications: ne jamais
-        # reveler a l'appelant si l'envoi a echoue (fuiterait la meme
-        # information qu'on protege deja par le message generique).
-        pass
+    # Envoi en TACHE DE FOND: la reponse part tout de suite. Avant, l'envoi SMTP (plusieurs
+    # secondes) bloquait la requete pour un e-mail existant seulement: duree de reponse
+    # revelatrice, et un serveur de messagerie lent pouvait saturer l'application.
+    background_tasks.add_task(_send_reset_email, user.email, body)
 
     return generic_response
 
 
-@router.post("/reset-password")
+@router.post("/reset-password", dependencies=[Depends(rate_limit("reset", 20, 900))])
 def reset_password(payload: ResetPasswordRequest, db: Session = Depends(get_db)):
     token_hash = _hash_token(payload.token)
     reset_token = (
@@ -334,7 +381,7 @@ def reset_password(payload: ResetPasswordRequest, db: Session = Depends(get_db))
         .filter(PasswordResetToken.token_hash == token_hash, PasswordResetToken.used == False)
         .first()
     )
-    if not reset_token or reset_token.expires_at < datetime.utcnow():
+    if not reset_token or reset_token.expires_at < utcnow():
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Ce lien de réinitialisation est invalide ou a expiré")
 
     user = db.query(User).filter(User.id == reset_token.user_id).first()

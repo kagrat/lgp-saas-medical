@@ -1,9 +1,9 @@
 {
   "name": "lgp-console",
   "version": "1.0.0",
-  "description": "LGP Console - Application Desktop pour les etablissements et le Super Admin",
+  "description": "SpeedSante+ - Application Desktop pour les etablissements et le Super Admin",
   "main": "main.js",
-  "author": "LGP HOLDINGS",
+  "author": "SpeedSante+",
   "scripts": {
     "start": "electron .",
     "build": "electron-builder --win",
@@ -15,7 +15,7 @@
   },
   "build": {
     "appId": "com.lgpholdings.console",
-    "productName": "LGP Console",
+    "productName": "SpeedSante+",
     "files": [
       "main.js",
       "preload.js"
