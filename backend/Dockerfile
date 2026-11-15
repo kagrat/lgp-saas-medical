@@ -8,7 +8,7 @@
 #   - le serveur s'execute avec un utilisateur SANS privilege (pas root);
 #   - aucun fichier de developpement dans l'image (voir .dockerignore);
 #   - arret propre: "exec" fait recevoir le signal d'arret directement a uvicorn.
-FROM python:3.12-slim
+FROM python:3.15-slim
 
 ENV PYTHONDONTWRITEBYTECODE=1 \
     PYTHONUNBUFFERED=1 \
