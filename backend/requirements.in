@@ -16,7 +16,7 @@
 # demarrait plus alors que RIEN n'avait change dans ce projet.
 fastapi~=0.162
 uvicorn[standard]~=0.54
-sqlalchemy>=2.0.35,<2.1
+sqlalchemy>=2.1.8,<2.2
 pg8000>=1.31.5,<1.32
 pydantic~=2.14
 pydantic-settings~=2.16
